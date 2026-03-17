@@ -221,6 +221,8 @@ model Product {
   createdAt           DateTime     @default(now())
 
   hotel               Hotel?
+  transfer            Transfer?
+  activity            Activity?
   contracts           Contract[]
   tourProgram         TourProgram?
 
@@ -361,3 +363,48 @@ model CharterSeason { id BigInt @id @default(autoincrement()); seasonCode String
 model CharterFlight { id BigInt @id @default(autoincrement()); charterSeasonId BigInt; season CharterSeason @relation(fields:[charterSeasonId], references:[id]); flightDate DateTime; directionCode String; seatCapacityTotal Int @default(0); seatCapacitySold Int @default(0); seatCapacityFree Int @default(0); statusCode String @default("scheduled"); @@map("charter_charter_flights") }
 model B2BAgencyUser { id BigInt @id @default(autoincrement()); agencyId BigInt; agency Agency @relation(fields:[agencyId], references:[id]); userId BigInt; user User @relation(fields:[userId], references:[id]); statusCode String @default("active"); @@unique([agencyId, userId]); @@map("b2b_agency_users") }
 model SefDocument { id BigInt @id @default(autoincrement()); bookingId BigInt; booking Booking @relation(fields:[bookingId], references:[id]); sefDocumentReference String?; documentStatusCode String @default("draft"); requestPayload Json?; responsePayload Json?; sentAt DateTime?; createdAt DateTime @default(now()); @@map("regulatory_sef_documents") }
+model Transfer {
+  id                  BigInt       @id @default(autoincrement())
+  productId           BigInt       @unique
+  product             Product      @relation(fields: [productId], references: [id])
+  transferTypeCode    String       // private, shared, shuttle
+  vehicleTypeCode     String       // sedan, minivan, minibus, bus
+  maxPassengers       Int
+  maxBags             Int
+  pickupLocationCode  String
+  dropoffLocationCode String
+  sourcing            String       // api, manual, fleet
+  fleetVehicleId      BigInt?
+  fleetVehicle        FleetVehicle? @relation(fields: [fleetVehicleId], references: [id])
+  statusCode          String       @default("active")
+
+  @@map("product_transfers")
+}
+
+model Activity {
+  id                   BigInt    @id @default(autoincrement())
+  productId            BigInt    @unique
+  product              Product   @relation(fields: [productId], references: [id])
+  activityCategoryCode String
+  name                 String
+  durationMinutes      Int
+  meetingPointText     String?
+  isTicketed           Boolean   @default(false)
+  statusCode           String    @default("active")
+
+  @@map("product_activities")
+}
+
+model FleetVehicle {
+  id                 BigInt     @id @default(autoincrement())
+  registrationNumber String     @unique
+  make               String
+  model              String
+  yearOfManufacture  Int
+  capacityPax        Int
+  capacityBags       Int
+  status             String     @default("available")
+  transfers          Transfer[]
+
+  @@map("ops_fleet_vehicles")
+}

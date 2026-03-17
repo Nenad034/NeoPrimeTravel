@@ -38,3 +38,10 @@ Ovaj dokument je obavezan "kontrolni punkt" za AI asistenta pre početka bilo ko
 - Svaki naš razgovor (sesija) mora biti dokumentovan i sačuvan na GitHub-u.
 - AI će redovno kreirati kratke opise (Summaries) obavljenog posla i donetih odluka u okviru posebnog foldera u repozitorijumu (npr. `docs/conversations/`).
 - Na taj način, čitava istorija razvoja i razmišljanja iza svake linije koda ostaje trajno sačuvana uz sam projekat.
+
+### 8. Perzistencija Zadataka i "Zero-Leak" Završetak (Task Persistence)
+- Ako AI predloži listu od više stavki (npr. 1, 2 i 3), a korisnik ima primedbu samo na stavku 1, AI mora:
+    - Ispraviti stavku 1 prema instrukcijama.
+    - Nakon ispravke, OBAVEZNO se vratiti i završiti stavke 2 i 3 koje su bile deo originalnog plana.
+*   AI ne sme da "zaboravi" preostale delove plana samo zato što se fokus razgovora privremeno pomerio na ispravku jednog dela.
+*   Pre predlaganja potpuno novog modula, AI mora napraviti retrospektivu trenutnog zadatka i potvrditi da je SVE iz prethodno odobrenog plana realizovano.

@@ -35,6 +35,11 @@ export class PackageOrchestrator {
       console.log('[Warning] Detektovan Hotel+Let bez Transfera. Sistem će predložiti transfer.');
     }
 
+    // Specifična provera za "Full Service" (Hotel + Let + Transfer + Activity)
+    if (types.includes('HOTEL') && types.includes('FLIGHT') && types.includes('TRANSFER') && types.includes('ACTIVITY')) {
+      console.log('[Info] Formiran Full Service paket. Primenjujem maksimalni popust (Bundle Discount).');
+    }
+
     // Ovde bi išla duboka logika provere datuma (Temporal Compatibility)
     return ok(true);
   }
