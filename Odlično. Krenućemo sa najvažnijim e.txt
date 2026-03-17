@@ -1,0 +1,424 @@
+Odlično. Krenućemo sa **najvažnijim ekranom celog sistema** — **centralna forma rezervacije (Reservation Dossier / Booking File)**.
+To je ekran koji operateri koriste **ceo dan**, zato mora biti:
+
+* brz
+* pregledan
+* modularan
+* bez previše klikova
+* sa jasnom hijerarhijom informacija
+
+U modernim travel sistemima to se zove **Reservation Dossier**, **Booking File** ili **Reservation Architect**.
+
+Ja predlažem **modularni layout** koji može da prikaže sve informacije bez haosa.
+
+---
+
+# 1. Koncept forme rezervacije
+
+Ekran mora imati **tri nivoa informacija**:
+
+### 1️⃣ Header (status rezervacije)
+
+Najvažnije informacije odmah vidljive.
+
+### 2️⃣ Main workspace
+
+Radni deo gde operater menja rezervaciju.
+
+### 3️⃣ Sticky finansijski panel
+
+Pregled novca i statusa plaćanja.
+
+---
+
+# 2. Predloženi layout
+
+```text
+-------------------------------------------------------------
+BOOKING HEADER
+-------------------------------------------------------------
+
+-------------------------------------------------------------
+LEFT SIDEBAR     | MAIN WORKSPACE                | FINANCE
+Navigation       | Reservation data              | PANEL
+                 |                               |
+                 |                               |
+                 |                               |
+-------------------------------------------------------------
+```
+
+---
+
+# 3. Header rezervacije
+
+Header mora odmah pokazati **status rezervacije**.
+
+Primer:
+
+```
+Reservation: OT-2026-000482
+Status: CONFIRMED
+Channel: B2B Agent
+Agent: TravelPro Belgrade
+Created: 14.03.2026
+Operator: Marko Jovanović
+Travel date: 10.07.2026
+```
+
+### Status badge
+
+Boje statusa:
+
+```
+DRAFT        gray
+OPTION       amber
+CONFIRMED    green
+CANCELLED    red
+ON REQUEST   blue
+PROBLEM      orange
+```
+
+### Brze akcije u headeru
+
+Desno u headeru:
+
+```
+Edit reservation
+Cancel reservation
+Send voucher
+Send invoice
+Add note
+```
+
+---
+
+# 4. Leva navigacija (Reservation sections)
+
+Rezervacija mora biti podeljena na sekcije.
+
+```
+Overview
+Passengers
+Services
+Rooming
+Operations
+Finance
+Documents
+Notes
+History
+```
+
+Klik na sekciju menja sadržaj u **main workspace-u**.
+
+---
+
+# 5. Sekcija 1 – Overview
+
+Overview daje **brz pregled rezervacije**.
+
+### Osnovni podaci
+
+```
+Reservation number
+External reference
+Booking channel
+Agent
+Operator
+Booking date
+Travel period
+Destination
+```
+
+### Kontakt putnika
+
+```
+Lead passenger
+Phone
+Email
+Nationality
+Passport number
+```
+
+### Brze informacije
+
+```
+Total passengers: 4
+Rooms: 2
+Services: hotel + flight + transfer
+Supplier: Hotelbeds
+Supplier reference: HB-884221
+```
+
+---
+
+# 6. Sekcija 2 – Passengers
+
+Tabela putnika.
+
+| Name           | DOB  | Passport | Room | Type  |
+| -------------- | ---- | -------- | ---- | ----- |
+| Marko Petrović | 1984 | P12345   | 101  | Adult |
+| Ana Petrović   | 1986 | P99811   | 101  | Adult |
+| Luka Petrović  | 2012 | P77211   | 102  | Child |
+
+Akcije:
+
+```
+Add passenger
+Edit passenger
+Assign room
+Add document
+```
+
+---
+
+# 7. Sekcija 3 – Services (stavke rezervacije)
+
+Ovo je **najvažniji operativni deo**.
+
+Tabela svih usluga.
+
+| Service   | Supplier         | Date      | Status    | Net | Sell |
+| --------- | ---------------- | --------- | --------- | --- | ---- |
+| Hotel     | Hotel Sea Star   | 10–17 Jul | Confirmed | 800 | 1050 |
+| Flight    | Air Serbia       | 10 Jul    | Ticketed  | 220 | 260  |
+| Transfer  | Balkan Transfers | 10 Jul    | Confirmed | 40  | 70   |
+| Excursion | Kotor Tour       | 12 Jul    | Pending   | 30  | 60   |
+
+Akcije:
+
+```
+Add service
+Edit service
+Change supplier
+Reprice
+Cancel item
+```
+
+---
+
+# 8. Sekcija 4 – Rooming
+
+Rooming mora imati vizuelni prikaz.
+
+Primer:
+
+```
+Room 101 – Deluxe Double
+Guests:
+- Marko Petrović
+- Ana Petrović
+
+Room 102 – Family Room
+Guests:
+- Luka Petrović
+- Sara Petrović
+```
+
+Operater može:
+
+```
+Add room
+Move passenger
+Change room type
+Export rooming list
+Send rooming to hotel
+```
+
+---
+
+# 9. Sekcija 5 – Operations
+
+Operativne informacije.
+
+### Transfer
+
+```
+Pickup: Tivat Airport
+Time: 14:30
+Vehicle: Van
+Supplier: Balkan Transfers
+```
+
+### Excursions
+
+```
+Kotor tour – 12 Jul – 08:00
+Pickup point: Hotel lobby
+Guide: Nikola
+```
+
+### Special requests
+
+```
+Sea view
+Baby cot
+Late check-out
+```
+
+---
+
+# 10. Sekcija 6 – Finance
+
+Ovo je povezano sa finansijskim modulom.
+
+Tabela:
+
+| Description | Amount | Status |
+| ----------- | ------ | ------ |
+| Total sell  | 1,440€ |        |
+| Net cost    | 1,090€ |        |
+| Margin      | 350€   |        |
+
+### Uplate kupca
+
+| Date       | Amount | Method |
+| ---------- | ------ | ------ |
+| 01.03.2026 | 500€   | Card   |
+| 01.05.2026 | 940€   | Bank   |
+
+### Obaveze dobavljaču
+
+| Supplier | Amount | Due   |
+| -------- | ------ | ----- |
+| Hotel    | 800€   | 01.06 |
+| Transfer | 40€    | 09.07 |
+
+---
+
+# 11. Sekcija 7 – Documents
+
+Lista dokumenata.
+
+```
+Voucher.pdf
+Invoice.pdf
+RoomingList.xlsx
+TransferList.pdf
+```
+
+Akcije:
+
+```
+Generate voucher
+Generate invoice
+Upload document
+Send to client
+```
+
+---
+
+# 12. Sekcija 8 – Notes
+
+Interna komunikacija.
+
+```
+14.03 – client requested sea view
+15.03 – hotel confirmed sea view
+20.03 – client paid deposit
+```
+
+---
+
+# 13. Sekcija 9 – History
+
+Audit log.
+
+```
+Reservation created – Marko
+Passenger added – Ana
+Payment recorded – Milica
+Voucher sent – system
+```
+
+---
+
+# 14. Sticky finansijski panel
+
+Desna strana ekrana.
+
+```
+TOTAL PRICE
+1,440€
+
+PAID
+500€
+
+BALANCE
+940€
+
+NET COST
+1,090€
+
+MARGIN
+350€
+```
+
+Status:
+
+```
+Balance due in 10 days
+```
+
+---
+
+# 15. Brze operativne akcije
+
+Na vrhu ili desno:
+
+```
+Add service
+Record payment
+Send voucher
+Send invoice
+Export documents
+Cancel service
+```
+
+---
+
+# 16. Prednosti ovakvog dizajna
+
+Operater može:
+
+* videti sve informacije odmah
+* brzo menjati usluge
+* kontrolisati rooming
+* pratiti novac
+* generisati dokumente
+* pratiti operativne liste
+
+bez prelaska u druge ekrane.
+
+---
+
+# 17. Važna stvar za vaš sistem
+
+Svaka stavka mora imati:
+
+```
+source
+API / manual
+supplier reference
+```
+
+jer rezervacija može biti:
+
+```
+online
+manual
+hybrid
+```
+
+---
+
+# 18. Sledeći korak
+
+Ako želite, sledeće mogu da uradim:
+
+1️⃣ **kompletan dizajn finansijskog modula**
+2️⃣ **operativne liste (arrival / departure / transfer)**
+3️⃣ **kapacitet i allotment modul**
+4️⃣ **rooming drag-and-drop interfejs**
+
+To su sledeće ključne komponente operativnog sistema.

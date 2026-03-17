@@ -1,0 +1,811 @@
+Nastavljam sa **operativnim listama**, jer su one sledeći prirodan sloj posle:
+
+* centralne forme rezervacije
+* finansijskog modula
+
+Ovo je deo sistema koji operativa koristi svakodnevno da bi znala:
+
+* ko dolazi
+* ko odlazi
+* ko je trenutno na destinaciji
+* ko ima transfer
+* ko ide na izlet
+* ko nema dokumenta
+* ko nije uplatio
+* gde postoji problem
+
+Ove liste nisu samo “izveštaji”, već **radni operativni ekrani**.
+
+---
+
+# 1. Svrha operativnih listi
+
+Operativne liste moraju da omoguće da tim u svakom trenutku ima pregled:
+
+1. dnevnih dolazaka
+2. dnevnih odlazaka
+3. transfer operacija
+4. izleta i aktivnosti
+5. rooming statusa
+6. otvorenih problema
+7. nekompletnih rezervacija
+
+Drugim rečima, ovo je **Operations Control Center**.
+
+---
+
+# 2. Glavne operativne liste koje sistem mora imati
+
+Predlažem sledećih 8 osnovnih listi:
+
+1. **Arrival List**
+2. **Departure List**
+3. **In-House List**
+4. **Transfer List**
+5. **Excursion / Activity List**
+6. **Rooming Status List**
+7. **Documents Pending List**
+8. **Financial Warning List**
+
+Kasnije se mogu dodati:
+
+* visa/docs control
+* allotment control
+* airport assistance list
+* rep/guide manifest
+* supplier dispatch list
+
+---
+
+# 3. Opšti UI princip za operativne liste
+
+Sve operativne liste treba da koriste isti vizuelni princip:
+
+## Gornji toolbar
+
+* naziv liste
+* datum / period
+* filteri
+* quick search
+* export
+* quick actions
+
+## Centralna tabela
+
+* čista, široka, pregledna
+* sticky header
+* sort/filter po kolonama
+* statusi obojeni diskretno
+
+## Desni detalj panel ili drawer
+
+* klik na red otvara mini pregled rezervacije
+* bez odlaska na drugi ekran kad nije potrebno
+
+## Donje bulk akcije
+
+* send vouchers
+* export PDF/Excel
+* mark sent
+* assign operator
+* notify supplier
+
+---
+
+# 4. Arrival List
+
+Ovo je jedna od najvažnijih lista.
+
+## Svrha
+
+Da operativa zna:
+
+* ko dolazi danas / sutra / po periodu
+* u koji hotel
+* sa koliko putnika
+* da li je sve potvrđeno
+* da li je transfer organizovan
+* da li su dokumenta poslata
+* da li postoji finansijski problem
+
+---
+
+## 4.1 Ključne kolone za Arrival List
+
+Predlažem kolone:
+
+* Arrival Date
+* Booking Ref
+* Lead Passenger
+* Total Pax
+* Destination
+* Hotel
+* Room Type / Board
+* Nights
+* Transfer In
+* Rooming Status
+* Voucher Status
+* Finance Status
+* Booking Status
+* Operator
+* Alerts
+
+### Dodatne opcione kolone
+
+* agent
+* supplier reference
+* flight arrival time
+* special requests
+* source (api/manual/hybrid)
+
+---
+
+## 4.2 Primer reda
+
+```text
+10.07.2026 | OT-2026-00482 | Marko Petrović | 4 pax | Budva | Sea Star Hotel | Deluxe BB | 7 | Yes 14:30 | Sent | Sent | Deposit pending | Confirmed | Milica | Sea view request
+```
+
+---
+
+## 4.3 Filteri
+
+Arrival list mora imati filtere:
+
+* date / date range
+* destination
+* hotel
+* operator
+* booking status
+* transfer yes/no
+* voucher sent/not sent
+* rooming sent/not sent
+* finance warning yes/no
+* B2C / B2B / internal
+* supplier
+
+---
+
+## 4.4 Quick actions
+
+Na arrival listi moraju postojati brze akcije:
+
+* open reservation
+* send voucher
+* send arrival info
+* export hotel arrival list
+* export transfer list
+* mark rooming sent
+* assign operator
+* add internal note
+
+---
+
+# 5. Departure List
+
+## Svrha
+
+Da operativa zna:
+
+* ko odlazi
+* iz kog hotela
+* kada ima transfer
+* da li su svi troškovi zatvoreni
+* da li postoji open balance
+* da li postoje problemi pri check-out-u
+
+---
+
+## 5.1 Ključne kolone
+
+* Departure Date
+* Booking Ref
+* Lead Passenger
+* Total Pax
+* Hotel
+* Room Number / Rooming
+* Check-out Time
+* Transfer Out
+* Flight / Departure Info
+* Finance Balance
+* Supplier Payment Warning
+* Operator
+* Alerts
+
+---
+
+## 5.2 Tipični alerti na departure listi
+
+* unpaid balance
+* missing transfer
+* late checkout request
+* supplier not settled
+* document missing
+* unresolved complaint
+
+---
+
+# 6. In-House List
+
+Ovo je vrlo važna lista za operativu na destinaciji.
+
+## Svrha
+
+Prikazuje goste koji su trenutno:
+
+* smešteni
+* aktivni na putovanju
+* na krstarenju
+* u hotelu
+* u toku programa
+
+---
+
+## 6.1 Ključne kolone
+
+* Booking Ref
+* Lead Passenger
+* Total Pax
+* Hotel / Cruise / Program
+* Check-in Date
+* Check-out Date
+* Room / Cabin
+* Rep / Guide
+* Special Requests
+* Complaint Flag
+* Finance Flag
+* Notes
+
+---
+
+## 6.2 Upotreba
+
+Ova lista je korisna za:
+
+* predstavnike na destinaciji
+* call centar
+* operaciju
+* rešavanje problema dok su gosti na putu
+
+---
+
+# 7. Transfer List
+
+Ovo mora biti i zasebna lista i deo arrival/departure workflow-a.
+
+## Svrha
+
+Prikazuje sve transfere po datumu i vremenu.
+
+Može se gledati:
+
+* po danu
+* po aerodromu
+* po hotelu
+* po supplier-u
+* po vozilu
+
+---
+
+## 7.1 Ključne kolone
+
+* Service Date
+* Pickup Time
+* Booking Ref
+* Lead Passenger
+* Total Pax
+* Pickup Point
+* Dropoff Point
+* Transfer Type
+* Vehicle
+* Supplier
+* Driver / Contact
+* Status
+* Notes
+
+---
+
+## 7.2 Grupisanje
+
+Transfer listu treba omogućiti da se grupiše po:
+
+* supplier-u
+* ruti
+* vremenu
+* destinaciji
+* vozilu
+
+To je važno za operativno slanje supplier-ima.
+
+---
+
+## 7.3 Quick actions
+
+* export supplier manifest
+* send transfer list
+* mark supplier confirmed
+* print driver list
+* add manual transfer
+* reassign transfer supplier
+
+---
+
+# 8. Excursion / Activity List
+
+Za izlete, aktivnosti, ulaznice.
+
+## Svrha
+
+Da operativa zna:
+
+* ko ide
+* kada ide
+* gde se skuplja
+* ko vodi grupu
+* da li je supplier potvrđen
+* da li su karte izdate
+
+---
+
+## 8.1 Ključne kolone
+
+* Activity Date
+* Time
+* Booking Ref
+* Lead Passenger
+* Pax
+* Activity Name
+* Pickup Point
+* Supplier / Guide
+* Voucher / Ticket Status
+* Payment Status
+* Notes
+
+---
+
+## 8.2 Dodatne funkcije
+
+* export manifest
+* print excursion list
+* send guide list
+* group by activity/date
+* attendance check
+* special meal / mobility note
+
+---
+
+# 9. Rooming Status List
+
+Ovo je posebna operativna lista za kontrolu sobinga.
+
+## Svrha
+
+Da tim vidi:
+
+* koje rezervacije imaju sobe dodeljene
+* koje nemaju
+* šta je poslato hotelu
+* šta hotel još nije potvrdio
+* da li postoji mismatch
+
+---
+
+## 9.1 Ključne kolone
+
+* Booking Ref
+* Lead Passenger
+* Hotel
+* Arrival Date
+* Nights
+* Pax
+* Room Count
+* Rooming Status
+* Rooming Sent Date
+* Hotel Confirmation Status
+* Alerts
+
+---
+
+## 9.2 Rooming statusi
+
+Predlažem:
+
+* not_started
+* draft
+* assigned
+* sent_to_hotel
+* confirmed_by_hotel
+* changed_after_send
+* mismatch_warning
+
+---
+
+## 9.3 Quick actions
+
+* open rooming editor
+* export rooming list
+* send rooming
+* mark hotel confirmation received
+* compare rooming vs confirmed
+
+---
+
+# 10. Documents Pending List
+
+Ovo je veoma korisna lista koju mnogi sistemi nemaju dovoljno dobro.
+
+## Svrha
+
+Da odmah vidite koje rezervacije nisu operativno spremne jer nedostaje nešto od dokumentacije.
+
+---
+
+## 10.1 Šta može da nedostaje
+
+* voucher
+* invoice
+* rooming list
+* transfer manifest
+* excursion ticket
+* passport data
+* insurance document
+* supplier confirmation
+
+---
+
+## 10.2 Kolone
+
+* Booking Ref
+* Lead Passenger
+* Travel Date
+* Product Type
+* Missing Document / Missing Data
+* Priority
+* Operator
+* Status
+* Action Due
+
+---
+
+## 10.3 Priority logika
+
+* high: putovanje uskoro, a dokument fali
+* medium: dokument fali, ali ima vremena
+* low: interno nekompletno, bez rizika za putovanje
+
+---
+
+# 11. Financial Warning List
+
+Ovo direktno spaja operativu i finansije.
+
+## Svrha
+
+Da operativa pre putovanja zna:
+
+* ko nije uplatio
+* gde supplier nije plaćen
+* gde postoji finansijski rizik
+* gde postoji over-limit agent
+
+---
+
+## 11.1 Ključne kolone
+
+* Booking Ref
+* Lead Passenger / Agent
+* Travel Date
+* Sell Total
+* Paid In
+* Customer Balance
+* Supplier Due
+* Finance Status
+* Booking Status
+* Alert
+
+---
+
+## 11.2 Tipični alerti
+
+* balance unpaid before travel
+* supplier overdue
+* B2B agent over limit
+* refund unresolved
+* payment mismatch
+
+---
+
+# 12. Operativni status flag-ovi
+
+Da bi liste bile korisne, treba da postoji sistem diskretnih flag-ova.
+
+Predlažem sledeće:
+
+## Operativni flag-ovi
+
+* transfer_missing
+* rooming_missing
+* voucher_missing
+* passport_missing
+* special_request
+* supplier_unconfirmed
+* complaint_open
+* finance_warning
+* document_pending
+* manual_attention
+
+Ovi flag-ovi treba da se pojavljuju kao mali badge/pill elementi u listama.
+
+---
+
+# 13. Bulk akcije nad listama
+
+Operativa često radi nad više rezervacija odjednom.
+
+Zato sistem mora omogućiti bulk akcije:
+
+* send voucher to selected
+* export selected to Excel
+* export supplier manifest
+* assign operator
+* mark checked
+* add note
+* send supplier dispatch
+* generate documents
+* change status where allowed
+
+---
+
+# 14. Export modeli
+
+Sve operativne liste treba da podrže izvoz u:
+
+* Excel
+* CSV
+* PDF
+* supplier-specific layout
+
+Na primer:
+
+* hotel arrival report
+* airport transfer report
+* excursion manifest
+* rooming list
+* unpaid arrivals list
+
+---
+
+# 15. Supplier dispatch view
+
+Pored internih listi, sistem treba da može da generiše **supplier-facing listu**.
+
+Na primer za hotel:
+
+* ime putnika
+* datumi
+* broj soba
+* board
+* special requests
+
+Za transfer supplier:
+
+* pickup time
+* passenger name
+* route
+* contact
+
+Za vodiča:
+
+* activity manifest
+
+Ovo znači da iz operativne liste treba moći preći u:
+
+* internal view
+* supplier dispatch view
+
+---
+
+# 16. Predlog modernog UI-ja za operativne liste
+
+Pošto želite moderan i čist UI, liste ne treba da izgledaju kao:
+
+* stare ERP tabele
+* prenatrpane Excel kopije
+* gust raspored sa premalo prostora
+
+Ja bih radio ovako:
+
+## Stil
+
+* čist background
+* tanke linije
+* sticky header
+* veoma dobra tipografija
+* mnogo whitespace-a
+* status badge-evi tihi ali jasni
+* hover state blag
+* desni detail drawer umesto otvaranja 10 novih stranica
+
+## UX princip
+
+Klik na red:
+
+* otvara side panel sa mini sažetkom rezervacije
+* odatle može “Open Full Reservation”
+
+To daje brzinu radu.
+
+---
+
+# 17. Predlog detail drawer-a iz liste
+
+Kad kliknete na red iz Arrival liste, drawer prikazuje:
+
+* booking ref
+* lead passenger
+* hotel / room
+* transfer
+* rooming status
+* finance status
+* documents status
+* notes
+* quick actions
+
+Akcije:
+
+* open reservation
+* send voucher
+* send rooming
+* record payment
+* add note
+
+---
+
+# 18. Veza sa centralnom rezervacijom
+
+Sve operativne liste moraju biti samo “prozor” u centralni dossier.
+
+Znači:
+
+* Arrival List nije poseban izolovan entitet
+* ona se puni iz reservation data + services + finance + docs + rooming
+
+Drugim rečima, sve liste treba da budu:
+
+* derived views
+* real-time ili near real-time
+
+---
+
+# 19. Veza sa rooming, finansijama i dokumentima
+
+Operativne liste zavise od:
+
+## rooming modula
+
+* room assigned
+* rooming sent
+* rooming confirmed
+
+## finansijskog modula
+
+* paid / unpaid
+* supplier due
+* warning
+
+## dokumenata
+
+* voucher generated
+* sent/not sent
+* missing docs
+
+Zato sistem ne sme da ih tretira kao odvojene ručne tabele.
+
+---
+
+# 20. Predlog dodatnih operativnih filter presets
+
+Da ubrzamo rad, korisno je imati quick presets:
+
+### Arrival List
+
+* Today arrivals
+* Tomorrow arrivals
+* This week arrivals
+* Arrivals with warnings
+* Arrivals without rooming
+* Arrivals unpaid
+
+### Transfer List
+
+* Today transfers
+* Transfers pending confirmation
+* Airport pickups next 6h
+* Supplier export
+
+### Documents Pending
+
+* Missing vouchers
+* Missing passports
+* Missing rooming
+* Missing confirmations
+
+---
+
+# 21. Minimalna baza / logika iza operativnih listi
+
+Za operativne liste nije nužno praviti posebne “ručne” entitete za sve, ali treba imati:
+
+* reservation operational status summary
+* rooming status
+* document status summary
+* finance warning summary
+* service dispatch status
+* checklist completion status
+
+To može biti:
+
+* view layer
+* materialized view
+* derived summary table
+
+Za performanse je često bolje imati summary modele.
+
+---
+
+# 22. Operativni checklist sistem
+
+Ovo bih posebno preporučio.
+
+Za svaku rezervaciju ili booking type može postojati checklist:
+
+## Primer za hotel + transfer
+
+* reservation confirmed
+* voucher generated
+* voucher sent
+* transfer confirmed
+* rooming assigned
+* supplier dispatched
+* payment checked
+
+## Primer za group / cruise
+
+* manifest complete
+* rooming sent
+* flight list checked
+* transfer list sent
+* supplier invoices received
+
+Onda operativne liste mogu imati kolonu:
+
+* checklist status %
+
+Ovo je veoma korisno.
+
+---
+
+# 23. Sledeći logičan korak
+
+Sada kada smo razradili:
+
+* centralnu formu rezervacije
+* finansijski modul
+* operativne liste
+
+sledeći prirodan korak je:
+
+## **Rooming & occupancy / capacity modul**
+
+Tu treba detaljno razraditi:
+
+* raspodelu putnika po sobama
+* višesobne rezervacije
+* grupni rooming
+* export rooming listi
+* allotment
+* sold/free stanje
+* release logiku
+* pregled kapaciteta po hotelu / terminu
+
+To je sledeći ključni operativni sloj.

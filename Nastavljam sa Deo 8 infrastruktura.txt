@@ -1,0 +1,713 @@
+Nastavljam sa **Deo 8: infrastruktura sistema, microservice arhitektura, skaliranje i deployment model**.
+Ovo je deo koji objašnjava **kako platforma fizički i tehnički funkcioniše u produkciji**, posebno kada ima veliki broj pretraga i rezervacija — što je tipično za travel industriju.
+
+---
+
+# Unified Travel Booking Platform
+
+## Deo 8 — Infrastructure, Microservices i Skaliranje
+
+---
+
+# 1. Glavni ciljevi infrastrukture
+
+Travel platforma mora da bude:
+
+* **visoko dostupna**
+* **skalabilna**
+* **otporna na greške**
+* **brza u pretrazi**
+* **stabilna u rezervacijama**
+
+Posebno jer travel sistemi imaju:
+
+* ogromne search volumene
+* relativno mali procenat rezervacija
+* mnogo spoljašnjih API zavisnosti
+
+Tipičan odnos:
+
+```text
+1000 search request
+→ 100 offer views
+→ 10 booking attempts
+→ 3–5 confirmed bookings
+```
+
+---
+
+# 2. Preporučena arhitektura sistema
+
+```text
+Users
+ |
+CDN
+ |
+Load Balancer
+ |
+API Gateway
+ |
+----------------------------------------
+Search Service
+Hotel Service
+Flight Service
+Package Service
+Transfer Service
+Activity Service
+Cruise Service
+Pricing Service
+Booking Service
+Payment Service
+Notification Service
+Supplier Integration Service
+----------------------------------------
+ |
+Databases
+ |
+Cache Layer
+ |
+Message Queue
+ |
+Monitoring & Logs
+```
+
+---
+
+# 3. Frontend sloj
+
+Frontend može biti:
+
+* React / Next.js
+* Vue
+* Angular
+
+Preporuka za modernu travel platformu:
+
+**Next.js + React**
+
+Razlog:
+
+* SSR za SEO
+* brzi page load
+* API kompatibilnost
+
+Frontend komunicira sa backendom preko:
+
+```text
+API Gateway
+```
+
+---
+
+# 4. API Gateway
+
+API Gateway je ulazna tačka za sve zahteve.
+
+Funkcije:
+
+* autentifikacija
+* rate limiting
+* routing
+* request logging
+* request validation
+
+Primeri tehnologija:
+
+* Kong
+* AWS API Gateway
+* Nginx + custom layer
+* Envoy
+
+---
+
+# 5. Microservice arhitektura
+
+Platforma treba da bude podeljena u više servisa.
+
+Primer:
+
+```text
+search-service
+hotel-service
+flight-service
+package-service
+transfer-service
+activity-service
+cruise-service
+pricing-service
+booking-service
+payment-service
+supplier-service
+notification-service
+reporting-service
+```
+
+Svaki servis ima svoju odgovornost.
+
+---
+
+# 6. Search service
+
+Search service je najopterećeniji deo sistema.
+
+Odgovoran za:
+
+* pretragu
+* agregaciju supplier rezultata
+* deduplikaciju
+* ranking
+* filtriranje
+* pagination
+
+Search mora biti **visoko optimizovan**.
+
+---
+
+# 7. Booking service
+
+Booking service je **kritičan servis**.
+
+Odgovoran za:
+
+* kreiranje rezervacije
+* orchestration
+* status promene
+* supplier rezervacije
+* rollback
+* dokumenta
+
+Za razliku od search servisa, mora biti:
+
+* konzistentan
+* pouzdan
+* auditabilan
+
+---
+
+# 8. Pricing service
+
+Pricing service mora biti izdvojen.
+
+Razlog:
+
+* svi proizvodi koriste pricing
+* pravila se često menjaju
+* admin panel upravlja pravilima
+
+Pricing service radi:
+
+* markup
+* commission
+* bundle discount
+* promo
+* final price
+
+---
+
+# 9. Supplier integration service
+
+Ovaj servis komunicira sa svim dobavljačima.
+
+Odgovoran za:
+
+* supplier API calls
+* normalization
+* retry
+* timeout handling
+* caching
+
+Ovaj servis mora imati **rate limiting**.
+
+---
+
+# 10. Notification service
+
+Notification service šalje:
+
+* email
+* SMS
+* push notification
+* internal alerts
+
+Primeri:
+
+* booking confirmation
+* payment confirmation
+* cancellation
+* supplier update
+
+---
+
+# 11. Message queue
+
+Message queue je ključan za skalabilnost.
+
+Primer:
+
+```text
+Booking created
+→ message queue
+→ supplier reservation worker
+```
+
+Popularne tehnologije:
+
+* RabbitMQ
+* Kafka
+* AWS SQS
+* Google Pub/Sub
+
+---
+
+# 12. Worker servisi
+
+Neki procesi ne treba da blokiraju API.
+
+Primer:
+
+* document generation
+* email sending
+* supplier retries
+* analytics logging
+
+Worker servisi obrađuju te zadatke.
+
+---
+
+# 13. Database arhitektura
+
+Preporuka:
+
+```text
+Primary database (PostgreSQL)
+ |
+Read replicas
+ |
+Analytics database
+```
+
+PostgreSQL je odličan izbor za travel platformu.
+
+---
+
+# 14. Baza po servisu vs monolitna baza
+
+Dve strategije postoje.
+
+## Monolitna baza
+
+Jedna baza za sve servise.
+
+Prednost:
+
+* lakše održavanje
+
+Mana:
+
+* teže skaliranje
+
+## Baza po servisu
+
+Svaki servis ima svoju bazu.
+
+Prednost:
+
+* skalabilnost
+
+Mana:
+
+* kompleksnije održavanje
+
+Za MVP je prihvatljivo početi sa **jednom bazom**.
+
+---
+
+# 15. Cache layer
+
+Cache je kritičan za search performanse.
+
+Tehnologije:
+
+* Redis
+* Memcached
+
+Cache koristi se za:
+
+* search results
+* hotel content
+* destination data
+* supplier responses
+
+---
+
+# 16. Search caching model
+
+Primer:
+
+```text
+User search
+→ check cache
+→ if cached return results
+→ else query suppliers
+→ store in cache
+```
+
+TTL može biti:
+
+```text
+search cache = 2–5 min
+```
+
+---
+
+# 17. CDN
+
+CDN se koristi za:
+
+* slike hotela
+* statički sadržaj
+* frontend assets
+
+Primeri:
+
+* Cloudflare
+* AWS CloudFront
+* Fastly
+
+---
+
+# 18. Load balancing
+
+Load balancer raspodeljuje saobraćaj.
+
+Primer:
+
+```text
+users
+ |
+load balancer
+ |
+API instances
+```
+
+Tehnologije:
+
+* Nginx
+* AWS ELB
+* HAProxy
+
+---
+
+# 19. Horizontal scaling
+
+Servisi treba da se skaliraju horizontalno.
+
+Primer:
+
+```text
+search-service instance x 10
+booking-service instance x 3
+pricing-service instance x 5
+```
+
+Search servis najčešće ima najviše instanci.
+
+---
+
+# 20. Containerization
+
+Servisi treba da budu u kontejnerima.
+
+Tehnologija:
+
+* Docker
+
+Orchestration:
+
+* Kubernetes
+* AWS ECS
+* Docker Swarm
+
+Kubernetes je industrijski standard.
+
+---
+
+# 21. CI/CD pipeline
+
+Deployment mora biti automatizovan.
+
+CI/CD pipeline:
+
+```text
+code commit
+→ build
+→ test
+→ container build
+→ staging deploy
+→ production deploy
+```
+
+Alati:
+
+* GitHub Actions
+* GitLab CI
+* Jenkins
+
+---
+
+# 22. Environment model
+
+Sistem mora imati više okruženja.
+
+```text
+development
+staging
+production
+```
+
+Za supplier integracije:
+
+```text
+sandbox
+production
+```
+
+---
+
+# 23. Monitoring
+
+Platforma mora imati monitoring.
+
+Alati:
+
+* Prometheus
+* Grafana
+* Datadog
+* New Relic
+
+Monitorisati:
+
+* response time
+* error rate
+* booking success rate
+* supplier performance
+* API latency
+
+---
+
+# 24. Logging
+
+Centralizovani log sistem.
+
+Tehnologije:
+
+* ELK stack
+* Loki
+* Datadog logs
+
+Logovati:
+
+* API requests
+* supplier errors
+* booking failures
+* payment failures
+
+---
+
+# 25. Alerting
+
+Alerti moraju postojati za:
+
+* supplier downtime
+* booking failure spike
+* payment errors
+* API latency
+* queue backlog
+
+---
+
+# 26. Security
+
+Osnovne mere:
+
+* HTTPS svuda
+* JWT autentifikacija
+* role-based access
+* rate limiting
+* API key management
+
+Za payment:
+
+* PCI compliance
+
+---
+
+# 27. Secrets management
+
+API ključevi ne smeju biti u kodu.
+
+Tehnologije:
+
+* HashiCorp Vault
+* AWS Secrets Manager
+* Kubernetes secrets
+
+---
+
+# 28. Backup strategija
+
+Database backup mora biti:
+
+```text
+daily full backup
+hourly incremental backup
+```
+
+Retention:
+
+```text
+30 days
+```
+
+---
+
+# 29. Disaster recovery
+
+Plan mora sadržati:
+
+* backup region
+* failover database
+* infrastructure redeploy script
+
+Recovery cilj:
+
+```text
+RTO < 1h
+RPO < 15 min
+```
+
+---
+
+# 30. Traffic spike handling
+
+Travel platforme imaju sezonske pikove.
+
+Primer:
+
+* Black Friday
+* Summer promotions
+* Flight sale
+
+Rešenje:
+
+* auto scaling
+* caching
+* queue buffering
+
+---
+
+# 31. Search optimization
+
+Search je najteži deo sistema.
+
+Optimizacije:
+
+* parallel supplier calls
+* partial result return
+* caching
+* supplier prioritization
+* result deduplication
+
+---
+
+# 32. Rate limiting
+
+Sistem mora zaštititi API.
+
+Primer:
+
+```text
+100 requests / minute per IP
+```
+
+Za B2B agente može biti veći limit.
+
+---
+
+# 33. Feature flags
+
+Omogućavaju uključivanje novih funkcija bez deploy-a.
+
+Primer:
+
+* enable cruise search
+* enable package engine
+* enable dynamic pricing
+
+---
+
+# 34. Deployment strategija
+
+Preporučene metode:
+
+* blue/green deploy
+* canary deploy
+
+To smanjuje rizik kod velikih sistema.
+
+---
+
+# 35. Skaliranje search servisa
+
+Search servis je najveći potrošač resursa.
+
+Optimizacije:
+
+* async supplier calls
+* result streaming
+* prefetch popular destinations
+* ML ranking caching
+
+---
+
+# 36. Skaliranje booking servisa
+
+Booking servis mora biti stabilan, ne nužno masivan.
+
+Bitno:
+
+* transactional integrity
+* idempotency
+* retry control
+* audit trail
+
+---
+
+# 37. Zaključak ovog dela
+
+Sa ovim delom sada imate:
+
+* kompletnu infrastrukturnu arhitekturu
+* microservice model
+* caching strategiju
+* deployment model
+* monitoring i logging
+* security i backup strategiju
+
+To je osnova da platforma može da radi na **velikom saobraćaju kao Expedia ili Booking sistem**.
+
+---
+
+# 38. Sledeći deo
+
+Ako želite, sledeći deo može biti **Deo 9: AI i napredna optimizacija travel platforme**.
+
+Tu mogu objasniti:
+
+* kako AI može generisati pakete automatski
+* kako AI optimizuje cene
+* kako AI rangira ponude
+* kako AI personalizuje pretragu
+* kako AI predviđa konverziju
+
+To je zapravo sledeći nivo modernih travel platformi.

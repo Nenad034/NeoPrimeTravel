@@ -1,0 +1,639 @@
+Odlično — sada ćemo napraviti **DEO 10: MASTER BLUEPRINT cele travel platforme**.
+Ovo je **kompletna tehnička i poslovna mapa sistema**, kao dokument koji bi CTO dao timu ili investitorima za izgradnju platforme slične Expedia ili Booking.com.
+
+Ovaj dokument spaja sve prethodne delove u **jedinstven plan razvoja**.
+
+---
+
+# Unified Travel Platform
+
+# MASTER BLUEPRINT
+
+---
+
+# 1. Vizija sistema
+
+Platforma treba da podrži prodaju:
+
+* samo hotela
+* samo letova
+* hotel + avion paketa
+* hotel + avion + transfer
+* hotel + avion + aktivnosti
+* krstarenja
+* B2C prodaju
+* B2B prodaju
+
+Platforma mora omogućiti:
+
+* dynamic packaging
+* API integracije
+* AI optimizaciju
+* globalni inventory
+
+---
+
+# 2. Glavni moduli sistema
+
+Kompletan sistem ima **10 glavnih modula**.
+
+```text
+1 Search Engine
+2 Inventory Engine
+3 Package Engine
+4 Pricing Engine
+5 Booking Engine
+6 Payment Engine
+7 Supplier Integration Layer
+8 AI Optimization Layer
+9 B2B Distribution Layer
+10 Admin Platform
+```
+
+---
+
+# 3. Search engine
+
+Search engine je najopterećeniji deo sistema.
+
+Podržava:
+
+* destination search
+* hotel search
+* flight search
+* cruise search
+* package search
+
+Search pipeline:
+
+```text
+User search
+↓
+Supplier APIs
+↓
+Normalization
+↓
+Aggregation
+↓
+Deduplication
+↓
+Ranking
+↓
+Results
+```
+
+---
+
+# 4. Inventory engine
+
+Inventory engine upravlja svim proizvodima.
+
+Proizvodi:
+
+```text
+hotels
+flights
+transfers
+activities
+cruises
+```
+
+Inventory može biti:
+
+* API inventory
+* contracted inventory
+* cached inventory
+
+---
+
+# 5. Package engine
+
+Package engine generiše kombinacije.
+
+Primer:
+
+```text
+flight + hotel
+flight + hotel + transfer
+flight + hotel + activity
+cruise + flight
+```
+
+Engine mora optimizovati:
+
+* cenu
+* kompatibilnost datuma
+* transfer udaljenost
+* marginu
+
+---
+
+# 6. Pricing engine
+
+Pricing engine izračunava finalnu cenu.
+
+Elementi cene:
+
+```text
+supplier net
++ markup
++ fees
++ taxes
+- discounts
+```
+
+Podržava:
+
+* B2C pricing
+* B2B pricing
+* dynamic markup
+* promotions
+
+---
+
+# 7. Booking engine
+
+Booking engine upravlja rezervacijama.
+
+Flow:
+
+```text
+search
+↓
+select offer
+↓
+reprice
+↓
+enter traveler data
+↓
+payment
+↓
+supplier booking
+↓
+confirmation
+```
+
+Booking mora biti:
+
+* transactional
+* auditabilan
+* rollback-safe
+
+---
+
+# 8. Payment engine
+
+Payment engine podržava:
+
+* kartice
+* bank transfer
+* agency credit
+* wallet
+
+Payment integracije:
+
+* Stripe
+* Adyen
+* lokalni payment gateway
+
+---
+
+# 9. Supplier integration layer
+
+Supplier layer povezuje:
+
+* hotel wholesaler API
+* flight aggregator
+* transfer supplier
+* activity supplier
+* cruise supplier
+
+Layer radi:
+
+* API calls
+* normalization
+* retry
+* fallback
+
+---
+
+# 10. AI optimization layer
+
+AI layer optimizuje:
+
+* ranking
+* package generation
+* pricing
+* personalization
+* fraud detection
+
+---
+
+# 11. B2B distribution layer
+
+Platforma mora podržati subagente.
+
+B2B funkcije:
+
+* agent accounts
+* agent commission
+* credit limit
+* markup rules
+* API access
+
+---
+
+# 12. Admin platform
+
+Admin panel upravlja sistemom.
+
+Moduli:
+
+```text
+supplier management
+product content
+pricing rules
+bookings
+payments
+reports
+campaigns
+users
+```
+
+---
+
+# 13. Database struktura
+
+Glavne baze:
+
+```text
+users
+agents
+suppliers
+hotels
+rooms
+rates
+flights
+transfers
+activities
+cruises
+bookings
+payments
+pricing_rules
+logs
+```
+
+Glavna baza:
+
+**PostgreSQL**
+
+---
+
+# 14. Caching layer
+
+Cache koristi se za:
+
+* search results
+* hotel content
+* pricing
+* supplier responses
+
+Tehnologija:
+
+**Redis**
+
+---
+
+# 15. Message queue
+
+Queue koristi se za:
+
+* booking processing
+* email sending
+* retries
+* analytics
+
+Tehnologije:
+
+* RabbitMQ
+* Kafka
+
+---
+
+# 16. Microservice arhitektura
+
+Servisi:
+
+```text
+search-service
+hotel-service
+flight-service
+package-service
+pricing-service
+booking-service
+payment-service
+supplier-service
+notification-service
+analytics-service
+```
+
+---
+
+# 17. Cloud infrastruktura
+
+Preporučeni cloud:
+
+* AWS
+* Google Cloud
+* Azure
+
+Tipična infrastruktura:
+
+```text
+Kubernetes cluster
+Load balancer
+API gateway
+Microservices
+Databases
+Cache
+Queue
+Monitoring
+```
+
+---
+
+# 18. Skaliranje
+
+Search mora skalirati horizontalno.
+
+Primer:
+
+```text
+search-service × 10
+pricing-service × 5
+booking-service × 3
+```
+
+---
+
+# 19. Monitoring
+
+Monitoring prati:
+
+* API latency
+* supplier errors
+* booking failures
+* payment errors
+
+Alati:
+
+* Prometheus
+* Grafana
+* Datadog
+
+---
+
+# 20. Security
+
+Security mora uključiti:
+
+* HTTPS
+* JWT autentifikaciju
+* rate limiting
+* secrets management
+
+Za payment:
+
+* PCI compliance
+
+---
+
+# 21. AI data pipeline
+
+Podaci za AI dolaze iz:
+
+```text
+search logs
+booking logs
+user behavior
+pricing history
+supplier performance
+```
+
+Skladište:
+
+* data warehouse
+
+---
+
+# 22. Deployment pipeline
+
+CI/CD pipeline:
+
+```text
+code commit
+↓
+build
+↓
+tests
+↓
+container build
+↓
+staging deploy
+↓
+production deploy
+```
+
+---
+
+# 23. Development roadmap
+
+Realni razvoj ima **4 faze**.
+
+---
+
+## FAZA 1 – Core booking engine
+
+Trajanje:
+
+```text
+6–8 meseci
+```
+
+Funkcije:
+
+* hotel search
+* flight search
+* basic package engine
+* booking engine
+* payment
+* admin panel
+
+---
+
+## FAZA 2 – Supplier expansion
+
+Trajanje:
+
+```text
+3–4 meseca
+```
+
+Dodaje:
+
+* više hotel API
+* transfer API
+* activity API
+* cruise API
+
+---
+
+## FAZA 3 – B2B platforma
+
+Trajanje:
+
+```text
+3 meseca
+```
+
+Dodaje:
+
+* agent portal
+* agent pricing
+* credit limit
+* B2B booking
+
+---
+
+## FAZA 4 – AI optimizacija
+
+Trajanje:
+
+```text
+6 meseci
+```
+
+Dodaje:
+
+* ML ranking
+* personalization
+* dynamic pricing
+
+---
+
+# 24. Potreban tim
+
+Minimalni tim:
+
+```text
+1 Product manager
+1 Tech lead
+3 Backend developers
+2 Frontend developers
+1 DevOps
+1 QA
+```
+
+Napredna faza:
+
+```text
++ data scientist
++ ML engineer
+```
+
+---
+
+# 25. Procena razvoja
+
+MVP platforma:
+
+```text
+9–12 meseci razvoja
+```
+
+Napredna platforma:
+
+```text
+18–24 meseca razvoja
+```
+
+---
+
+# 26. Procena troška
+
+Ako tim radi interno:
+
+```text
+$500k – $1.5M
+```
+
+Ako koristi outsourcing:
+
+```text
+$800k – $2M
+```
+
+---
+
+# 27. Najveći tehnički izazovi
+
+Najkompleksniji delovi sistema:
+
+1️⃣ package engine
+2️⃣ supplier integrations
+3️⃣ search optimization
+4️⃣ pricing engine
+5️⃣ booking orchestration
+
+---
+
+# 28. Kako platforme poput Expedia rade
+
+Velike platforme imaju:
+
+```text
+100+ microservices
+50+ supplier integrations
+AI ranking
+global infrastructure
+```
+
+---
+
+# 29. Realna strategija za novu platformu
+
+Najbolji pristup:
+
+1️⃣ fokus na **packages**
+2️⃣ fokus na **destinations**
+3️⃣ fokus na **AI ranking**
+4️⃣ fokus na **B2B distribuciju**
+
+---
+
+# 30. Zaključak
+
+Ovaj blueprint opisuje **kompletnu travel platformu** koja može podržati:
+
+* hotel rezervacije
+* letove
+* pakete
+* krstarenja
+* aktivnosti
+* B2B i B2C prodaju
+* AI optimizaciju
+
+To je arhitektura sistema koji koriste velike OTA platforme.
+
+---
+
+✅ Ako želite, sledeći korak mogu napraviti nešto još korisnije za vas:
+
+**Kompletan dijagram sistema (vizuelni OTA architecture map)** koji pokazuje:
+
+* sve servise
+* tok pretrage
+* tok rezervacije
+* tok API integracija
+
+To je dijagram kakav CTO daje developerima da razumeju ceo sistem za 5 minuta.

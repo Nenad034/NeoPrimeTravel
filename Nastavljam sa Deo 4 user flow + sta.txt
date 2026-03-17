@@ -1,0 +1,1216 @@
+Nastavljam sa **Deo 4: user flow + state machine + booking orchestration logika**.
+
+Ovo je deo koji razvojnom timu najviše pomaže da razume:
+
+* kako korisnik prolazi kroz sistem
+* kako backend menja statuse
+* kako se rezervišu pojedinačne stavke
+* šta se dešava kad nešto ne uspe
+
+---
+
+# TEHNIČKI DOKUMENT ZA RAZVOJNI TIM
+
+## Unified Travel Booking Platform
+
+### Deo 4 — User flow, state machine i booking orchestration
+
+# 1. Svrha ovog dela
+
+Ovaj deo definiše:
+
+1. **korisničke tokove po proizvodu**
+2. **state machine za offer, booking i booking item**
+3. **booking orchestration**
+4. **rollback logiku**
+5. **partial confirmation scenarije**
+6. **post-booking tokove**
+
+Cilj je da svi timovi imaju isti model ponašanja sistema.
+
+---
+
+# 2. Glavni koncepti toka
+
+Sistem ima 4 ključne faze:
+
+```text
+SEARCH
+→ OFFER
+→ REPRICE
+→ BOOKING
+```
+
+Posle toga ide:
+
+```text
+POST-BOOKING SERVICING
+```
+
+Važno pravilo:
+
+* **Search** služi za prikaz mogućnosti
+* **Offer** je konkretna kombinacija spremna za izbor
+* **Reprice** proverava da li je sve i dalje validno
+* **Booking** kreira transakciju i rezerviše kod dobavljača
+
+---
+
+# 3. GLOBALNI USER FLOW
+
+## 3.1 Opšti tok
+
+```text
+User enters search
+→ System validates request
+→ Search engine fetches supplier data
+→ Offers are generated
+→ User selects one offer
+→ System reprices selected offer
+→ User enters traveler and contact data
+→ User chooses payment method
+→ Booking is created
+→ Supplier booking orchestration runs
+→ Payment is finalized
+→ Documents are generated
+→ Booking confirmation shown
+```
+
+---
+
+# 4. USER FLOW PO PROIZVODU
+
+# 4.1 Samo hotel
+
+## Frontend tok
+
+```text
+Hotel Search
+→ Hotel Results
+→ Hotel Details
+→ Room / Rate Selection
+→ Reprice
+→ Traveler / Contact Form
+→ Payment
+→ Booking Processing
+→ Confirmation
+```
+
+## Backend tok
+
+```text
+search hotel inventory
+→ normalize hotel offers
+→ create hotel offer
+→ reprice selected hotel offer
+→ create booking
+→ reserve hotel with supplier
+→ capture payment
+→ generate hotel voucher
+→ set booking confirmed
+```
+
+---
+
+# 4.2 Samo let
+
+## Frontend tok
+
+```text
+Flight Search
+→ Flight Results
+→ Select Itinerary
+→ Fare Details
+→ Reprice
+→ Passenger Form
+→ Payment
+→ Booking Processing
+→ Confirmation
+```
+
+## Backend tok
+
+```text
+search flights
+→ normalize itineraries
+→ create flight offer
+→ reprice flight fare
+→ create booking
+→ reserve flight
+→ ticket / confirm if applicable
+→ capture payment
+→ generate itinerary
+→ set booking confirmed
+```
+
+Napomena: kod letova može postojati razlika između:
+
+* `reserved`
+* `ticketed`
+* `confirmed`
+
+---
+
+# 4.3 Hotel + let
+
+## Frontend tok
+
+```text
+Package Search
+→ Package Results
+→ Package Details
+→ Reprice
+→ Traveler Form
+→ Payment
+→ Booking Processing
+→ Confirmation
+```
+
+## Backend tok
+
+```text
+search flights + hotels
+→ build compatible packages
+→ create package offer
+→ reprice package
+→ create booking
+→ reserve flight
+→ reserve hotel
+→ finalize payment
+→ generate master itinerary
+→ confirmed
+```
+
+---
+
+# 4.4 Hotel + let + transfer + izlet
+
+## Frontend tok
+
+```text
+Package Search
+→ Package Results
+→ Package Details
+→ Optional item replacement
+→ Reprice
+→ Traveler Form
+→ Payment
+→ Booking Processing
+→ Confirmation
+```
+
+## Backend tok
+
+```text
+search flights + hotels + transfers + activities
+→ compatibility filtering
+→ package build
+→ ranking
+→ select package
+→ reprice package
+→ create booking
+→ reserve flight
+→ reserve hotel
+→ reserve transfer
+→ reserve activity
+→ capture payment
+→ generate all documents
+→ unified itinerary
+→ confirmed / partially_confirmed / failed
+```
+
+---
+
+# 4.5 Krstarenje
+
+## Frontend tok
+
+```text
+Cruise Search
+→ Cruise Results
+→ Cruise Details
+→ Cabin Selection
+→ Reprice
+→ Traveler Form
+→ Payment
+→ Booking Processing
+→ Confirmation
+```
+
+## Backend tok
+
+```text
+search cruises
+→ normalize cruise offers
+→ create cruise offer
+→ reprice cruise cabin offer
+→ create booking
+→ reserve cruise
+→ capture payment
+→ generate cruise confirmation
+→ confirmed
+```
+
+---
+
+# 4.6 Krstarenje + let + transfer + hotel pre/post stay
+
+## Frontend tok
+
+```text
+Cruise Package Search
+→ Cruise Package Results
+→ Package Details
+→ Add/change hotel or transfer
+→ Reprice
+→ Traveler Form
+→ Payment
+→ Booking Processing
+→ Confirmation
+```
+
+## Backend tok
+
+```text
+search cruise
+→ search flights
+→ search transfers
+→ search hotels
+→ match embarkation/disembarkation rules
+→ build cruise package
+→ reprice
+→ create booking
+→ reserve flight
+→ reserve hotel pre/post stay
+→ reserve transfer
+→ reserve cruise
+→ capture payment
+→ generate master itinerary
+```
+
+---
+
+# 5. OFFER STATE MACHINE
+
+Offer predstavlja opciju koju korisnik može da izabere.
+
+## 5.1 Offer statusi
+
+* `available`
+* `expired`
+* `repricing_required`
+* `repriced`
+* `unavailable`
+* `booked`
+
+## 5.2 Prelazi stanja
+
+```text
+available
+→ repricing_required
+→ repriced
+→ booked
+```
+
+ili
+
+```text
+available
+→ expired
+```
+
+ili
+
+```text
+available
+→ unavailable
+```
+
+## 5.3 Pravila
+
+### `available`
+
+Offer postoji i može da se prikaže korisniku.
+
+### `repricing_required`
+
+Koristi se kada:
+
+* je flight/package volatile
+* je istekao stari price snapshot
+* je potreban novi check dostupnosti
+
+### `repriced`
+
+Offer je ponovo potvrđen i može u booking flow.
+
+### `expired`
+
+Vreme važenja je isteklo.
+
+### `unavailable`
+
+Jedna ili više komponenti više ne postoji.
+
+### `booked`
+
+Offer je već iskorišćen za kreiranje rezervacije.
+
+---
+
+# 6. BOOKING STATE MACHINE
+
+Booking je master entitet.
+
+## 6.1 Booking statusi
+
+* `pending`
+* `awaiting_payment`
+* `payment_in_progress`
+* `processing`
+* `confirmed`
+* `partially_confirmed`
+* `failed`
+* `cancel_requested`
+* `cancelled`
+* `refunded`
+
+## 6.2 Tok
+
+### Standardni uspešan tok
+
+```text
+pending
+→ awaiting_payment
+→ payment_in_progress
+→ processing
+→ confirmed
+```
+
+### Ako deo stavki uspe, a deo ne uspe
+
+```text
+processing
+→ partially_confirmed
+```
+
+### Ako sve padne
+
+```text
+processing
+→ failed
+```
+
+### Otkazivanje
+
+```text
+confirmed
+→ cancel_requested
+→ cancelled
+```
+
+### Refund
+
+```text
+cancelled
+→ refunded
+```
+
+## 6.3 Značenje statusa
+
+### `pending`
+
+Booking zapis je kreiran, ali dalje radnje još nisu počele.
+
+### `awaiting_payment`
+
+Čeka se iniciranje ili potvrda plaćanja.
+
+### `payment_in_progress`
+
+Payment gateway je aktivan.
+
+### `processing`
+
+Backend rezerviše jednu po jednu stavku.
+
+### `confirmed`
+
+Sve stavke potvrđene.
+
+### `partially_confirmed`
+
+Neke stavke potvrđene, neke nisu.
+
+### `failed`
+
+Rezervacija nije uspela.
+
+### `cancel_requested`
+
+Korisnik ili agent je zatražio otkazivanje.
+
+### `cancelled`
+
+Otkazivanje je obrađeno.
+
+### `refunded`
+
+Refund je izvršen ili evidentiran.
+
+---
+
+# 7. BOOKING ITEM STATE MACHINE
+
+Svaka stavka ima svoj životni ciklus.
+
+## 7.1 Statusi
+
+* `new`
+* `revalidated`
+* `reservation_pending`
+* `reserved`
+* `ticketing_pending`
+* `ticketed`
+* `confirmed`
+* `failed`
+* `cancel_requested`
+* `cancelled`
+* `refunded`
+
+## 7.2 Tipični tokovi
+
+### Hotel
+
+```text
+new
+→ revalidated
+→ reservation_pending
+→ confirmed
+```
+
+### Flight
+
+```text
+new
+→ revalidated
+→ reservation_pending
+→ reserved
+→ ticketing_pending
+→ ticketed
+→ confirmed
+```
+
+### Transfer / activity
+
+```text
+new
+→ revalidated
+→ reservation_pending
+→ confirmed
+```
+
+### Cruise
+
+```text
+new
+→ revalidated
+→ reservation_pending
+→ confirmed
+```
+
+---
+
+# 8. BOOKING ORCHESTRATION — OSNOVNA LOGIKA
+
+Ovo je najbitniji backend proces.
+
+## 8.1 Cilj
+
+Na osnovu jednog booking-a sa više stavki sistem mora da:
+
+* obradi stavke pravim redosledom
+* vodi računa o zavisnostima
+* menja statuse
+* pokrene rollback ako treba
+
+---
+
+# 9. PREPORUČENI REDOSLED OBRADE
+
+Redosled nije isti za sve proizvode, ali predlažem sledeću logiku.
+
+## 9.1 Hotel only
+
+```text
+1. revalidate hotel item
+2. authorize payment
+3. reserve hotel
+4. capture payment
+5. generate voucher
+6. confirm booking
+```
+
+## 9.2 Flight only
+
+```text
+1. revalidate flight fare
+2. authorize payment
+3. reserve flight
+4. ticket if needed
+5. capture payment
+6. generate itinerary
+7. confirm booking
+```
+
+## 9.3 Hotel + flight
+
+```text
+1. revalidate flight
+2. revalidate hotel
+3. authorize payment
+4. reserve flight
+5. reserve hotel
+6. if both success → capture payment
+7. generate documents
+8. confirm booking
+```
+
+## 9.4 Hotel + flight + transfer + activity
+
+```text
+1. revalidate all items
+2. authorize payment
+3. reserve flight
+4. reserve hotel
+5. reserve transfer
+6. reserve activity
+7. if all success → capture payment
+8. generate documents
+9. confirm booking
+```
+
+## 9.5 Cruise package
+
+```text
+1. revalidate cruise
+2. revalidate flight/hotel/transfer if any
+3. authorize payment
+4. reserve flight
+5. reserve hotel if pre/post stay exists
+6. reserve transfer
+7. reserve cruise
+8. capture payment
+9. generate documents
+10. confirm booking
+```
+
+---
+
+# 10. ZAŠTO JE REDOSLED BITAN
+
+Redosled mora biti poslovno smislen.
+
+## 10.1 Flight pre hotela
+
+Često ima smisla prvo rezervisati let jer:
+
+* flight fare može brže da nestane
+* često je volatilniji od hotela
+
+## 10.2 Hotel pre transfera
+
+Transfer zavisi od leta i/ili hotela.
+
+## 10.3 Activity posle core komponenti
+
+Izlet ili ulaznica su obično sekundarna komponenta.
+
+## 10.4 Cruise kao anchor proizvod
+
+Kod cruise package-a često je cruise glavna komponenta, ali operativno može biti pametno proveriti flight/hotel kompatibilnost unapred.
+
+---
+
+# 11. PAYMENT ORCHESTRATION
+
+## 11.1 Preporučeni model
+
+Za multi-item booking:
+
+* prvo **authorize**
+* zatim rezerviši stavke
+* onda **capture**
+
+## 11.2 Tok
+
+```text
+create booking
+→ authorize payment
+→ reserve items
+→ if success capture payment
+→ else void/cancel authorization
+```
+
+## 11.3 Ako authorize ne uspe
+
+* booking ostaje `awaiting_payment` ili `failed`
+* supplier booking se ne pokreće
+
+## 11.4 Ako authorize uspe, a booking padne
+
+* authorization se void/rollback
+* booking ide u `failed`
+
+---
+
+# 12. ROLLBACK LOGIKA
+
+Rollback je ključan za pakete.
+
+## 12.1 Potpuni rollback
+
+Koristi se kada želite “all-or-nothing” model.
+
+Primer:
+
+* flight uspe
+* hotel padne
+
+Akcija:
+
+* otkaži flight hold / reservation ako je moguće
+* ne potvrđuj booking
+* vrati payment authorization
+
+Rezultat:
+
+* booking = `failed`
+
+---
+
+## 12.2 Delimični rollback
+
+Koristi se kada je dozvoljeno da booking opstane bez sekundarne komponente.
+
+Primer:
+
+* flight uspe
+* hotel uspe
+* transfer padne
+
+Moguća pravila:
+
+* ostavi booking bez transfera
+* booking = `partially_confirmed`
+* korisniku se prikaže da transfer nije potvrđen
+
+Ovo treba definisati po poslovnim pravilima.
+
+---
+
+# 13. PREPORUČENI ROLLBACK REŽIMI
+
+## 13.1 Core items
+
+Za sledeće stavke preporučujem stroži režim:
+
+* flight
+* hotel
+* cruise
+
+Ako padne core item, najčešće:
+
+* ceo booking propada
+
+## 13.2 Secondary items
+
+Za sledeće stavke može postojati fleksibilnost:
+
+* transfer
+* activity
+* insurance
+* ticket add-on
+
+Ako padne secondary item:
+
+* booking može ostati `partially_confirmed`
+
+---
+
+# 14. PARTIAL CONFIRMATION SCENARIJI
+
+## 14.1 Primer 1
+
+Flight + hotel + transfer
+
+* flight confirmed
+* hotel confirmed
+* transfer failed
+
+Rezultat:
+
+* booking = `partially_confirmed`
+* documents za flight/hotel generisani
+* transfer nije uključen
+* korisnik dobija obaveštenje
+
+## 14.2 Primer 2
+
+Flight + hotel + activity
+
+* flight confirmed
+* hotel failed
+* activity not attempted or cancelled
+
+Rezultat:
+
+* rollback flight ako je moguće
+* booking = `failed`
+
+## 14.3 Primer 3
+
+Cruise + hotel pre-stay + transfer
+
+* cruise confirmed
+* hotel confirmed
+* transfer failed
+
+Rezultat:
+
+* booking može biti `partially_confirmed`
+
+---
+
+# 15. PRAVILA ZA PARTIAL CONFIRMATION
+
+Sistem treba da ima business rules tabelu ili konfiguraciju:
+
+* koji item type je `core`
+* koji item type je `optional`
+* da li je partial allowed
+* da li je rollback obavezan
+
+Primer logike:
+
+```text
+flight = core
+hotel = core
+cruise = core
+transfer = optional
+activity = optional
+insurance = optional
+```
+
+---
+
+# 16. ORCHESTRATION PSEUDOKOD
+
+## 16.1 Standardni multi-item booking
+
+```python
+def process_booking(booking):
+    set_booking_status(booking, "processing")
+
+    authorize_payment(booking)
+
+    for item in ordered_items(booking):
+        revalidate_item(item)
+
+    for item in ordered_items(booking):
+        result = reserve_item(item)
+
+        if not result.success:
+            handle_item_failure(booking, item, result)
+            return
+
+    capture_payment(booking)
+    generate_documents(booking)
+    set_booking_status(booking, "confirmed")
+```
+
+---
+
+## 16.2 Failure handler
+
+```python
+def handle_item_failure(booking, failed_item, result):
+    if is_core_item(failed_item):
+        rollback_confirmed_items(booking)
+        void_payment(booking)
+        set_booking_status(booking, "failed")
+    else:
+        mark_item_failed(failed_item)
+        finalize_partial_booking(booking)
+        set_booking_status(booking, "partially_confirmed")
+```
+
+---
+
+# 17. REVALIDATION LOGIKA
+
+Pre bookinga svaka stavka mora biti proverena.
+
+## 17.1 Šta se proverava
+
+### Hotel
+
+* raspoloživost
+* cena
+* occupancy uslovi
+* cancel policy
+
+### Flight
+
+* fare availability
+* seats available
+* tax change
+* baggage/fare rule change
+
+### Transfer
+
+* ruta
+* dostupnost vozila
+* cena
+
+### Activity
+
+* datum
+* slot availability
+* cena
+
+### Cruise
+
+* cabin availability
+* port taxes
+* gratuities
+* sailing status
+
+---
+
+# 18. AKO REPRICE VRATI DRUGAČIJU CENU
+
+Moguća ponašanja sistema:
+
+## Opcija A — hard stop
+
+* korisnik mora da prihvati novu cenu pre nastavka
+
+## Opcija B — soft update
+
+* frontend osveži cenu i dozvoli nastavak
+
+Za flight i package preporučujem:
+
+* **hard stop sa eksplicitnim prihvatanjem nove cene**
+
+---
+
+# 19. DOCUMENT GENERATION FLOW
+
+Dokumenta se generišu tek kada stavke budu uspešno potvrđene.
+
+## 19.1 Po stavci
+
+* hotel voucher
+* transfer voucher
+* activity voucher
+* cruise confirmation
+* flight itinerary / ticket info
+
+## 19.2 Master nivo
+
+* unified itinerary
+* invoice / proforma
+
+## 19.3 Kod partial confirmation
+
+Generišu se samo dokumenta za confirmed stavke.
+
+---
+
+# 20. NOTIFICATION FLOW
+
+## 20.1 Uspesan booking
+
+Šalje se:
+
+* booking confirmation email
+* document links
+* payment confirmation
+
+## 20.2 Partial confirmation
+
+Šalje se:
+
+* objašnjenje koje stavke su potvrđene
+* koje nisu
+* sledeći koraci
+
+## 20.3 Failed booking
+
+Šalje se:
+
+* booking failed notification
+* payment status
+* eventualni predlog da korisnik pokuša ponovo
+
+## 20.4 Schedule change / supplier update
+
+Šalje se:
+
+* alert korisniku
+* alert admin/support timu ako je potrebno
+
+---
+
+# 21. POST-BOOKING FLOW
+
+## 21.1 My bookings
+
+Korisnik vidi:
+
+* booking status
+* item status
+* dokumenta
+* opcije za otkazivanje
+
+## 21.2 Otkazivanje
+
+Tok:
+
+```text
+user requests cancellation
+→ system checks supplier rules
+→ create cancellation request
+→ execute cancellation
+→ update item statuses
+→ calculate refund if applicable
+→ update booking status
+```
+
+## 21.3 Izmene
+
+Za prvu verziju preporuka je:
+
+* složene izmene ne raditi automatski
+* voditi ih kroz support / internal agent flow
+
+---
+
+# 22. INTERNAL AGENT FLOW
+
+Interni agent mora imati dodatne mogućnosti.
+
+## 22.1 Manual override tok
+
+```text
+agent selects booking
+→ adds offline item / manual fee / manual discount
+→ saves change
+→ system creates audit log
+→ documents regenerate if needed
+```
+
+## 22.2 Manual recovery tok
+
+Ako supplier API vrati grešku, agent može:
+
+* ručno potvrditi stavku
+* uneti supplier reference
+* označiti item confirmed
+
+Naravno, samo uz odgovarajuću rolu.
+
+---
+
+# 23. B2B FLOW SPECIFIČNOSTI
+
+## 23.1 Agent booking
+
+Tok je isti kao B2C, ali:
+
+* kanal je `b2b`
+* cene su agent-specific
+* payment method može biti `agent_credit` ili `bank_transfer`
+
+## 23.2 Agent credit scenario
+
+```text
+create booking
+→ validate credit limit
+→ if enough credit:
+    set payment as approved on credit
+    process booking
+→ else:
+    fail with insufficient credit
+```
+
+---
+
+# 24. GLAVNI ASINHRONI DOGAĐAJI
+
+Preporučujem event-driven logiku za sledeće događaje:
+
+* booking.created
+* payment.authorized
+* item.revalidated
+* item.confirmed
+* item.failed
+* booking.confirmed
+* booking.failed
+* booking.partially_confirmed
+* document.generated
+* refund.created
+
+To olakšava:
+
+* notifications
+* reporting
+* audit
+* retry logiku
+
+---
+
+# 25. RETRY PRAVILA
+
+Ne treba sve retry-ovati isto.
+
+## 25.1 Bezbedno retry
+
+Može za:
+
+* supplier availability check
+* document generation
+* notifications
+
+## 25.2 Oprezno retry
+
+Treba idempotency za:
+
+* booking create
+* supplier reserve
+* payment capture
+
+---
+
+# 26. ERROR KATEGORIJE
+
+Sistem treba da razlikuje:
+
+## Business errors
+
+* offer expired
+* no availability
+* invalid passenger mix
+* insufficient agent credit
+
+## Technical errors
+
+* supplier timeout
+* provider unavailable
+* webhook failure
+* payment gateway timeout
+
+Frontend i support tim treba da vide razliku.
+
+---
+
+# 27. PREPORUČENA ODLUKA ZA MVP
+
+Za prvu verziju bih preporučio sledeće:
+
+## Strogo all-or-nothing za:
+
+* hotel_only
+* flight_only
+* hotel + flight
+* cruise_only
+
+## Partial allowed za:
+
+* hotel + flight + transfer
+* hotel + flight + activity
+* cruise + transfer
+* cruise + hotel pre/post stay
+
+Tako je sistem jednostavniji za kontrolu i manje rizičan.
+
+---
+
+# 28. SEKVENCA ZA PACKAGE BOOKING
+
+Primer: hotel + flight + transfer + activity
+
+```text
+1. User selects package offer
+2. System reprices package
+3. User enters travelers
+4. Booking created as pending
+5. Payment authorized
+6. Booking status → processing
+7. Flight item reserved
+8. Hotel item reserved
+9. Transfer item reserved
+10. Activity item reserved
+11. Payment captured
+12. Documents generated
+13. Booking → confirmed
+```
+
+Ako activity padne:
+
+```text
+11. Activity item failed
+12. If optional → booking partially_confirmed
+13. Capture adjusted payment or create refund delta rule
+14. Documents for successful items generated
+```
+
+---
+
+# 29. ŠTA TIM TREBA DA ZAKLJUČI POSLE OVOG DELA
+
+Pre sledeće faze razvoja treba doneti odluke o:
+
+1. koji proizvodi su core a koji optional
+2. da li partial confirmation postoji u MVP-u
+3. kako se radi payment delta kod partial scenarija
+4. da li se radi manual recovery ekran za support
+5. koje statuse vidi korisnik, a koje samo admin
+
+---
+
+# 30. ZAKLJUČAK OVOG DELA
+
+Sada imate definisano:
+
+* korisničke tokove po proizvodima
+* state machine za offer, booking i booking item
+* redosled rezervacije
+* rollback logiku
+* partial confirmation model
+* post-booking tokove
+
+To je osnova da backend tim napiše:
+
+* orchestration servise
+* workflow engine
+* status transition pravila
+* retry/failure handling
+
+---
+
+# 31. SLEDEĆI DEO
+
+Sledeći logičan korak je **Deo 5: admin panel, B2B portal i operativni workflow**.
+
+Tu ću razraditi:
+
+* admin sekcije
+* agent portal sekcije
+* rights/permissions model
+* ručni unos offline proizvoda
+* pricing rules ekran
+* supplier management
+* reporting i operativni dashboard

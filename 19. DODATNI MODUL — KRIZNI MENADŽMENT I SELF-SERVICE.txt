@@ -1,0 +1,43 @@
+# 19. DODATNI MODUL — KRIZNI MENADŽMENT I SELF-SERVICE
+
+Ovaj modul drastično smanjuje pritisak na call centar i reservation agente u špicu sezone ili kriznim situacijama.
+
+---
+
+## 1. Crisis Management Dashboard
+
+"Panic button" za krizne situacije (npr. otkazan let, štrajk na destinaciji, prirodna nepogoda).
+
+### Funkcije:
+*   **Mass Notification:** Filter (svi putnici na letu YU-100) -> Slanje personalizovanog Viber/SMS/Email obaveštenja.
+*   **Alternative Offer Push:** Slanje linka putnicima ka novoj ponudi (npr. drugi hotel ili drugi termin) koji oni mogu prihvatiti jednim klikom (instant amandman).
+*   **Refund Queue:** Automatsko stavljanje otkazanih bookinga u prioritetnu listu za odobravanje povrata od strane finansija.
+
+---
+
+## 2. Customer Self-Service Portal (My Portal 2.0)
+
+Mogućnost da klijent samostalno rešava administraciju.
+
+### Funkcije portala:
+*   **Dokumentacija:** Pregled i preuzimanje vaučera, polisa i računa u bilo kom trenutku.
+*   **Izmena putnika:** Samostalna promena broja pasoša ili slovne greške u imenu (uz proveru pravila tarife).
+*   **Doplate:** Klijent vidi ponudu "Upgrade na All Inclusive za 50 EUR" i plaća direktno karticom na portalu.
+*   **Istorija plaćanja:** Pregled svih dospelih rata i link za instant plaćanje karticom (preventiva kašnjenja).
+
+---
+
+## 3. Ticketing & Support
+
+*   **Zendesk-like Integration:** Svaki upit sa portala postaje ticket vezan direktno za booking reference.
+*   **FAQ Suggest:** AI chatbot na portalu sugerišue odgovore na osnovu uslova ugovora (npr. "Šta se dešava ako otkažem 5 dana ranije?").
+
+---
+
+## 4. Tabela: `self_service_requests`
+*   `id` (PK)
+*   `booking_id`
+*   `request_type` (passenger_change, payment, document_resend)
+*   `status` (pending, approved, auto_executed)
+*   `prev_data_snapshot` (JSON starog stanja)
+*   `new_data_snapshot` (JSON novog stanja)

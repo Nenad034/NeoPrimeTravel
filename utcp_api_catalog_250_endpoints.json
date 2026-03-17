@@ -1,0 +1,1752 @@
+[
+  {
+    "id": 1,
+    "module": "identity",
+    "method": "GET",
+    "endpoint": "/api/v1/identity/login",
+    "description": "GET operation for login in identity module"
+  },
+  {
+    "id": 2,
+    "module": "identity",
+    "method": "POST",
+    "endpoint": "/api/v1/identity/login",
+    "description": "POST operation for login in identity module"
+  },
+  {
+    "id": 3,
+    "module": "identity",
+    "method": "PUT",
+    "endpoint": "/api/v1/identity/login",
+    "description": "PUT operation for login in identity module"
+  },
+  {
+    "id": 4,
+    "module": "identity",
+    "method": "GET",
+    "endpoint": "/api/v1/identity/logout",
+    "description": "GET operation for logout in identity module"
+  },
+  {
+    "id": 5,
+    "module": "identity",
+    "method": "POST",
+    "endpoint": "/api/v1/identity/logout",
+    "description": "POST operation for logout in identity module"
+  },
+  {
+    "id": 6,
+    "module": "identity",
+    "method": "PUT",
+    "endpoint": "/api/v1/identity/logout",
+    "description": "PUT operation for logout in identity module"
+  },
+  {
+    "id": 7,
+    "module": "identity",
+    "method": "GET",
+    "endpoint": "/api/v1/identity/refresh",
+    "description": "GET operation for refresh in identity module"
+  },
+  {
+    "id": 8,
+    "module": "identity",
+    "method": "POST",
+    "endpoint": "/api/v1/identity/refresh",
+    "description": "POST operation for refresh in identity module"
+  },
+  {
+    "id": 9,
+    "module": "identity",
+    "method": "PUT",
+    "endpoint": "/api/v1/identity/refresh",
+    "description": "PUT operation for refresh in identity module"
+  },
+  {
+    "id": 10,
+    "module": "identity",
+    "method": "GET",
+    "endpoint": "/api/v1/identity/users",
+    "description": "GET operation for users in identity module"
+  },
+  {
+    "id": 11,
+    "module": "identity",
+    "method": "POST",
+    "endpoint": "/api/v1/identity/users",
+    "description": "POST operation for users in identity module"
+  },
+  {
+    "id": 12,
+    "module": "identity",
+    "method": "PUT",
+    "endpoint": "/api/v1/identity/users",
+    "description": "PUT operation for users in identity module"
+  },
+  {
+    "id": 13,
+    "module": "identity",
+    "method": "GET",
+    "endpoint": "/api/v1/identity/roles",
+    "description": "GET operation for roles in identity module"
+  },
+  {
+    "id": 14,
+    "module": "identity",
+    "method": "POST",
+    "endpoint": "/api/v1/identity/roles",
+    "description": "POST operation for roles in identity module"
+  },
+  {
+    "id": 15,
+    "module": "identity",
+    "method": "PUT",
+    "endpoint": "/api/v1/identity/roles",
+    "description": "PUT operation for roles in identity module"
+  },
+  {
+    "id": 16,
+    "module": "crm",
+    "method": "GET",
+    "endpoint": "/api/v1/crm/contacts",
+    "description": "GET operation for contacts in crm module"
+  },
+  {
+    "id": 17,
+    "module": "crm",
+    "method": "POST",
+    "endpoint": "/api/v1/crm/contacts",
+    "description": "POST operation for contacts in crm module"
+  },
+  {
+    "id": 18,
+    "module": "crm",
+    "method": "PUT",
+    "endpoint": "/api/v1/crm/contacts",
+    "description": "PUT operation for contacts in crm module"
+  },
+  {
+    "id": 19,
+    "module": "crm",
+    "method": "GET",
+    "endpoint": "/api/v1/crm/agencies",
+    "description": "GET operation for agencies in crm module"
+  },
+  {
+    "id": 20,
+    "module": "crm",
+    "method": "POST",
+    "endpoint": "/api/v1/crm/agencies",
+    "description": "POST operation for agencies in crm module"
+  },
+  {
+    "id": 21,
+    "module": "crm",
+    "method": "PUT",
+    "endpoint": "/api/v1/crm/agencies",
+    "description": "PUT operation for agencies in crm module"
+  },
+  {
+    "id": 22,
+    "module": "crm",
+    "method": "GET",
+    "endpoint": "/api/v1/crm/suppliers",
+    "description": "GET operation for suppliers in crm module"
+  },
+  {
+    "id": 23,
+    "module": "crm",
+    "method": "POST",
+    "endpoint": "/api/v1/crm/suppliers",
+    "description": "POST operation for suppliers in crm module"
+  },
+  {
+    "id": 24,
+    "module": "crm",
+    "method": "PUT",
+    "endpoint": "/api/v1/crm/suppliers",
+    "description": "PUT operation for suppliers in crm module"
+  },
+  {
+    "id": 25,
+    "module": "crm",
+    "method": "GET",
+    "endpoint": "/api/v1/crm/notes",
+    "description": "GET operation for notes in crm module"
+  },
+  {
+    "id": 26,
+    "module": "crm",
+    "method": "POST",
+    "endpoint": "/api/v1/crm/notes",
+    "description": "POST operation for notes in crm module"
+  },
+  {
+    "id": 27,
+    "module": "crm",
+    "method": "PUT",
+    "endpoint": "/api/v1/crm/notes",
+    "description": "PUT operation for notes in crm module"
+  },
+  {
+    "id": 28,
+    "module": "crm",
+    "method": "GET",
+    "endpoint": "/api/v1/crm/documents",
+    "description": "GET operation for documents in crm module"
+  },
+  {
+    "id": 29,
+    "module": "crm",
+    "method": "POST",
+    "endpoint": "/api/v1/crm/documents",
+    "description": "POST operation for documents in crm module"
+  },
+  {
+    "id": 30,
+    "module": "crm",
+    "method": "PUT",
+    "endpoint": "/api/v1/crm/documents",
+    "description": "PUT operation for documents in crm module"
+  },
+  {
+    "id": 31,
+    "module": "product",
+    "method": "GET",
+    "endpoint": "/api/v1/product/destinations",
+    "description": "GET operation for destinations in product module"
+  },
+  {
+    "id": 32,
+    "module": "product",
+    "method": "POST",
+    "endpoint": "/api/v1/product/destinations",
+    "description": "POST operation for destinations in product module"
+  },
+  {
+    "id": 33,
+    "module": "product",
+    "method": "PUT",
+    "endpoint": "/api/v1/product/destinations",
+    "description": "PUT operation for destinations in product module"
+  },
+  {
+    "id": 34,
+    "module": "product",
+    "method": "GET",
+    "endpoint": "/api/v1/product/hotels",
+    "description": "GET operation for hotels in product module"
+  },
+  {
+    "id": 35,
+    "module": "product",
+    "method": "POST",
+    "endpoint": "/api/v1/product/hotels",
+    "description": "POST operation for hotels in product module"
+  },
+  {
+    "id": 36,
+    "module": "product",
+    "method": "PUT",
+    "endpoint": "/api/v1/product/hotels",
+    "description": "PUT operation for hotels in product module"
+  },
+  {
+    "id": 37,
+    "module": "product",
+    "method": "GET",
+    "endpoint": "/api/v1/product/rooms",
+    "description": "GET operation for rooms in product module"
+  },
+  {
+    "id": 38,
+    "module": "product",
+    "method": "POST",
+    "endpoint": "/api/v1/product/rooms",
+    "description": "POST operation for rooms in product module"
+  },
+  {
+    "id": 39,
+    "module": "product",
+    "method": "PUT",
+    "endpoint": "/api/v1/product/rooms",
+    "description": "PUT operation for rooms in product module"
+  },
+  {
+    "id": 40,
+    "module": "product",
+    "method": "GET",
+    "endpoint": "/api/v1/product/amenities",
+    "description": "GET operation for amenities in product module"
+  },
+  {
+    "id": 41,
+    "module": "product",
+    "method": "POST",
+    "endpoint": "/api/v1/product/amenities",
+    "description": "POST operation for amenities in product module"
+  },
+  {
+    "id": 42,
+    "module": "product",
+    "method": "PUT",
+    "endpoint": "/api/v1/product/amenities",
+    "description": "PUT operation for amenities in product module"
+  },
+  {
+    "id": 43,
+    "module": "product",
+    "method": "GET",
+    "endpoint": "/api/v1/product/images",
+    "description": "GET operation for images in product module"
+  },
+  {
+    "id": 44,
+    "module": "product",
+    "method": "POST",
+    "endpoint": "/api/v1/product/images",
+    "description": "POST operation for images in product module"
+  },
+  {
+    "id": 45,
+    "module": "product",
+    "method": "PUT",
+    "endpoint": "/api/v1/product/images",
+    "description": "PUT operation for images in product module"
+  },
+  {
+    "id": 46,
+    "module": "contracting",
+    "method": "GET",
+    "endpoint": "/api/v1/contracting/contracts",
+    "description": "GET operation for contracts in contracting module"
+  },
+  {
+    "id": 47,
+    "module": "contracting",
+    "method": "POST",
+    "endpoint": "/api/v1/contracting/contracts",
+    "description": "POST operation for contracts in contracting module"
+  },
+  {
+    "id": 48,
+    "module": "contracting",
+    "method": "PUT",
+    "endpoint": "/api/v1/contracting/contracts",
+    "description": "PUT operation for contracts in contracting module"
+  },
+  {
+    "id": 49,
+    "module": "contracting",
+    "method": "GET",
+    "endpoint": "/api/v1/contracting/seasons",
+    "description": "GET operation for seasons in contracting module"
+  },
+  {
+    "id": 50,
+    "module": "contracting",
+    "method": "POST",
+    "endpoint": "/api/v1/contracting/seasons",
+    "description": "POST operation for seasons in contracting module"
+  },
+  {
+    "id": 51,
+    "module": "contracting",
+    "method": "PUT",
+    "endpoint": "/api/v1/contracting/seasons",
+    "description": "PUT operation for seasons in contracting module"
+  },
+  {
+    "id": 52,
+    "module": "contracting",
+    "method": "GET",
+    "endpoint": "/api/v1/contracting/rates",
+    "description": "GET operation for rates in contracting module"
+  },
+  {
+    "id": 53,
+    "module": "contracting",
+    "method": "POST",
+    "endpoint": "/api/v1/contracting/rates",
+    "description": "POST operation for rates in contracting module"
+  },
+  {
+    "id": 54,
+    "module": "contracting",
+    "method": "PUT",
+    "endpoint": "/api/v1/contracting/rates",
+    "description": "PUT operation for rates in contracting module"
+  },
+  {
+    "id": 55,
+    "module": "contracting",
+    "method": "GET",
+    "endpoint": "/api/v1/contracting/supplements",
+    "description": "GET operation for supplements in contracting module"
+  },
+  {
+    "id": 56,
+    "module": "contracting",
+    "method": "POST",
+    "endpoint": "/api/v1/contracting/supplements",
+    "description": "POST operation for supplements in contracting module"
+  },
+  {
+    "id": 57,
+    "module": "contracting",
+    "method": "PUT",
+    "endpoint": "/api/v1/contracting/supplements",
+    "description": "PUT operation for supplements in contracting module"
+  },
+  {
+    "id": 58,
+    "module": "contracting",
+    "method": "GET",
+    "endpoint": "/api/v1/contracting/restrictions",
+    "description": "GET operation for restrictions in contracting module"
+  },
+  {
+    "id": 59,
+    "module": "contracting",
+    "method": "POST",
+    "endpoint": "/api/v1/contracting/restrictions",
+    "description": "POST operation for restrictions in contracting module"
+  },
+  {
+    "id": 60,
+    "module": "contracting",
+    "method": "PUT",
+    "endpoint": "/api/v1/contracting/restrictions",
+    "description": "PUT operation for restrictions in contracting module"
+  },
+  {
+    "id": 61,
+    "module": "search",
+    "method": "GET",
+    "endpoint": "/api/v1/search/search",
+    "description": "GET operation for search in search module"
+  },
+  {
+    "id": 62,
+    "module": "search",
+    "method": "POST",
+    "endpoint": "/api/v1/search/search",
+    "description": "POST operation for search in search module"
+  },
+  {
+    "id": 63,
+    "module": "search",
+    "method": "PUT",
+    "endpoint": "/api/v1/search/search",
+    "description": "PUT operation for search in search module"
+  },
+  {
+    "id": 64,
+    "module": "search",
+    "method": "GET",
+    "endpoint": "/api/v1/search/filters",
+    "description": "GET operation for filters in search module"
+  },
+  {
+    "id": 65,
+    "module": "search",
+    "method": "POST",
+    "endpoint": "/api/v1/search/filters",
+    "description": "POST operation for filters in search module"
+  },
+  {
+    "id": 66,
+    "module": "search",
+    "method": "PUT",
+    "endpoint": "/api/v1/search/filters",
+    "description": "PUT operation for filters in search module"
+  },
+  {
+    "id": 67,
+    "module": "search",
+    "method": "GET",
+    "endpoint": "/api/v1/search/offers",
+    "description": "GET operation for offers in search module"
+  },
+  {
+    "id": 68,
+    "module": "search",
+    "method": "POST",
+    "endpoint": "/api/v1/search/offers",
+    "description": "POST operation for offers in search module"
+  },
+  {
+    "id": 69,
+    "module": "search",
+    "method": "PUT",
+    "endpoint": "/api/v1/search/offers",
+    "description": "PUT operation for offers in search module"
+  },
+  {
+    "id": 70,
+    "module": "search",
+    "method": "GET",
+    "endpoint": "/api/v1/search/reprice",
+    "description": "GET operation for reprice in search module"
+  },
+  {
+    "id": 71,
+    "module": "search",
+    "method": "POST",
+    "endpoint": "/api/v1/search/reprice",
+    "description": "POST operation for reprice in search module"
+  },
+  {
+    "id": 72,
+    "module": "search",
+    "method": "PUT",
+    "endpoint": "/api/v1/search/reprice",
+    "description": "PUT operation for reprice in search module"
+  },
+  {
+    "id": 73,
+    "module": "search",
+    "method": "GET",
+    "endpoint": "/api/v1/search/ranking",
+    "description": "GET operation for ranking in search module"
+  },
+  {
+    "id": 74,
+    "module": "search",
+    "method": "POST",
+    "endpoint": "/api/v1/search/ranking",
+    "description": "POST operation for ranking in search module"
+  },
+  {
+    "id": 75,
+    "module": "search",
+    "method": "PUT",
+    "endpoint": "/api/v1/search/ranking",
+    "description": "PUT operation for ranking in search module"
+  },
+  {
+    "id": 76,
+    "module": "booking",
+    "method": "GET",
+    "endpoint": "/api/v1/booking/bookings",
+    "description": "GET operation for bookings in booking module"
+  },
+  {
+    "id": 77,
+    "module": "booking",
+    "method": "POST",
+    "endpoint": "/api/v1/booking/bookings",
+    "description": "POST operation for bookings in booking module"
+  },
+  {
+    "id": 78,
+    "module": "booking",
+    "method": "PUT",
+    "endpoint": "/api/v1/booking/bookings",
+    "description": "PUT operation for bookings in booking module"
+  },
+  {
+    "id": 79,
+    "module": "booking",
+    "method": "GET",
+    "endpoint": "/api/v1/booking/booking-items",
+    "description": "GET operation for booking-items in booking module"
+  },
+  {
+    "id": 80,
+    "module": "booking",
+    "method": "POST",
+    "endpoint": "/api/v1/booking/booking-items",
+    "description": "POST operation for booking-items in booking module"
+  },
+  {
+    "id": 81,
+    "module": "booking",
+    "method": "PUT",
+    "endpoint": "/api/v1/booking/booking-items",
+    "description": "PUT operation for booking-items in booking module"
+  },
+  {
+    "id": 82,
+    "module": "booking",
+    "method": "GET",
+    "endpoint": "/api/v1/booking/passengers",
+    "description": "GET operation for passengers in booking module"
+  },
+  {
+    "id": 83,
+    "module": "booking",
+    "method": "POST",
+    "endpoint": "/api/v1/booking/passengers",
+    "description": "POST operation for passengers in booking module"
+  },
+  {
+    "id": 84,
+    "module": "booking",
+    "method": "PUT",
+    "endpoint": "/api/v1/booking/passengers",
+    "description": "PUT operation for passengers in booking module"
+  },
+  {
+    "id": 85,
+    "module": "booking",
+    "method": "GET",
+    "endpoint": "/api/v1/booking/cancel",
+    "description": "GET operation for cancel in booking module"
+  },
+  {
+    "id": 86,
+    "module": "booking",
+    "method": "POST",
+    "endpoint": "/api/v1/booking/cancel",
+    "description": "POST operation for cancel in booking module"
+  },
+  {
+    "id": 87,
+    "module": "booking",
+    "method": "PUT",
+    "endpoint": "/api/v1/booking/cancel",
+    "description": "PUT operation for cancel in booking module"
+  },
+  {
+    "id": 88,
+    "module": "booking",
+    "method": "GET",
+    "endpoint": "/api/v1/booking/documents",
+    "description": "GET operation for documents in booking module"
+  },
+  {
+    "id": 89,
+    "module": "booking",
+    "method": "POST",
+    "endpoint": "/api/v1/booking/documents",
+    "description": "POST operation for documents in booking module"
+  },
+  {
+    "id": 90,
+    "module": "booking",
+    "method": "PUT",
+    "endpoint": "/api/v1/booking/documents",
+    "description": "PUT operation for documents in booking module"
+  },
+  {
+    "id": 91,
+    "module": "finance",
+    "method": "GET",
+    "endpoint": "/api/v1/finance/payments",
+    "description": "GET operation for payments in finance module"
+  },
+  {
+    "id": 92,
+    "module": "finance",
+    "method": "POST",
+    "endpoint": "/api/v1/finance/payments",
+    "description": "POST operation for payments in finance module"
+  },
+  {
+    "id": 93,
+    "module": "finance",
+    "method": "PUT",
+    "endpoint": "/api/v1/finance/payments",
+    "description": "PUT operation for payments in finance module"
+  },
+  {
+    "id": 94,
+    "module": "finance",
+    "method": "GET",
+    "endpoint": "/api/v1/finance/receivables",
+    "description": "GET operation for receivables in finance module"
+  },
+  {
+    "id": 95,
+    "module": "finance",
+    "method": "POST",
+    "endpoint": "/api/v1/finance/receivables",
+    "description": "POST operation for receivables in finance module"
+  },
+  {
+    "id": 96,
+    "module": "finance",
+    "method": "PUT",
+    "endpoint": "/api/v1/finance/receivables",
+    "description": "PUT operation for receivables in finance module"
+  },
+  {
+    "id": 97,
+    "module": "finance",
+    "method": "GET",
+    "endpoint": "/api/v1/finance/payables",
+    "description": "GET operation for payables in finance module"
+  },
+  {
+    "id": 98,
+    "module": "finance",
+    "method": "POST",
+    "endpoint": "/api/v1/finance/payables",
+    "description": "POST operation for payables in finance module"
+  },
+  {
+    "id": 99,
+    "module": "finance",
+    "method": "PUT",
+    "endpoint": "/api/v1/finance/payables",
+    "description": "PUT operation for payables in finance module"
+  },
+  {
+    "id": 100,
+    "module": "finance",
+    "method": "GET",
+    "endpoint": "/api/v1/finance/refunds",
+    "description": "GET operation for refunds in finance module"
+  },
+  {
+    "id": 101,
+    "module": "finance",
+    "method": "POST",
+    "endpoint": "/api/v1/finance/refunds",
+    "description": "POST operation for refunds in finance module"
+  },
+  {
+    "id": 102,
+    "module": "finance",
+    "method": "PUT",
+    "endpoint": "/api/v1/finance/refunds",
+    "description": "PUT operation for refunds in finance module"
+  },
+  {
+    "id": 103,
+    "module": "finance",
+    "method": "GET",
+    "endpoint": "/api/v1/finance/statements",
+    "description": "GET operation for statements in finance module"
+  },
+  {
+    "id": 104,
+    "module": "finance",
+    "method": "POST",
+    "endpoint": "/api/v1/finance/statements",
+    "description": "POST operation for statements in finance module"
+  },
+  {
+    "id": 105,
+    "module": "finance",
+    "method": "PUT",
+    "endpoint": "/api/v1/finance/statements",
+    "description": "PUT operation for statements in finance module"
+  },
+  {
+    "id": 106,
+    "module": "rooming",
+    "method": "GET",
+    "endpoint": "/api/v1/rooming/rooming-sets",
+    "description": "GET operation for rooming-sets in rooming module"
+  },
+  {
+    "id": 107,
+    "module": "rooming",
+    "method": "POST",
+    "endpoint": "/api/v1/rooming/rooming-sets",
+    "description": "POST operation for rooming-sets in rooming module"
+  },
+  {
+    "id": 108,
+    "module": "rooming",
+    "method": "PUT",
+    "endpoint": "/api/v1/rooming/rooming-sets",
+    "description": "PUT operation for rooming-sets in rooming module"
+  },
+  {
+    "id": 109,
+    "module": "rooming",
+    "method": "GET",
+    "endpoint": "/api/v1/rooming/room-assignments",
+    "description": "GET operation for room-assignments in rooming module"
+  },
+  {
+    "id": 110,
+    "module": "rooming",
+    "method": "POST",
+    "endpoint": "/api/v1/rooming/room-assignments",
+    "description": "POST operation for room-assignments in rooming module"
+  },
+  {
+    "id": 111,
+    "module": "rooming",
+    "method": "PUT",
+    "endpoint": "/api/v1/rooming/room-assignments",
+    "description": "PUT operation for room-assignments in rooming module"
+  },
+  {
+    "id": 112,
+    "module": "rooming",
+    "method": "GET",
+    "endpoint": "/api/v1/rooming/manifests",
+    "description": "GET operation for manifests in rooming module"
+  },
+  {
+    "id": 113,
+    "module": "rooming",
+    "method": "POST",
+    "endpoint": "/api/v1/rooming/manifests",
+    "description": "POST operation for manifests in rooming module"
+  },
+  {
+    "id": 114,
+    "module": "rooming",
+    "method": "PUT",
+    "endpoint": "/api/v1/rooming/manifests",
+    "description": "PUT operation for manifests in rooming module"
+  },
+  {
+    "id": 115,
+    "module": "rooming",
+    "method": "GET",
+    "endpoint": "/api/v1/rooming/exports",
+    "description": "GET operation for exports in rooming module"
+  },
+  {
+    "id": 116,
+    "module": "rooming",
+    "method": "POST",
+    "endpoint": "/api/v1/rooming/exports",
+    "description": "POST operation for exports in rooming module"
+  },
+  {
+    "id": 117,
+    "module": "rooming",
+    "method": "PUT",
+    "endpoint": "/api/v1/rooming/exports",
+    "description": "PUT operation for exports in rooming module"
+  },
+  {
+    "id": 118,
+    "module": "rooming",
+    "method": "GET",
+    "endpoint": "/api/v1/rooming/capacity",
+    "description": "GET operation for capacity in rooming module"
+  },
+  {
+    "id": 119,
+    "module": "rooming",
+    "method": "POST",
+    "endpoint": "/api/v1/rooming/capacity",
+    "description": "POST operation for capacity in rooming module"
+  },
+  {
+    "id": 120,
+    "module": "rooming",
+    "method": "PUT",
+    "endpoint": "/api/v1/rooming/capacity",
+    "description": "PUT operation for capacity in rooming module"
+  },
+  {
+    "id": 121,
+    "module": "tour",
+    "method": "GET",
+    "endpoint": "/api/v1/tour/programs",
+    "description": "GET operation for programs in tour module"
+  },
+  {
+    "id": 122,
+    "module": "tour",
+    "method": "POST",
+    "endpoint": "/api/v1/tour/programs",
+    "description": "POST operation for programs in tour module"
+  },
+  {
+    "id": 123,
+    "module": "tour",
+    "method": "PUT",
+    "endpoint": "/api/v1/tour/programs",
+    "description": "PUT operation for programs in tour module"
+  },
+  {
+    "id": 124,
+    "module": "tour",
+    "method": "GET",
+    "endpoint": "/api/v1/tour/itineraries",
+    "description": "GET operation for itineraries in tour module"
+  },
+  {
+    "id": 125,
+    "module": "tour",
+    "method": "POST",
+    "endpoint": "/api/v1/tour/itineraries",
+    "description": "POST operation for itineraries in tour module"
+  },
+  {
+    "id": 126,
+    "module": "tour",
+    "method": "PUT",
+    "endpoint": "/api/v1/tour/itineraries",
+    "description": "PUT operation for itineraries in tour module"
+  },
+  {
+    "id": 127,
+    "module": "tour",
+    "method": "GET",
+    "endpoint": "/api/v1/tour/departures",
+    "description": "GET operation for departures in tour module"
+  },
+  {
+    "id": 128,
+    "module": "tour",
+    "method": "POST",
+    "endpoint": "/api/v1/tour/departures",
+    "description": "POST operation for departures in tour module"
+  },
+  {
+    "id": 129,
+    "module": "tour",
+    "method": "PUT",
+    "endpoint": "/api/v1/tour/departures",
+    "description": "PUT operation for departures in tour module"
+  },
+  {
+    "id": 130,
+    "module": "tour",
+    "method": "GET",
+    "endpoint": "/api/v1/tour/guides",
+    "description": "GET operation for guides in tour module"
+  },
+  {
+    "id": 131,
+    "module": "tour",
+    "method": "POST",
+    "endpoint": "/api/v1/tour/guides",
+    "description": "POST operation for guides in tour module"
+  },
+  {
+    "id": 132,
+    "module": "tour",
+    "method": "PUT",
+    "endpoint": "/api/v1/tour/guides",
+    "description": "PUT operation for guides in tour module"
+  },
+  {
+    "id": 133,
+    "module": "tour",
+    "method": "GET",
+    "endpoint": "/api/v1/tour/pricing",
+    "description": "GET operation for pricing in tour module"
+  },
+  {
+    "id": 134,
+    "module": "tour",
+    "method": "POST",
+    "endpoint": "/api/v1/tour/pricing",
+    "description": "POST operation for pricing in tour module"
+  },
+  {
+    "id": 135,
+    "module": "tour",
+    "method": "PUT",
+    "endpoint": "/api/v1/tour/pricing",
+    "description": "PUT operation for pricing in tour module"
+  },
+  {
+    "id": 136,
+    "module": "charter",
+    "method": "GET",
+    "endpoint": "/api/v1/charter/seasons",
+    "description": "GET operation for seasons in charter module"
+  },
+  {
+    "id": 137,
+    "module": "charter",
+    "method": "POST",
+    "endpoint": "/api/v1/charter/seasons",
+    "description": "POST operation for seasons in charter module"
+  },
+  {
+    "id": 138,
+    "module": "charter",
+    "method": "PUT",
+    "endpoint": "/api/v1/charter/seasons",
+    "description": "PUT operation for seasons in charter module"
+  },
+  {
+    "id": 139,
+    "module": "charter",
+    "method": "GET",
+    "endpoint": "/api/v1/charter/routes",
+    "description": "GET operation for routes in charter module"
+  },
+  {
+    "id": 140,
+    "module": "charter",
+    "method": "POST",
+    "endpoint": "/api/v1/charter/routes",
+    "description": "POST operation for routes in charter module"
+  },
+  {
+    "id": 141,
+    "module": "charter",
+    "method": "PUT",
+    "endpoint": "/api/v1/charter/routes",
+    "description": "PUT operation for routes in charter module"
+  },
+  {
+    "id": 142,
+    "module": "charter",
+    "method": "GET",
+    "endpoint": "/api/v1/charter/flights",
+    "description": "GET operation for flights in charter module"
+  },
+  {
+    "id": 143,
+    "module": "charter",
+    "method": "POST",
+    "endpoint": "/api/v1/charter/flights",
+    "description": "POST operation for flights in charter module"
+  },
+  {
+    "id": 144,
+    "module": "charter",
+    "method": "PUT",
+    "endpoint": "/api/v1/charter/flights",
+    "description": "PUT operation for flights in charter module"
+  },
+  {
+    "id": 145,
+    "module": "charter",
+    "method": "GET",
+    "endpoint": "/api/v1/charter/seats",
+    "description": "GET operation for seats in charter module"
+  },
+  {
+    "id": 146,
+    "module": "charter",
+    "method": "POST",
+    "endpoint": "/api/v1/charter/seats",
+    "description": "POST operation for seats in charter module"
+  },
+  {
+    "id": 147,
+    "module": "charter",
+    "method": "PUT",
+    "endpoint": "/api/v1/charter/seats",
+    "description": "PUT operation for seats in charter module"
+  },
+  {
+    "id": 148,
+    "module": "charter",
+    "method": "GET",
+    "endpoint": "/api/v1/charter/load-factor",
+    "description": "GET operation for load-factor in charter module"
+  },
+  {
+    "id": 149,
+    "module": "charter",
+    "method": "POST",
+    "endpoint": "/api/v1/charter/load-factor",
+    "description": "POST operation for load-factor in charter module"
+  },
+  {
+    "id": 150,
+    "module": "charter",
+    "method": "PUT",
+    "endpoint": "/api/v1/charter/load-factor",
+    "description": "PUT operation for load-factor in charter module"
+  },
+  {
+    "id": 151,
+    "module": "b2b",
+    "method": "GET",
+    "endpoint": "/api/v1/b2b/agents",
+    "description": "GET operation for agents in b2b module"
+  },
+  {
+    "id": 152,
+    "module": "b2b",
+    "method": "POST",
+    "endpoint": "/api/v1/b2b/agents",
+    "description": "POST operation for agents in b2b module"
+  },
+  {
+    "id": 153,
+    "module": "b2b",
+    "method": "PUT",
+    "endpoint": "/api/v1/b2b/agents",
+    "description": "PUT operation for agents in b2b module"
+  },
+  {
+    "id": 154,
+    "module": "b2b",
+    "method": "GET",
+    "endpoint": "/api/v1/b2b/pricing",
+    "description": "GET operation for pricing in b2b module"
+  },
+  {
+    "id": 155,
+    "module": "b2b",
+    "method": "POST",
+    "endpoint": "/api/v1/b2b/pricing",
+    "description": "POST operation for pricing in b2b module"
+  },
+  {
+    "id": 156,
+    "module": "b2b",
+    "method": "PUT",
+    "endpoint": "/api/v1/b2b/pricing",
+    "description": "PUT operation for pricing in b2b module"
+  },
+  {
+    "id": 157,
+    "module": "b2b",
+    "method": "GET",
+    "endpoint": "/api/v1/b2b/statements",
+    "description": "GET operation for statements in b2b module"
+  },
+  {
+    "id": 158,
+    "module": "b2b",
+    "method": "POST",
+    "endpoint": "/api/v1/b2b/statements",
+    "description": "POST operation for statements in b2b module"
+  },
+  {
+    "id": 159,
+    "module": "b2b",
+    "method": "PUT",
+    "endpoint": "/api/v1/b2b/statements",
+    "description": "PUT operation for statements in b2b module"
+  },
+  {
+    "id": 160,
+    "module": "b2b",
+    "method": "GET",
+    "endpoint": "/api/v1/b2b/support",
+    "description": "GET operation for support in b2b module"
+  },
+  {
+    "id": 161,
+    "module": "b2b",
+    "method": "POST",
+    "endpoint": "/api/v1/b2b/support",
+    "description": "POST operation for support in b2b module"
+  },
+  {
+    "id": 162,
+    "module": "b2b",
+    "method": "PUT",
+    "endpoint": "/api/v1/b2b/support",
+    "description": "PUT operation for support in b2b module"
+  },
+  {
+    "id": 163,
+    "module": "b2b",
+    "method": "GET",
+    "endpoint": "/api/v1/b2b/api-access",
+    "description": "GET operation for api-access in b2b module"
+  },
+  {
+    "id": 164,
+    "module": "b2b",
+    "method": "POST",
+    "endpoint": "/api/v1/b2b/api-access",
+    "description": "POST operation for api-access in b2b module"
+  },
+  {
+    "id": 165,
+    "module": "b2b",
+    "method": "PUT",
+    "endpoint": "/api/v1/b2b/api-access",
+    "description": "PUT operation for api-access in b2b module"
+  },
+  {
+    "id": 166,
+    "module": "communication",
+    "method": "GET",
+    "endpoint": "/api/v1/communication/mailboxes",
+    "description": "GET operation for mailboxes in communication module"
+  },
+  {
+    "id": 167,
+    "module": "communication",
+    "method": "POST",
+    "endpoint": "/api/v1/communication/mailboxes",
+    "description": "POST operation for mailboxes in communication module"
+  },
+  {
+    "id": 168,
+    "module": "communication",
+    "method": "PUT",
+    "endpoint": "/api/v1/communication/mailboxes",
+    "description": "PUT operation for mailboxes in communication module"
+  },
+  {
+    "id": 169,
+    "module": "communication",
+    "method": "GET",
+    "endpoint": "/api/v1/communication/threads",
+    "description": "GET operation for threads in communication module"
+  },
+  {
+    "id": 170,
+    "module": "communication",
+    "method": "POST",
+    "endpoint": "/api/v1/communication/threads",
+    "description": "POST operation for threads in communication module"
+  },
+  {
+    "id": 171,
+    "module": "communication",
+    "method": "PUT",
+    "endpoint": "/api/v1/communication/threads",
+    "description": "PUT operation for threads in communication module"
+  },
+  {
+    "id": 172,
+    "module": "communication",
+    "method": "GET",
+    "endpoint": "/api/v1/communication/messages",
+    "description": "GET operation for messages in communication module"
+  },
+  {
+    "id": 173,
+    "module": "communication",
+    "method": "POST",
+    "endpoint": "/api/v1/communication/messages",
+    "description": "POST operation for messages in communication module"
+  },
+  {
+    "id": 174,
+    "module": "communication",
+    "method": "PUT",
+    "endpoint": "/api/v1/communication/messages",
+    "description": "PUT operation for messages in communication module"
+  },
+  {
+    "id": 175,
+    "module": "communication",
+    "method": "GET",
+    "endpoint": "/api/v1/communication/attachments",
+    "description": "GET operation for attachments in communication module"
+  },
+  {
+    "id": 176,
+    "module": "communication",
+    "method": "POST",
+    "endpoint": "/api/v1/communication/attachments",
+    "description": "POST operation for attachments in communication module"
+  },
+  {
+    "id": 177,
+    "module": "communication",
+    "method": "PUT",
+    "endpoint": "/api/v1/communication/attachments",
+    "description": "PUT operation for attachments in communication module"
+  },
+  {
+    "id": 178,
+    "module": "communication",
+    "method": "GET",
+    "endpoint": "/api/v1/communication/templates",
+    "description": "GET operation for templates in communication module"
+  },
+  {
+    "id": 179,
+    "module": "communication",
+    "method": "POST",
+    "endpoint": "/api/v1/communication/templates",
+    "description": "POST operation for templates in communication module"
+  },
+  {
+    "id": 180,
+    "module": "communication",
+    "method": "PUT",
+    "endpoint": "/api/v1/communication/templates",
+    "description": "PUT operation for templates in communication module"
+  },
+  {
+    "id": 181,
+    "module": "marketing",
+    "method": "GET",
+    "endpoint": "/api/v1/marketing/campaigns",
+    "description": "GET operation for campaigns in marketing module"
+  },
+  {
+    "id": 182,
+    "module": "marketing",
+    "method": "POST",
+    "endpoint": "/api/v1/marketing/campaigns",
+    "description": "POST operation for campaigns in marketing module"
+  },
+  {
+    "id": 183,
+    "module": "marketing",
+    "method": "PUT",
+    "endpoint": "/api/v1/marketing/campaigns",
+    "description": "PUT operation for campaigns in marketing module"
+  },
+  {
+    "id": 184,
+    "module": "marketing",
+    "method": "GET",
+    "endpoint": "/api/v1/marketing/audiences",
+    "description": "GET operation for audiences in marketing module"
+  },
+  {
+    "id": 185,
+    "module": "marketing",
+    "method": "POST",
+    "endpoint": "/api/v1/marketing/audiences",
+    "description": "POST operation for audiences in marketing module"
+  },
+  {
+    "id": 186,
+    "module": "marketing",
+    "method": "PUT",
+    "endpoint": "/api/v1/marketing/audiences",
+    "description": "PUT operation for audiences in marketing module"
+  },
+  {
+    "id": 187,
+    "module": "marketing",
+    "method": "GET",
+    "endpoint": "/api/v1/marketing/automations",
+    "description": "GET operation for automations in marketing module"
+  },
+  {
+    "id": 188,
+    "module": "marketing",
+    "method": "POST",
+    "endpoint": "/api/v1/marketing/automations",
+    "description": "POST operation for automations in marketing module"
+  },
+  {
+    "id": 189,
+    "module": "marketing",
+    "method": "PUT",
+    "endpoint": "/api/v1/marketing/automations",
+    "description": "PUT operation for automations in marketing module"
+  },
+  {
+    "id": 190,
+    "module": "marketing",
+    "method": "GET",
+    "endpoint": "/api/v1/marketing/analytics",
+    "description": "GET operation for analytics in marketing module"
+  },
+  {
+    "id": 191,
+    "module": "marketing",
+    "method": "POST",
+    "endpoint": "/api/v1/marketing/analytics",
+    "description": "POST operation for analytics in marketing module"
+  },
+  {
+    "id": 192,
+    "module": "marketing",
+    "method": "PUT",
+    "endpoint": "/api/v1/marketing/analytics",
+    "description": "PUT operation for analytics in marketing module"
+  },
+  {
+    "id": 193,
+    "module": "marketing",
+    "method": "GET",
+    "endpoint": "/api/v1/marketing/assets",
+    "description": "GET operation for assets in marketing module"
+  },
+  {
+    "id": 194,
+    "module": "marketing",
+    "method": "POST",
+    "endpoint": "/api/v1/marketing/assets",
+    "description": "POST operation for assets in marketing module"
+  },
+  {
+    "id": 195,
+    "module": "marketing",
+    "method": "PUT",
+    "endpoint": "/api/v1/marketing/assets",
+    "description": "PUT operation for assets in marketing module"
+  },
+  {
+    "id": 196,
+    "module": "ai",
+    "method": "GET",
+    "endpoint": "/api/v1/ai/ask",
+    "description": "GET operation for ask in ai module"
+  },
+  {
+    "id": 197,
+    "module": "ai",
+    "method": "POST",
+    "endpoint": "/api/v1/ai/ask",
+    "description": "POST operation for ask in ai module"
+  },
+  {
+    "id": 198,
+    "module": "ai",
+    "method": "PUT",
+    "endpoint": "/api/v1/ai/ask",
+    "description": "PUT operation for ask in ai module"
+  },
+  {
+    "id": 199,
+    "module": "ai",
+    "method": "GET",
+    "endpoint": "/api/v1/ai/suggest",
+    "description": "GET operation for suggest in ai module"
+  },
+  {
+    "id": 200,
+    "module": "ai",
+    "method": "POST",
+    "endpoint": "/api/v1/ai/suggest",
+    "description": "POST operation for suggest in ai module"
+  },
+  {
+    "id": 201,
+    "module": "ai",
+    "method": "PUT",
+    "endpoint": "/api/v1/ai/suggest",
+    "description": "PUT operation for suggest in ai module"
+  },
+  {
+    "id": 202,
+    "module": "ai",
+    "method": "GET",
+    "endpoint": "/api/v1/ai/execute",
+    "description": "GET operation for execute in ai module"
+  },
+  {
+    "id": 203,
+    "module": "ai",
+    "method": "POST",
+    "endpoint": "/api/v1/ai/execute",
+    "description": "POST operation for execute in ai module"
+  },
+  {
+    "id": 204,
+    "module": "ai",
+    "method": "PUT",
+    "endpoint": "/api/v1/ai/execute",
+    "description": "PUT operation for execute in ai module"
+  },
+  {
+    "id": 205,
+    "module": "ai",
+    "method": "GET",
+    "endpoint": "/api/v1/ai/usage",
+    "description": "GET operation for usage in ai module"
+  },
+  {
+    "id": 206,
+    "module": "ai",
+    "method": "POST",
+    "endpoint": "/api/v1/ai/usage",
+    "description": "POST operation for usage in ai module"
+  },
+  {
+    "id": 207,
+    "module": "ai",
+    "method": "PUT",
+    "endpoint": "/api/v1/ai/usage",
+    "description": "PUT operation for usage in ai module"
+  },
+  {
+    "id": 208,
+    "module": "ai",
+    "method": "GET",
+    "endpoint": "/api/v1/ai/budgets",
+    "description": "GET operation for budgets in ai module"
+  },
+  {
+    "id": 209,
+    "module": "ai",
+    "method": "POST",
+    "endpoint": "/api/v1/ai/budgets",
+    "description": "POST operation for budgets in ai module"
+  },
+  {
+    "id": 210,
+    "module": "ai",
+    "method": "PUT",
+    "endpoint": "/api/v1/ai/budgets",
+    "description": "PUT operation for budgets in ai module"
+  },
+  {
+    "id": 211,
+    "module": "cms",
+    "method": "GET",
+    "endpoint": "/api/v1/cms/pages",
+    "description": "GET operation for pages in cms module"
+  },
+  {
+    "id": 212,
+    "module": "cms",
+    "method": "POST",
+    "endpoint": "/api/v1/cms/pages",
+    "description": "POST operation for pages in cms module"
+  },
+  {
+    "id": 213,
+    "module": "cms",
+    "method": "PUT",
+    "endpoint": "/api/v1/cms/pages",
+    "description": "PUT operation for pages in cms module"
+  },
+  {
+    "id": 214,
+    "module": "cms",
+    "method": "GET",
+    "endpoint": "/api/v1/cms/seo",
+    "description": "GET operation for seo in cms module"
+  },
+  {
+    "id": 215,
+    "module": "cms",
+    "method": "POST",
+    "endpoint": "/api/v1/cms/seo",
+    "description": "POST operation for seo in cms module"
+  },
+  {
+    "id": 216,
+    "module": "cms",
+    "method": "PUT",
+    "endpoint": "/api/v1/cms/seo",
+    "description": "PUT operation for seo in cms module"
+  },
+  {
+    "id": 217,
+    "module": "cms",
+    "method": "GET",
+    "endpoint": "/api/v1/cms/redirects",
+    "description": "GET operation for redirects in cms module"
+  },
+  {
+    "id": 218,
+    "module": "cms",
+    "method": "POST",
+    "endpoint": "/api/v1/cms/redirects",
+    "description": "POST operation for redirects in cms module"
+  },
+  {
+    "id": 219,
+    "module": "cms",
+    "method": "PUT",
+    "endpoint": "/api/v1/cms/redirects",
+    "description": "PUT operation for redirects in cms module"
+  },
+  {
+    "id": 220,
+    "module": "cms",
+    "method": "GET",
+    "endpoint": "/api/v1/cms/blocks",
+    "description": "GET operation for blocks in cms module"
+  },
+  {
+    "id": 221,
+    "module": "cms",
+    "method": "POST",
+    "endpoint": "/api/v1/cms/blocks",
+    "description": "POST operation for blocks in cms module"
+  },
+  {
+    "id": 222,
+    "module": "cms",
+    "method": "PUT",
+    "endpoint": "/api/v1/cms/blocks",
+    "description": "PUT operation for blocks in cms module"
+  },
+  {
+    "id": 223,
+    "module": "cms",
+    "method": "GET",
+    "endpoint": "/api/v1/cms/publish",
+    "description": "GET operation for publish in cms module"
+  },
+  {
+    "id": 224,
+    "module": "cms",
+    "method": "POST",
+    "endpoint": "/api/v1/cms/publish",
+    "description": "POST operation for publish in cms module"
+  },
+  {
+    "id": 225,
+    "module": "cms",
+    "method": "PUT",
+    "endpoint": "/api/v1/cms/publish",
+    "description": "PUT operation for publish in cms module"
+  },
+  {
+    "id": 226,
+    "module": "regulatory",
+    "method": "GET",
+    "endpoint": "/api/v1/regulatory/sef-invoices",
+    "description": "GET operation for sef-invoices in regulatory module"
+  },
+  {
+    "id": 227,
+    "module": "regulatory",
+    "method": "POST",
+    "endpoint": "/api/v1/regulatory/sef-invoices",
+    "description": "POST operation for sef-invoices in regulatory module"
+  },
+  {
+    "id": 228,
+    "module": "regulatory",
+    "method": "PUT",
+    "endpoint": "/api/v1/regulatory/sef-invoices",
+    "description": "PUT operation for sef-invoices in regulatory module"
+  },
+  {
+    "id": 229,
+    "module": "regulatory",
+    "method": "GET",
+    "endpoint": "/api/v1/regulatory/cis-reports",
+    "description": "GET operation for cis-reports in regulatory module"
+  },
+  {
+    "id": 230,
+    "module": "regulatory",
+    "method": "POST",
+    "endpoint": "/api/v1/regulatory/cis-reports",
+    "description": "POST operation for cis-reports in regulatory module"
+  },
+  {
+    "id": 231,
+    "module": "regulatory",
+    "method": "PUT",
+    "endpoint": "/api/v1/regulatory/cis-reports",
+    "description": "PUT operation for cis-reports in regulatory module"
+  },
+  {
+    "id": 232,
+    "module": "regulatory",
+    "method": "GET",
+    "endpoint": "/api/v1/regulatory/fiscal-receipts",
+    "description": "GET operation for fiscal-receipts in regulatory module"
+  },
+  {
+    "id": 233,
+    "module": "regulatory",
+    "method": "POST",
+    "endpoint": "/api/v1/regulatory/fiscal-receipts",
+    "description": "POST operation for fiscal-receipts in regulatory module"
+  },
+  {
+    "id": 234,
+    "module": "regulatory",
+    "method": "PUT",
+    "endpoint": "/api/v1/regulatory/fiscal-receipts",
+    "description": "PUT operation for fiscal-receipts in regulatory module"
+  },
+  {
+    "id": 235,
+    "module": "regulatory",
+    "method": "GET",
+    "endpoint": "/api/v1/regulatory/sync",
+    "description": "GET operation for sync in regulatory module"
+  },
+  {
+    "id": 236,
+    "module": "regulatory",
+    "method": "POST",
+    "endpoint": "/api/v1/regulatory/sync",
+    "description": "POST operation for sync in regulatory module"
+  },
+  {
+    "id": 237,
+    "module": "regulatory",
+    "method": "PUT",
+    "endpoint": "/api/v1/regulatory/sync",
+    "description": "PUT operation for sync in regulatory module"
+  },
+  {
+    "id": 238,
+    "module": "regulatory",
+    "method": "GET",
+    "endpoint": "/api/v1/regulatory/logs",
+    "description": "GET operation for logs in regulatory module"
+  },
+  {
+    "id": 239,
+    "module": "regulatory",
+    "method": "POST",
+    "endpoint": "/api/v1/regulatory/logs",
+    "description": "POST operation for logs in regulatory module"
+  },
+  {
+    "id": 240,
+    "module": "regulatory",
+    "method": "PUT",
+    "endpoint": "/api/v1/regulatory/logs",
+    "description": "PUT operation for logs in regulatory module"
+  },
+  {
+    "id": 241,
+    "module": "treasury",
+    "method": "GET",
+    "endpoint": "/api/v1/treasury/supplier-accounts",
+    "description": "GET operation for supplier-accounts in treasury module"
+  },
+  {
+    "id": 242,
+    "module": "treasury",
+    "method": "POST",
+    "endpoint": "/api/v1/treasury/supplier-accounts",
+    "description": "POST operation for supplier-accounts in treasury module"
+  },
+  {
+    "id": 243,
+    "module": "treasury",
+    "method": "PUT",
+    "endpoint": "/api/v1/treasury/supplier-accounts",
+    "description": "PUT operation for supplier-accounts in treasury module"
+  },
+  {
+    "id": 244,
+    "module": "treasury",
+    "method": "GET",
+    "endpoint": "/api/v1/treasury/payouts",
+    "description": "GET operation for payouts in treasury module"
+  },
+  {
+    "id": 245,
+    "module": "treasury",
+    "method": "POST",
+    "endpoint": "/api/v1/treasury/payouts",
+    "description": "POST operation for payouts in treasury module"
+  },
+  {
+    "id": 246,
+    "module": "treasury",
+    "method": "PUT",
+    "endpoint": "/api/v1/treasury/payouts",
+    "description": "PUT operation for payouts in treasury module"
+  },
+  {
+    "id": 247,
+    "module": "treasury",
+    "method": "GET",
+    "endpoint": "/api/v1/treasury/sepa",
+    "description": "GET operation for sepa in treasury module"
+  },
+  {
+    "id": 248,
+    "module": "treasury",
+    "method": "POST",
+    "endpoint": "/api/v1/treasury/sepa",
+    "description": "POST operation for sepa in treasury module"
+  },
+  {
+    "id": 249,
+    "module": "treasury",
+    "method": "PUT",
+    "endpoint": "/api/v1/treasury/sepa",
+    "description": "PUT operation for sepa in treasury module"
+  },
+  {
+    "id": 250,
+    "module": "treasury",
+    "method": "GET",
+    "endpoint": "/api/v1/treasury/cards",
+    "description": "GET operation for cards in treasury module"
+  }
+]

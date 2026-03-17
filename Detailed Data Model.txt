@@ -1,0 +1,1593 @@
+Odlično. Krećem sada na **Detailed Data Model** — onako kako to rade CTO i product arhitekte kada platforma pređe iz faze ideje u fazu **realne implementacije**.
+
+Ovde neću raditi “grub pregled”, nego ću postaviti:
+
+* **kompletnu logiku baze**
+* **raspodelu na domene**
+* **strukturu od ~500+ tabela**
+* **ključne relacije**
+* **API boundary**
+* **event / queue model**
+* **pravila imenovanja i verzionisanja**
+
+Ovo je praktično **Master Data Architecture V1**.
+
+---
+
+# 1. Osnovni princip modela
+
+Ovakav sistem se ne projektuje kao jedna velika haotična baza, nego kao **federisana domen-baza** sa jasnim granicama.
+
+Predlažem sledeći pristup:
+
+## 1.1 Logički nivo
+
+Jedna platforma, više poslovnih domena:
+
+1. Identity & Access
+2. CRM & Accounts
+3. Product Master
+4. Contracting & Rates
+5. Search & Offer
+6. Booking Core
+7. Reservation Operations
+8. Finance & Settlement
+9. Rooming & Capacity
+10. Tour Operator Programs
+11. Charter & Series
+12. B2B Distribution
+13. Mail & Communication
+14. Marketing Automation
+15. AI Governance
+16. Website / CMS / SEO
+17. Monitoring / Audit / Control Plane
+
+---
+
+# 2. Strategija broja tabela
+
+Za ovakav sistem je potpuno realno da završi na:
+
+* **450–650 tabela**
+* plus views
+* plus materialized views
+* plus event log / queue tablice
+* plus analytics modele
+
+## 2.1 Moj predlog raspodele
+
+| Domen                        | Procena tabela |
+| ---------------------------- | -------------: |
+| Identity & Access            |             20 |
+| CRM & Accounts               |             35 |
+| Product Master               |             35 |
+| Contracting & Rates          |             70 |
+| Search & Offers              |             30 |
+| Booking Core                 |             35 |
+| Reservation Operations       |             30 |
+| Finance & Settlement         |             45 |
+| Rooming & Capacity           |             35 |
+| Tour Operator Programs       |             35 |
+| Charter & Series             |             35 |
+| B2B Distribution             |             25 |
+| Mail & Communication         |             40 |
+| Marketing Automation         |             35 |
+| AI Governance & Usage        |             20 |
+| Website / CMS / SEO          |             30 |
+| Audit / Monitoring / Control |             25 |
+
+**Ukupno: ~580 tabela**
+
+To je realan enterprise opseg.
+
+---
+
+# 3. Naming standard
+
+Da baza ostane održiva, imena moraju biti strogo standardizovana.
+
+## 3.1 Pravila
+
+* sve tablice u `snake_case`
+* svi PK: `id`
+* svi FK: `<entity>_id`
+* enum kolone: `<name>_code`
+* date/datetime:
+
+  * `created_at`
+  * `updated_at`
+  * `deleted_at`
+* status kolone:
+
+  * `status_code`
+* iznosi:
+
+  * `amount`
+  * `currency_code`
+* audit:
+
+  * `created_by_user_id`
+  * `updated_by_user_id`
+
+## 3.2 Primer
+
+* `bookings`
+* `booking_items`
+* `booking_item_passengers`
+* `hotel_contracts`
+* `hotel_contract_rate_seasons`
+* `charter_flight_series`
+* `mail_threads`
+* `campaign_audience_members`
+
+---
+
+# 4. Multi-tenant / brand-ready logika
+
+Pošto imate:
+
+* B2C sajt
+* B2B mrežu
+* moguće više brendova
+* future white-label
+
+predlažem da ključne tabele imaju:
+
+* `brand_id`
+* `market_id`
+* `channel_id`
+
+gde je smisleno.
+
+To ne mora svuda, ali mora postojati kao mogućnost.
+
+---
+
+# 5. ID strategija
+
+Za enterprise sistem preporučujem:
+
+* interni PK = `bigint`
+* public ref = human-friendly code
+* external ref = supplier reference
+
+Primer:
+
+* `bookings.id = 1288821`
+* `bookings.booking_reference = OT-2026-00482`
+* `supplier_reservations.external_reference = HB-884221`
+
+---
+
+# 6. Domain-by-domain master model
+
+Sada krećem po domenima.
+
+---
+
+---
+
+# DOMAIN 1 — IDENTITY & ACCESS
+
+---
+
+## 6.1 Tabele
+
+1. `users`
+2. `user_profiles`
+3. `user_preferences`
+4. `roles`
+5. `permissions`
+6. `role_permissions`
+7. `user_roles`
+8. `teams`
+9. `team_members`
+10. `departments`
+11. `user_department_memberships`
+12. `sessions`
+13. `user_devices`
+14. `login_attempts`
+15. `password_resets`
+16. `mfa_methods`
+17. `mfa_challenges`
+18. `api_clients`
+19. `api_client_keys`
+20. `security_events`
+
+## 6.2 Ključne tabele
+
+### `users`
+
+* id
+* email
+* username
+* password_hash
+* status_code
+* is_internal
+* is_b2b_user
+* last_login_at
+* created_at
+* updated_at
+
+### `user_profiles`
+
+* id
+* user_id
+* first_name
+* last_name
+* phone
+* language_code
+* timezone
+* avatar_file_id
+* title
+* signature_html
+
+### `roles`
+
+* id
+* code
+* name
+* scope_code
+  (`internal`, `b2b`, `system`, `mixed`)
+
+### `permissions`
+
+* id
+* code
+* module_code
+* action_code
+* description
+
+### `teams`
+
+* id
+* name
+* team_type_code
+  (`sales`, `operations`, `finance`, `marketing`, `b2b_support`, `contracting`)
+
+### `api_clients`
+
+* id
+* name
+* client_type_code
+* owner_user_id
+* owner_agency_id
+* is_active
+
+---
+
+# DOMAIN 2 — CRM & ACCOUNTS
+
+---
+
+## 7.1 Tabele
+
+1. `contacts`
+2. `contact_profiles`
+3. `contact_emails`
+4. `contact_phones`
+5. `contact_addresses`
+6. `contact_documents`
+7. `contact_tags`
+8. `contact_tag_links`
+9. `contact_notes`
+10. `contact_owners`
+11. `contact_preferences`
+12. `contact_marketing_consents`
+13. `contact_travel_preferences`
+14. `contact_loyalty_profiles`
+15. `contact_relationships`
+16. `agencies`
+17. `agency_profiles`
+18. `agency_addresses`
+19. `agency_contacts`
+20. `agency_users`
+21. `agency_credit_profiles`
+22. `agency_payment_terms`
+23. `agency_commission_profiles`
+24. `agency_tags`
+25. `agency_tag_links`
+26. `agency_notes`
+27. `agency_owners`
+28. `suppliers`
+29. `supplier_profiles`
+30. `supplier_contacts`
+31. `supplier_addresses`
+32. `supplier_payment_terms`
+33. `supplier_tags`
+34. `supplier_tag_links`
+35. `account_relationships`
+
+## 7.2 Ključne tabele
+
+### `contacts`
+
+* id
+* contact_type_code
+  (`b2c`, `b2b_person`, `supplier_contact`, `lead`)
+* first_name
+* last_name
+* primary_email
+* primary_phone
+* status_code
+* agency_id nullable
+* owner_user_id
+* created_at
+
+### `contact_marketing_consents`
+
+* id
+* contact_id
+* channel_code
+  (`email`, `sms`, `viber`, `whatsapp`, `telegram`)
+* consent_status_code
+* consent_source_code
+* granted_at
+* revoked_at
+
+### `contact_travel_preferences`
+
+* id
+* contact_id
+* preferred_destinations_json
+* budget_min
+* budget_max
+* travel_style_code
+* favorite_board_code
+* preferred_airport_code
+* direct_flights_only
+
+### `agencies`
+
+* id
+* agency_code
+* legal_name
+* commercial_name
+* market_id
+* status_code
+* primary_email
+* primary_phone
+* website_url
+* tax_number
+* registration_number
+
+### `agency_credit_profiles`
+
+* id
+* agency_id
+* credit_limit_amount
+* currency_code
+* current_exposure_amount
+* overdue_amount
+* hard_stop_enabled
+* approval_required_over_limit
+
+### `agency_commission_profiles`
+
+* id
+* agency_id
+* pricing_model_code
+  (`gross_commission`, `net`, `contracted_sell`)
+* default_commission_percent
+* default_markup_percent
+* statement_cycle_code
+
+---
+
+# DOMAIN 3 — PRODUCT MASTER
+
+---
+
+## 8.1 Tabele
+
+1. `destinations`
+2. `destination_hierarchies`
+3. `destination_aliases`
+4. `destination_tags`
+5. `destination_images`
+6. `countries`
+7. `regions`
+8. `cities`
+9. `airports`
+10. `ports`
+11. `products`
+12. `product_categories`
+13. `product_types`
+14. `product_statuses`
+15. `product_tags`
+16. `product_tag_links`
+17. `product_images`
+18. `product_files`
+19. `product_locations`
+20. `product_amenities`
+21. `product_amenity_links`
+22. `hotels`
+23. `hotel_room_types`
+24. `hotel_board_types`
+25. `hotel_facilities`
+26. `hotel_facility_links`
+27. `hotel_policies`
+28. `transfers`
+29. `activities`
+30. `cruises`
+31. `cruise_ships`
+32. `cruise_cabin_types`
+33. `tour_program_products`
+34. `charter_products`
+35. `product_publication_states`
+
+## 8.2 Ključne tabele
+
+### `destinations`
+
+* id
+* destination_code
+* destination_type_code
+  (`country`, `region`, `city`, `resort`, `island`, `park`)
+* name
+* slug
+* parent_destination_id
+* latitude
+* longitude
+* status_code
+
+### `products`
+
+* id
+* product_type_code
+  (`hotel`, `tour_program`, `charter_program`, `transfer`, `activity`, `cruise`)
+* name
+* destination_id
+* supplier_id nullable
+* brand_id
+* market_id
+* status_code
+* publication_status_code
+
+### `hotels`
+
+* id
+* product_id
+* stars
+* check_in_time
+* check_out_time
+* hotel_chain_name
+* latitude
+* longitude
+* geocode_quality_code
+
+### `hotel_room_types`
+
+* id
+* hotel_id
+* room_code
+* name
+* max_adults
+* max_children
+* max_infants
+* extra_bed_allowed
+* baby_cot_allowed
+
+### `hotel_board_types`
+
+* id
+* hotel_id
+* board_code
+  (`RO`, `BB`, `HB`, `FB`, `AI`, `UAI`)
+* name
+* is_default
+
+---
+
+# DOMAIN 4 — CONTRACTING & RATES
+
+---
+
+Ovo je jedan od najvećih domena.
+
+## 9.1 Tabele
+
+1. `contracts`
+2. `contract_versions`
+3. `contract_documents`
+4. `contract_status_history`
+5. `contract_markets`
+6. `contract_channels`
+7. `contract_release_rules`
+8. `contract_payment_rules`
+9. `contract_cancellation_rules`
+10. `contract_supplier_contacts`
+11. `contract_products`
+12. `contract_seasons`
+13. `contract_blackout_dates`
+14. `contract_room_allocations`
+15. `contract_board_links`
+16. `contract_room_type_links`
+17. `rate_plans`
+18. `rate_plan_versions`
+19. `rate_plan_seasons`
+20. `rate_plan_prices`
+21. `rate_plan_price_components`
+22. `rate_plan_occupancy_rules`
+23. `rate_plan_child_policies`
+24. `rate_plan_single_supplements`
+25. `rate_plan_extra_bed_rules`
+26. `rate_plan_free_night_rules`
+27. `rate_plan_long_stay_rules`
+28. `rate_plan_early_booking_rules`
+29. `rate_plan_last_minute_rules`
+30. `rate_plan_promotions`
+31. `rate_plan_mandatory_supplements`
+32. `rate_plan_optional_supplements`
+33. `supplement_catalog`
+34. `supplement_rules`
+35. `discount_catalog`
+36. `discount_rules`
+37. `restriction_catalog`
+38. `restriction_rules`
+39. `minimum_stay_rules`
+40. `cta_rules`
+41. `ctd_rules`
+42. `stop_sale_rules`
+43. `release_period_rules`
+44. `allotments`
+45. `allotment_daily_inventory`
+46. `allotment_channel_allocations`
+47. `allotment_release_events`
+48. `allotment_overrides`
+49. `series_contracts`
+50. `series_hotel_links`
+51. `charter_season_contracts`
+52. `contract_rate_import_jobs`
+53. `contract_rate_import_rows`
+54. `contract_validation_results`
+55. `pricing_rule_sets`
+56. `pricing_rules`
+57. `commission_rules`
+58. `markup_rules`
+59. `promo_rules`
+60. `package_discount_rules`
+61. `fare_override_rules`
+62. `currency_conversion_rules`
+63. `price_rounding_rules`
+64. `contract_audit_events`
+65. `product_supplier_maps`
+66. `room_type_supplier_maps`
+67. `board_type_supplier_maps`
+68. `rate_plan_supplier_maps`
+69. `contract_publication_rules`
+70. `contract_change_requests`
+
+## 9.2 Ključne tabele
+
+### `contracts`
+
+* id
+* contract_code
+* contract_type_code
+  (`hotel`, `series`, `charter`, `activity`, `transfer`, `cruise`)
+* supplier_id
+* product_id
+* start_date
+* end_date
+* currency_code
+* status_code
+
+### `contract_versions`
+
+* id
+* contract_id
+* version_number
+* effective_from
+* effective_to
+* is_current
+* approved_by_user_id
+
+### `contract_seasons`
+
+* id
+* contract_version_id
+* season_code
+* name
+* start_date
+* end_date
+* priority
+
+### `rate_plan_prices`
+
+* id
+* rate_plan_id
+* season_id
+* room_type_id
+* board_type_id
+* occupancy_code
+  (`1/1`, `1/2`, `2/2`, `2+1`, `2+2`)
+* price_amount
+* currency_code
+* price_basis_code
+  (`per_room`, `per_person`, `per_adult`, `per_child`)
+
+### `rate_plan_child_policies`
+
+* id
+* rate_plan_id
+* age_from
+* age_to
+* pricing_mode_code
+  (`free`, `percent_discount`, `fixed_amount`, `adult_rate`)
+* value_amount
+
+### `allotments`
+
+* id
+* contract_id
+* hotel_id
+* room_type_id
+* board_type_id
+* start_date
+* end_date
+* release_days
+* total_committed
+* status_code
+
+### `allotment_daily_inventory`
+
+* id
+* allotment_id
+* inventory_date
+* committed_qty
+* sold_qty
+* option_qty
+* blocked_qty
+* free_qty
+* overbook_limit_qty
+
+---
+
+# DOMAIN 5 — SEARCH & OFFERS
+
+---
+
+## 10.1 Tabele
+
+1. `search_requests`
+2. `search_request_passengers`
+3. `search_request_rooms`
+4. `search_request_filters`
+5. `search_request_contexts`
+6. `search_request_logs`
+7. `search_cache_entries`
+8. `offer_groups`
+9. `offers`
+10. `offer_items`
+11. `offer_price_breakdowns`
+12. `offer_component_snapshots`
+13. `offer_ranking_features`
+14. `offer_reprice_requests`
+15. `offer_reprice_results`
+16. `offer_expiration_events`
+17. `package_build_jobs`
+18. `package_build_candidates`
+19. `package_build_filters`
+20. `package_recommendation_scores`
+21. `search_click_events`
+22. `offer_view_events`
+23. `offer_selection_events`
+24. `search_abandonment_events`
+25. `public_offer_publications`
+26. `website_offer_snapshots`
+27. `api_offer_tokens`
+28. `search_deduplication_maps`
+29. `supplier_search_batches`
+30. `offer_audit_events`
+
+## 10.2 Ključne tabele
+
+### `search_requests`
+
+* id
+* user_id nullable
+* contact_id nullable
+* agency_id nullable
+* channel_id
+* search_type_code
+  (`hotel`, `flight`, `package`, `tour_program`, `charter`)
+* origin_code
+* destination_code
+* start_date
+* end_date
+* budget_amount nullable
+* created_at
+
+### `offers`
+
+* id
+* offer_group_id
+* offer_type_code
+* status_code
+* total_sell_amount
+* total_net_amount
+* currency_code
+* expires_at
+* score_amount
+* source_mix_code
+  (`fixed`, `api`, `hybrid`)
+
+### `offer_items`
+
+* id
+* offer_id
+* item_type_code
+* source_type_code
+  (`contracted`, `api_dynamic`, `api_cached`, `manual_override`, `hybrid_locked`)
+* source_ref_table
+* source_ref_id
+* supplier_id
+* net_amount
+* sell_amount
+* currency_code
+
+---
+
+# DOMAIN 6 — BOOKING CORE
+
+---
+
+## 11.1 Tabele
+
+1. `bookings`
+2. `booking_versions`
+3. `booking_status_history`
+4. `booking_items`
+5. `booking_item_status_history`
+6. `booking_item_dependencies`
+7. `booking_contacts`
+8. `booking_passengers`
+9. `booking_passenger_documents`
+10. `booking_item_passengers`
+11. `booking_room_requests`
+12. `booking_special_requests`
+13. `booking_notes`
+14. `booking_tags`
+15. `booking_tag_links`
+16. `booking_source_metadata`
+17. `booking_manual_overrides`
+18. `booking_holds`
+19. `booking_confirmations`
+20. `supplier_reservations`
+21. `supplier_reservation_events`
+22. `supplier_reservation_errors`
+23. `booking_revalidation_requests`
+24. `booking_revalidation_results`
+25. `booking_documents`
+26. `booking_checklists`
+27. `booking_checklist_items`
+28. `group_bookings`
+29. `group_booking_members`
+30. `booking_split_operations`
+31. `booking_merge_operations`
+32. `booking_service_changes`
+33. `booking_cancellations`
+34. `booking_refund_requests`
+35. `booking_audit_events`
+
+## 11.2 Ključne tabele
+
+### `bookings`
+
+* id
+* booking_reference
+* booking_type_code
+* channel_id
+* brand_id
+* user_id nullable
+* agency_id nullable
+* contact_id nullable
+* offer_id nullable
+* status_code
+* travel_start_date
+* travel_end_date
+* total_sell_amount
+* total_net_amount
+* currency_code
+
+### `booking_items`
+
+* id
+* booking_id
+* item_type_code
+* source_type_code
+* supplier_id
+* supplier_reference
+* status_code
+* service_start_date
+* service_end_date
+* gross_amount
+* net_amount
+* currency_code
+
+### `supplier_reservations`
+
+* id
+* booking_item_id
+* supplier_id
+* reservation_reference
+* reservation_status_code
+* requested_at
+* confirmed_at
+* raw_response_json
+
+---
+
+# DOMAIN 7 — RESERVATION OPERATIONS
+
+---
+
+## 12.1 Tabele
+
+1. `reservation_workspaces`
+2. `reservation_operation_statuses`
+3. `reservation_assignments`
+4. `reservation_operational_flags`
+5. `reservation_flag_links`
+6. `reservation_alerts`
+7. `reservation_todos`
+8. `reservation_checkpoints`
+9. `reservation_document_statuses`
+10. `reservation_dispatches`
+11. `reservation_dispatch_targets`
+12. `arrival_lists`
+13. `arrival_list_rows`
+14. `departure_lists`
+15. `departure_list_rows`
+16. `inhouse_lists`
+17. `inhouse_list_rows`
+18. `transfer_lists`
+19. `transfer_list_rows`
+20. `excursion_lists`
+21. `excursion_list_rows`
+22. `rooming_status_views`
+23. `document_pending_views`
+24. `financial_warning_views`
+25. `guide_assignments`
+26. `operational_incidents`
+27. `operational_incident_comments`
+28. `reservation_escalations`
+29. `reservation_coaching_cases`
+30. `reservation_operational_audit`
+
+---
+
+# DOMAIN 8 — FINANCE & SETTLEMENT
+
+---
+
+## 13.1 Tabele
+
+1. `payment_providers`
+2. `payment_methods`
+3. `payment_intents`
+4. `payments`
+5. `payment_attempts`
+6. `payment_webhook_events`
+7. `payment_reconciliations`
+8. `receivables`
+9. `receivable_installments`
+10. `receivable_payments`
+11. `receivable_adjustments`
+12. `payables`
+13. `payable_installments`
+14. `payable_payments`
+15. `payable_adjustments`
+16. `reservation_finance_summaries`
+17. `settlement_logs`
+18. `refunds`
+19. `refund_items`
+20. `credit_notes`
+21. `debit_notes`
+22. `finance_documents`
+23. `customer_invoices`
+24. `supplier_invoices`
+25. `invoice_lines`
+26. `invoice_links`
+27. `commission_accruals`
+28. `commission_settlements`
+29. `margin_snapshots`
+30. `currency_rates`
+31. `financial_periods`
+32. `finance_closures`
+33. `bank_accounts`
+34. `bank_movements`
+35. `bank_reconciliation_matches`
+36. `agency_credit_movements`
+37. `agency_exposure_snapshots`
+38. `finance_alerts`
+39. `tax_rules`
+40. `tax_components`
+41. `cost_centers`
+42. `ledger_export_batches`
+43. `ledger_export_rows`
+44. `finance_audit_events`
+45. `settlement_disputes`
+
+## 13.2 Ključne tabele
+
+### `receivables`
+
+* id
+* booking_id
+* payer_type_code
+  (`contact`, `agency`)
+* payer_contact_id nullable
+* payer_agency_id nullable
+* amount
+* currency_code
+* due_date
+* status_code
+
+### `payables`
+
+* id
+* booking_item_id
+* supplier_id
+* amount
+* currency_code
+* due_date
+* status_code
+* supplier_invoice_id nullable
+
+### `reservation_finance_summaries`
+
+* id
+* booking_id
+* total_sell_amount
+* total_net_amount
+* paid_in_amount
+* paid_out_amount
+* balance_due_amount
+* supplier_due_amount
+* expected_margin_amount
+* realized_margin_amount
+* finance_status_code
+
+---
+
+# DOMAIN 9 — ROOMING & CAPACITY
+
+---
+
+## 14.1 Tabele
+
+1. `rooming_sets`
+2. `rooming_versions`
+3. `rooming_rooms`
+4. `rooming_room_passengers`
+5. `rooming_preferences`
+6. `rooming_change_logs`
+7. `rooming_exports`
+8. `rooming_confirmations`
+9. `rooming_mismatch_events`
+10. `occupancy_rules`
+11. `occupancy_validation_results`
+12. `capacity_snapshots`
+13. `capacity_rules`
+14. `capacity_overrides`
+15. `capacity_alerts`
+16. `inventory_pools`
+17. `inventory_pool_members`
+18. `inventory_allocations`
+19. `inventory_release_rules`
+20. `inventory_release_events`
+21. `seat_inventory`
+22. `seat_inventory_movements`
+23. `seat_blocks`
+24. `waitlists`
+25. `waitlist_entries`
+26. `channel_inventory_allocations`
+27. `group_rooming_sets`
+28. `group_rooming_members`
+29. `manifest_exports`
+30. `manifest_rows`
+31. `transfer_manifest_exports`
+32. `guide_manifest_exports`
+33. `rooming_tasks`
+34. `capacity_dashboard_snapshots`
+35. `rooming_audit_events`
+
+---
+
+# DOMAIN 10 — TOUR OPERATOR PROGRAMS
+
+---
+
+## 15.1 Tabele
+
+1. `tour_programs`
+2. `tour_program_versions`
+3. `tour_program_categories`
+4. `tour_departures`
+5. `tour_departure_status_history`
+6. `tour_itinerary_days`
+7. `tour_itinerary_day_services`
+8. `tour_included_services`
+9. `tour_optional_services`
+10. `tour_pricing_models`
+11. `tour_pricing_lines`
+12. `tour_single_supplements`
+13. `tour_child_rules`
+14. `tour_capacity_profiles`
+15. `tour_capacity_snapshots`
+16. `tour_guides`
+17. `tour_departure_guides`
+18. `tour_operations_workspaces`
+19. `tour_manifests`
+20. `tour_manifest_rows`
+21. `tour_dispatches`
+22. `tour_dispatch_rows`
+23. `tour_rooming_sets`
+24. `tour_publications`
+25. `tour_faq_entries`
+26. `tour_documents`
+27. `tour_booking_rules`
+28. `tour_payment_rules`
+29. `tour_cancellation_rules`
+30. `tour_marketing_links`
+31. `tour_tags`
+32. `tour_tag_links`
+33. `tour_change_requests`
+34. `tour_audit_events`
+35. `tour_performance_snapshots`
+
+---
+
+# DOMAIN 11 — CHARTER & SERIES
+
+---
+
+## 16.1 Tabele
+
+1. `charter_seasons`
+2. `charter_season_versions`
+3. `charter_markets`
+4. `charter_routes`
+5. `charter_flight_series`
+6. `charter_flights`
+7. `charter_flight_status_history`
+8. `charter_duration_templates`
+9. `charter_hotel_links`
+10. `charter_hotel_duration_rules`
+11. `charter_package_templates`
+12. `charter_package_template_items`
+13. `charter_pricing_models`
+14. `charter_pricing_lines`
+15. `charter_fare_components`
+16. `charter_seat_inventory`
+17. `charter_seat_blocks`
+18. `charter_waitlists`
+19. `charter_load_factor_snapshots`
+20. `charter_allotments`
+21. `charter_release_events`
+22. `charter_rooming_sets`
+23. `charter_departure_operations`
+24. `charter_dispatches`
+25. `charter_manifest_exports`
+26. `charter_publications`
+27. `charter_offer_snapshots`
+28. `charter_promo_rules`
+29. `charter_sales_targets`
+30. `charter_performance_snapshots`
+31. `charter_change_requests`
+32. `charter_alerts`
+33. `charter_incidents`
+34. `charter_audit_events`
+35. `charter_supplier_maps`
+
+---
+
+# DOMAIN 12 — B2B DISTRIBUTION
+
+---
+
+## 17.1 Tabele
+
+1. `agency_users`
+2. `agency_user_roles`
+3. `agency_permissions`
+4. `agency_branches`
+5. `agency_branch_users`
+6. `agency_pricing_profiles`
+7. `agency_restrictions`
+8. `agency_destination_access`
+9. `agency_product_access`
+10. `agency_statement_cycles`
+11. `agency_statements`
+12. `agency_statement_rows`
+13. `agency_documents`
+14. `agency_support_cases`
+15. `agency_support_case_messages`
+16. `agency_credit_requests`
+17. `agency_credit_approvals`
+18. `agency_api_access_profiles`
+19. `agency_api_usage_logs`
+20. `agency_campaign_links`
+21. `agency_booking_views`
+22. `agency_customer_links`
+23. `agency_white_label_profiles`
+24. `agency_quality_scores`
+25. `agency_audit_events`
+
+---
+
+# DOMAIN 13 — MAIL & COMMUNICATION
+
+---
+
+## 18.1 Tabele
+
+1. `mailboxes`
+2. `mailbox_permissions`
+3. `mail_threads`
+4. `mail_thread_status_history`
+5. `mail_messages`
+6. `mail_message_headers`
+7. `mail_message_bodies`
+8. `mail_participants`
+9. `mail_attachments`
+10. `mail_attachment_files`
+11. `mail_thread_links`
+12. `mail_routing_rules`
+13. `mail_routing_results`
+14. `mail_unassigned_queue`
+15. `mail_templates`
+16. `mail_template_versions`
+17. `mail_signatures`
+18. `mail_drafts`
+19. `mail_send_queue`
+20. `mail_send_attempts`
+21. `mail_delivery_events`
+22. `mail_bounces`
+23. `mail_spam_flags`
+24. `communication_timelines`
+25. `communication_timeline_events`
+26. `communication_tasks`
+27. `communication_task_comments`
+28. `inbox_user_reviews`
+29. `outbound_quality_scores`
+30. `outbound_quality_flags`
+31. `quality_review_cases`
+32. `quality_review_notes`
+33. `best_practice_replies`
+34. `thread_ai_summaries`
+35. `communication_analytics_daily`
+36. `communication_sla_profiles`
+37. `communication_sla_events`
+38. `mail_sync_jobs`
+39. `mail_sync_errors`
+40. `communication_audit_events`
+
+## 18.2 Ključne tabele
+
+### `mail_threads`
+
+* id
+* mailbox_id
+* subject_normalized
+* status_code
+* priority_code
+* assigned_user_id nullable
+* related_contact_id nullable
+* related_agency_id nullable
+* related_booking_id nullable
+* opened_at
+* resolved_at
+
+### `mail_messages`
+
+* id
+* thread_id
+* direction_code
+  (`inbound`, `outbound`, `internal_note`, `system_event`)
+* sender_user_id nullable
+* sender_email
+* subject
+* body_text
+* body_html
+* sent_at
+* received_at
+
+### `outbound_quality_scores`
+
+* id
+* mail_message_id
+* overall_score
+* tone_score
+* clarity_score
+* completeness_score
+* actionability_score
+* brand_alignment_score
+* risk_score
+* reviewed_status_code
+
+---
+
+# DOMAIN 14 — MARKETING AUTOMATION
+
+---
+
+## 19.1 Tabele
+
+1. `campaigns`
+2. `campaign_versions`
+3. `campaign_channels`
+4. `campaign_status_history`
+5. `audiences`
+6. `audience_filters`
+7. `audience_members`
+8. `audience_refresh_jobs`
+9. `content_blocks`
+10. `content_block_versions`
+11. `content_templates`
+12. `email_campaigns`
+13. `email_campaign_recipients`
+14. `email_campaign_events`
+15. `social_campaigns`
+16. `social_posts`
+17. `social_post_channels`
+18. `social_post_events`
+19. `messaging_campaigns`
+20. `messaging_campaign_recipients`
+21. `messaging_delivery_events`
+22. `automation_flows`
+23. `automation_triggers`
+24. `automation_conditions`
+25. `automation_actions`
+26. `automation_run_logs`
+27. `marketing_consents`
+28. `channel_preferences`
+29. `campaign_revenue_attribution`
+30. `campaign_click_events`
+31. `campaign_open_events`
+32. `campaign_conversion_events`
+33. `approval_workflows`
+34. `approval_steps`
+35. `marketing_audit_events`
+
+---
+
+# DOMAIN 15 — AI GOVERNANCE & USAGE
+
+---
+
+## 20.1 Tabele
+
+1. `ai_models`
+2. `ai_model_routes`
+3. `ai_prompt_templates`
+4. `ai_prompt_versions`
+5. `ai_usage_logs`
+6. `ai_usage_budgets`
+7. `ai_budget_consumption`
+8. `ai_action_policies`
+9. `ai_action_approvals`
+10. `ai_sessions`
+11. `ai_messages`
+12. `ai_tool_calls`
+13. `ai_summaries`
+14. `ai_classification_results`
+15. `ai_quality_scores`
+16. `ai_execution_requests`
+17. `ai_execution_results`
+18. `ai_cache_entries`
+19. `ai_token_alerts`
+20. `ai_audit_events`
+
+## 20.2 Ključne tabele
+
+### `ai_usage_budgets`
+
+* id
+* scope_type_code
+  (`module`, `user`, `team`, `brand`, `channel`)
+* scope_ref_id
+* budget_period_code
+  (`daily`, `weekly`, `monthly`)
+* token_limit
+* hard_stop_enabled
+
+### `ai_model_routes`
+
+* id
+* task_type_code
+* preferred_model_id
+* fallback_model_id
+* route_mode_code
+  (`deterministic_first`, `small_model_first`, `full_llm`)
+* max_tokens_per_call
+
+---
+
+# DOMAIN 16 — WEBSITE / CMS / SEO
+
+---
+
+## 21.1 Tabele
+
+1. `pages`
+2. `page_versions`
+3. `page_templates`
+4. `page_blocks`
+5. `page_block_versions`
+6. `slugs`
+7. `redirects`
+8. `seo_metadata`
+9. `seo_keyword_groups`
+10. `seo_keywords`
+11. `seo_page_targets`
+12. `seo_internal_links`
+13. `schema_markups`
+14. `faq_entries`
+15. `landing_pages`
+16. `landing_page_offer_links`
+17. `destination_content`
+18. `hotel_content`
+19. `tour_content`
+20. `charter_content`
+21. `blog_articles`
+22. `blog_article_versions`
+23. `public_navigation_items`
+24. `website_publications`
+25. `website_snapshots`
+26. `website_api_logs`
+27. `public_search_index_entries`
+28. `ai_seo_suggestions`
+29. `content_performance_snapshots`
+30. `website_audit_events`
+
+---
+
+# DOMAIN 17 — AUDIT / MONITORING / CONTROL PLANE
+
+---
+
+## 22.1 Tabele
+
+1. `audit_logs`
+2. `entity_change_logs`
+3. `feature_flags`
+4. `system_settings`
+5. `integration_health_checks`
+6. `integration_error_logs`
+7. `queue_jobs`
+8. `queue_job_attempts`
+9. `queue_dead_letters`
+10. `event_bus_events`
+11. `event_subscriptions`
+12. `event_delivery_attempts`
+13. `api_request_logs`
+14. `api_rate_limit_events`
+15. `monitoring_alerts`
+16. `monitoring_incidents`
+17. `incident_comments`
+18. `scheduled_jobs`
+19. `scheduled_job_runs`
+20. `import_jobs`
+21. `import_job_rows`
+22. `export_jobs`
+23. `export_job_rows`
+24. `sandbox_test_runs`
+25. `control_plane_audit_events`
+
+---
+
+# 23. API STRUKTURA — HIGH LEVEL
+
+Sada, posle baze, mora se odrediti i API boundary.
+
+## 23.1 API slojevi
+
+### Public Website API
+
+* destinations
+* hotels
+* tours
+* charters
+* offers
+* SEO content
+* search
+
+### B2C API
+
+* auth
+* search
+* offers
+* bookings
+* payments
+* documents
+* chatbot
+
+### B2B API
+
+* auth
+* search
+* bookings
+* agency finance
+* statements
+* documents
+* chatbot
+
+### Internal Admin API
+
+* CRM
+* contracts
+* pricing
+* reservation ops
+* finance
+* rooming
+* mail
+* marketing
+* AI control
+* monitoring
+
+### Integration API
+
+* supplier adapters
+* payment callbacks
+* messaging callbacks
+* website publishing
+
+---
+
+# 24. EVENT SYSTEM
+
+Za ovakav sistem event-driven sloj je obavezan.
+
+## 24.1 Glavne event kategorije
+
+### Booking events
+
+* `booking.created`
+* `booking.updated`
+* `booking.confirmed`
+* `booking.cancelled`
+* `booking_item.confirmed`
+* `booking_item.failed`
+
+### Finance events
+
+* `payment.authorized`
+* `payment.captured`
+* `receivable.created`
+* `payable.created`
+* `refund.processed`
+
+### Operations events
+
+* `rooming.updated`
+* `rooming.sent`
+* `manifest.generated`
+* `dispatch.sent`
+
+### Communication events
+
+* `mail.received`
+* `mail.sent`
+* `thread.assigned`
+* `quality_review.created`
+
+### Marketing events
+
+* `campaign.sent`
+* `campaign.clicked`
+* `campaign.converted`
+
+### AI events
+
+* `ai.requested`
+* `ai.executed`
+* `ai.budget.threshold_reached`
+
+### Website events
+
+* `page.published`
+* `offer.published`
+* `seo.updated`
+
+---
+
+# 25. MESSAGE QUEUE / JOB LOGIKA
+
+Sve teže operacije moraju ići kroz queue.
+
+## 25.1 Queue tipovi
+
+### sync-critical
+
+* payment confirmation
+* supplier booking hold
+* booking revalidation
+
+### async-operational
+
+* document generation
+* email send
+* rooming export
+* manifest export
+
+### async-marketing
+
+* campaign send
+* segment refresh
+* analytics attribution
+
+### async-ai
+
+* thread summary
+* quality scoring
+* SEO generation
+* campaign draft generation
+
+### async-publishing
+
+* website refresh
+* offer publication
+* sitemap rebuild
+
+---
+
+# 26. KAKO DALJE
+
+Sada smo uradili **pravu master strukturu Detailed Data Model-a** i postavili osnovu za svih ~580 tabela.
+
+Da bismo išli do “najsitnijeg detalja”, sledeći koraci moraju ići strogo redom:
+
+## korak 1
+
+**razrada domena po domena do nivoa kolona, FK, unique indexa, enum vrednosti i poslovnih pravila**
+
+## korak 2
+
+**API endpoint specifikacija po domenu**
+
+## korak 3
+
+**event schema + queue workers + retry policy**
+
+## korak 4
+
+**database deployment strategija**
+
+* schemas
+* partitioning
+* indexes
+* materialized views
+* reporting views
+
+---
+
+# 27. Šta sada predlažem
+
+Idemo dalje redom, kako ste tražili.
+
+Sledeći najlogičniji i najispravniji korak je:
+
+## **A. Detailed relational model — Domain 1 do 5**
+
+sa:
+
+* kolonama
+* PK/FK
+* unique pravilima
+* enum vrednostima
+* primerima relacija
+
+To je pravi početak “najsitnijeg detalja”.
+
+Posle toga nastavljamo:
+
+* Domain 6 do 10
+* Domain 11 do 17
+* pa API
+* pa event system
+* pa queue logic
+
+Krećem od toga u sledećem koraku.

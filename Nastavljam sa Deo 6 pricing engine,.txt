@@ -1,0 +1,1182 @@
+Nastavljam sa **Deo 6: pricing engine, commercial rules i package ranking logika**.
+
+Ovo je jedan od najvažnijih delova cele platforme, zato što ovde sistem odlučuje:
+
+* koliko će šta koštati
+* kolika je vaša zarada
+* koja cena ide B2C kupcu
+* koja cena ide B2B agentu
+* koji supplier ima prioritet
+* koji paket ide više u rezultatima
+
+Ovaj deo praktično spaja:
+
+* poslovna pravila
+* prodajnu strategiju
+* tehničku implementaciju
+
+---
+
+# TEHNIČKI DOKUMENT ZA RAZVOJNI TIM
+
+## Unified Travel Booking Platform
+
+### Deo 6 — Pricing engine, commercial rules i package ranking logika
+
+# 1. Svrha pricing engine-a
+
+Pricing engine mora da radi 6 stvari:
+
+1. preuzme net cenu iz dobavljačkog izvora
+2. doda takse, fees i doplate
+3. primeni markup i commission logiku
+4. primeni promocije i bundle discount
+5. vrati finalnu sell cenu po kanalu
+6. sačuva pricing snapshot za booking i audit
+
+Pricing engine mora biti:
+
+* centralizovan
+* dosledan
+* auditabilan
+* fleksibilan za B2C i B2B
+
+---
+
+# 2. Ključni komercijalni pojmovi
+
+## 2.1 Net cena
+
+Cena koju vraća supplier ili ugovorena cena.
+
+## 2.2 Gross / sell cena
+
+Cena koju vidi kupac ili agent.
+
+## 2.3 Markup
+
+Razlika koju sistem dodaje na net cenu.
+
+## 2.4 Commission
+
+Iznos koji ide agentu ili prodajnom kanalu.
+
+## 2.5 Service fee
+
+Dodatna operativna taksa.
+
+## 2.6 Bundle discount
+
+Popust koji se daje kada se više proizvoda prodaje zajedno.
+
+## 2.7 Promo discount
+
+Akcijski ili kuponski popust.
+
+---
+
+# 3. Opšta pricing formula
+
+## 3.1 Osnovna formula po item-u
+
+```text
+sell_price =
+net_price
++ taxes
++ fees
++ markup
+- item_discount
+```
+
+## 3.2 Formula za paket
+
+```text
+package_total =
+sum(all_item_sell_prices)
+- bundle_discount
+- promo_discount
+```
+
+## 3.3 Formula za B2B model sa provizijom
+
+```text
+agent_sell_price =
+net_price
++ platform_markup
+```
+
+```text
+agent_commission =
+agent_sell_price * commission_rate
+```
+
+Ili, alternativno, ako agent radi sa net cenom:
+
+```text
+agent_net_price = net_price + agreed_markup
+```
+
+---
+
+# 4. Komponente cene po proizvodu
+
+# 4.1 Hotel
+
+Hotel cena može sadržati:
+
+* room net price
+* board supplement
+* occupancy supplement
+* child supplement
+* city tax
+* package-only discount
+* supplier hotel promo
+
+Formula:
+
+```text
+hotel_total =
+room_net
++ board_supplement
++ occupancy_supplement
++ child_supplement
++ city_tax
++ markup
+- discount
+```
+
+---
+
+# 4.2 Flight
+
+Flight cena može sadržati:
+
+* base fare
+* airport taxes
+* fuel surcharge
+* baggage fee
+* seat fee
+* ticketing fee
+* markup
+
+Formula:
+
+```text
+flight_total =
+base_fare
++ airport_taxes
++ surcharges
++ ancillaries
++ markup
+```
+
+---
+
+# 4.3 Transfer
+
+Može sadržati:
+
+* base transfer price
+* night surcharge
+* extra luggage fee
+* child seat fee
+* markup
+
+---
+
+# 4.4 Activity / ticket
+
+Može sadržati:
+
+* ticket net
+* booking fee
+* markup
+* channel promo
+
+---
+
+# 4.5 Cruise
+
+Može sadržati:
+
+* cabin fare
+* port taxes
+* gratuities
+* cabin supplement
+* promo
+* markup
+
+Formula:
+
+```text
+cruise_total =
+cabin_fare
++ port_taxes
++ gratuities
++ supplements
++ markup
+- promo
+```
+
+---
+
+# 5. Pricing engine slojevi
+
+Preporučujem da pricing engine radi kroz slojeve.
+
+## 5.1 Base price layer
+
+Učitava:
+
+* supplier net price
+* taxes
+* included fees
+
+## 5.2 Adjustment layer
+
+Dodaje:
+
+* occupancy doplate
+* ancillaries
+* local taxes
+* operational fees
+
+## 5.3 Commercial layer
+
+Primena:
+
+* markup
+* commission
+* channel-specific rules
+* agent-specific rules
+
+## 5.4 Discount layer
+
+Primena:
+
+* promo code
+* package discount
+* supplier promo
+* campaign discount
+
+## 5.5 Finalization layer
+
+Računa:
+
+* final sell price
+* net margin
+* commission
+* displayed savings
+* rounded price
+
+---
+
+# 6. Pricing scope i prioritet pravila
+
+Pravila se mogu definisati na više nivoa.
+
+## 6.1 Nivoi pravila
+
+* global
+* sales channel
+* product type
+* supplier
+* destination
+* hotel / airline / cruise line
+* agent / agent group
+* booking date
+* travel date
+* campaign
+
+## 6.2 Predloženi redosled prioriteta
+
+Od najspecifičnijeg ka najopštijem:
+
+```text
+agent-specific
+→ product-specific + destination-specific
+→ supplier-specific
+→ channel-specific
+→ global default
+```
+
+## 6.3 Primer
+
+Ako postoji:
+
+* global hotel markup 10%
+* B2C hotel markup 12%
+* Paris hotel markup 15%
+* Agent X hotel markup 8%
+
+onda sistem za Agent X u Parizu mora primeniti ono pravilo koje je definisano kao najprioritetnije za taj scope.
+
+---
+
+# 7. Tipovi commercial pravila
+
+## 7.1 Markup pravila
+
+Podržati:
+
+* fixed amount
+* percentage
+* stepped markup
+* minimum markup
+* maximum markup
+
+### Primer percentage
+
+```text
+hotel markup = 12%
+```
+
+### Primer fixed
+
+```text
+flight service fee = 15 EUR
+```
+
+### Primer stepped
+
+```text
+if net_price < 100 → markup 15 EUR
+if net_price 100–500 → markup 10%
+if net_price > 500 → markup 7%
+```
+
+---
+
+## 7.2 Commission pravila
+
+Podržati:
+
+* fixed commission
+* percentage commission
+* tiered commission
+
+### Primer
+
+```text
+agent commission = 7%
+```
+
+ili:
+
+```text
+if monthly_sales > 50,000 EUR → commission 9%
+else commission 6%
+```
+
+---
+
+## 7.3 Discount pravila
+
+Podržati:
+
+* fixed discount
+* percent discount
+* package-only discount
+* destination promo
+* supplier promo
+* promo code
+* early booking
+* last minute
+
+---
+
+## 7.4 Fee pravila
+
+Podržati:
+
+* booking fee
+* ticketing fee
+* handling fee
+* service fee
+* bank transfer fee
+* offline processing fee
+
+---
+
+# 8. B2C pricing logika
+
+B2C kanal treba da koristi:
+
+* prikazanu finalnu cenu
+* market-oriented markup
+* promocije
+* package savings komunikaciju
+
+## 8.1 B2C formula
+
+```text
+b2c_sell =
+supplier_net
++ taxes
++ b2c_markup
++ fees
+- b2c_discounts
+```
+
+## 8.2 B2C UI prikaz
+
+Kupcu treba prikazati:
+
+* total price
+* currency
+* savings if package
+* optionally “from” price
+* cancellation condition
+* included/not included
+
+Ne treba nužno prikazivati:
+
+* net price
+* internu maržu
+* supplier info ako to nije deo poslovnog modela
+
+---
+
+# 9. B2B pricing logika
+
+B2B kanal može raditi na više modela.
+
+## 9.1 Model A — bruto cena + agent provizija
+
+Agent vidi prodajnu cenu i svoju proviziju.
+
+## 9.2 Model B — net cena za agenta
+
+Agent dobija net cenu i sam dodaje svoj markup.
+
+## 9.3 Model C — ugovoreni markup model
+
+Platforma vraća cenu već prilagođenu agentu.
+
+Za vas je najpraktičnije da sistem podrži bar:
+
+* B2C gross model
+* B2B contracted sell/net model
+
+---
+
+## 9.4 B2B formula primer
+
+```text
+b2b_price =
+supplier_net
++ b2b_markup
+- agent_discount
+```
+
+ili:
+
+```text
+b2b_sell =
+supplier_net
++ markup
+```
+
+```text
+agent_commission =
+b2b_sell * commission_rate
+```
+
+---
+
+# 10. Payment-dependent pricing pravila
+
+Ponekad cena može zavisiti od metode plaćanja.
+
+Podržati:
+
+* dodatni fee za bank transfer
+* popust za full prepayment
+* agent credit fee ili bez fee
+* rate lock fee
+
+Primer:
+
+```text
+if payment_method = bank_transfer:
+   add 5 EUR admin fee
+```
+
+---
+
+# 11. Occupancy pricing logika
+
+Vrlo važno za hotel i cruise.
+
+## 11.1 Hotel occupancy
+
+Sistem mora da podrži:
+
+* 1/1
+* 1/2
+* 2/2
+* 2+1
+* 2+2
+* 3rd adult supplement
+* 4th adult supplement
+* child discount
+* infant free / supplement
+
+## 11.2 Cruise occupancy
+
+Podržati:
+
+* double occupancy default
+* single supplement
+* 3rd/4th pax rates
+* child promotions
+
+Ovo nije samo sadržaj, već deo pricing engine-a.
+
+---
+
+# 12. Channel-specific i brand-specific pravila
+
+Ako platforma kasnije ima više brendova ili white-label portala, pricing mora podržati:
+
+* channel = b2c
+* channel = b2b
+* channel = internal
+* brand = Olympic
+* brand = white-label partner
+
+Formula treba da može vratiti različitu sell cenu za isti supplier net, zavisno od kanala i brenda.
+
+---
+
+# 13. Currency logika
+
+Sistem mora jasno da razdvoji:
+
+* source currency
+* pricing currency
+* display currency
+* settlement currency
+
+## 13.1 Pravila
+
+* net se može dobiti u EUR
+* prikaz može biti u RSD ili EUR
+* booking snapshot mora čuvati kurs
+* invoice mora koristiti pravilo knjigovodstva
+
+Za MVP preporuka:
+
+* core pricing u jednoj bazičnoj valuti, npr. EUR
+* display conversion kao zaseban sloj
+
+---
+
+# 14. Rounding pravila
+
+Obavezno definisati rounding pravila.
+
+Primeri:
+
+* round half up na 2 decimale
+* price display round na pun euro
+* psychological pricing: 999 umesto 1003
+
+Za travel sistem preporučujem:
+
+* storage bez agresivnog zaokruživanja
+* display sa definisanim rounding pravilom
+* invoice sa tačnom računskom vrednošću
+
+---
+
+# 15. Pricing snapshot
+
+Ovo je obavezno.
+
+Kada korisnik ide ka bookingu, sistem mora da sačuva:
+
+* net price per item
+* markup per item
+* taxes
+* fees
+* applied discounts
+* final totals
+* currency
+* exchange rate if any
+* applied rule IDs
+
+To služi za:
+
+* audit
+* refund
+* dispute handling
+* invoice doslednost
+* support analizu
+
+---
+
+# 16. Price breakdown model
+
+Svaki offer i booking treba da ima jasan breakdown.
+
+## 16.1 Primer po item-u
+
+```json
+{
+  "itemType": "hotel",
+  "netPrice": 800,
+  "taxes": 40,
+  "fees": 0,
+  "markup": 120,
+  "discount": 40,
+  "sellPrice": 920,
+  "currency": "EUR"
+}
+```
+
+## 16.2 Paket breakdown
+
+```json
+{
+  "itemsTotal": 1620,
+  "bundleDiscount": 60,
+  "promoDiscount": 20,
+  "finalTotal": 1540,
+  "currency": "EUR"
+}
+```
+
+---
+
+# 17. Package discount engine
+
+Paketni popusti ne treba da budu ad hoc, već sistemski.
+
+## 17.1 Tipovi package discount-a
+
+* hotel + flight only
+* hotel + flight + transfer
+* hotel + flight + activity
+* cruise + flight
+* destination-specific package discount
+* supplier-funded package discount
+* opaque hotel package discount
+
+## 17.2 Pravila
+
+Popust može biti:
+
+* fixed amount
+* percent
+* conditional based on total basket
+* conditional based on product combination
+
+## 17.3 Primeri
+
+### Primer 1
+
+```text
+if package contains hotel + flight:
+   discount = 5%
+```
+
+### Primer 2
+
+```text
+if destination = PAR and package contains theme_park_activity:
+   discount = 30 EUR
+```
+
+### Primer 3
+
+```text
+if hotel supplier = direct_contract and sold with flight:
+   apply hidden hotel discount
+```
+
+---
+
+# 18. Savings logika
+
+Ako prikazujete “ušteda”, sistem mora jasno znati kako se računa.
+
+## 18.1 Predlog formule
+
+```text
+savings =
+(sum of standalone comparable sell prices)
+- package sell price
+```
+
+## 18.2 Pravilo
+
+Standalone comparison mora biti baziran na:
+
+* istoj sobi
+* istim datumima
+* istoj tarifi
+* istim passenger parametrima
+
+Inače je savings prikaz netačan.
+
+---
+
+# 19. Supplier priority rules
+
+Pricing i ranking zavise i od prioriteta supplier-a.
+
+## 19.1 Zašto
+
+Isti hotel ili sličan flight može doći iz više izvora.
+
+Sistem mora znati:
+
+* koga prvo koristi
+* koga koristi za bolju cenu
+* koga koristi za veću maržu
+* koga koristi za veću pouzdanost
+
+## 19.2 Faktori prioriteta
+
+* niža net cena
+* bolja marža
+* bolja stopa potvrde
+* bolja brzina API-ja
+* dopušten package usage
+* manji cancellation risk
+
+## 19.3 Supplier score formula primer
+
+```text
+supplier_offer_score =
+0.35 * margin_score
++ 0.25 * price_score
++ 0.20 * reliability_score
++ 0.10 * response_time_score
++ 0.10 * package_eligibility_score
+```
+
+---
+
+# 20. Repricing pravila
+
+Ne treba svaki proizvod isto tretirati.
+
+## 20.1 Reprice obavezan za:
+
+* flights
+* packages
+* cruise packages
+* volatile hotel inventory
+
+## 20.2 Reprice može biti lakši za:
+
+* static hotel contracts
+* offline items
+* unapred ugovorene transfere
+
+## 20.3 Reprice rezultat mora vratiti:
+
+* da li je cena promenjena
+* da li je item i dalje dostupan
+* da li je rule set promenjen
+* novi expiresAt
+
+---
+
+# 21. Price change handling
+
+Ako se cena promeni između search i booking faze, sistem mora imati pravilo.
+
+## 21.1 Price up
+
+Ako je nova cena viša:
+
+* stop booking flow
+* prikaži novu cenu
+* traži potvrdu korisnika
+
+## 21.2 Price down
+
+Ako je nova cena niža:
+
+* može automatski ažurirati snapshot
+* ili prikazati korisniku novu bolju cenu
+
+Za UX je najbolje:
+
+* oba slučaja jasno prikazati
+
+---
+
+# 22. Package ranking engine — svrha
+
+Posle pricing-a, sistem mora odlučiti koji paketi izlaze prvi.
+
+Cilj nije samo najniža cena, već balans:
+
+* verovatnoća kupovine
+* kvalitet ponude
+* profitabilnost
+* operativna pouzdanost
+
+---
+
+# 23. Ranking signali
+
+Predlažem sledeće glavne signale.
+
+## 23.1 Price competitiveness
+
+Koliko je cena dobra u poređenju sa sličnim opcijama.
+
+## 23.2 Margin score
+
+Koliko je paket profitabilan.
+
+## 23.3 Product quality score
+
+Ocena hotela, itinerary kvaliteta, cruise kvaliteta, activity popularnosti.
+
+## 23.4 Convenience score
+
+Direktan let, dobro vreme dolaska, jednostavan transfer, dobar check-in alignment.
+
+## 23.5 Flexibility score
+
+Refundable opcije, bolji cancel uslovi.
+
+## 23.6 Supplier reliability
+
+Koliko je supplier stabilan.
+
+## 23.7 Conversion likelihood
+
+Istorijski performance sličnih paketa.
+
+## 23.8 Popularity score
+
+CTR, bookings, add-to-cart ponašanje.
+
+---
+
+# 24. Predlog ranking formule
+
+```text
+package_score =
+0.22 * conversion_score
++ 0.18 * margin_score
++ 0.16 * quality_score
++ 0.14 * price_competitiveness
++ 0.10 * convenience_score
++ 0.08 * flexibility_score
++ 0.07 * supplier_reliability
++ 0.05 * popularity_score
+```
+
+Težine će business tim kasnije fino podešavati.
+
+---
+
+# 25. Price competitiveness score
+
+Treba da meri koliko je paket dobar u odnosu na tržište unutar istog rezultata.
+
+Primer:
+
+* najniža cena dobija viši score
+* ali ne automatski 100, jer možda ima loš hotel ili loš flight
+
+Formula može biti relativna prema median/lowest u rezultatu.
+
+---
+
+# 26. Margin-aware ranking
+
+Ne preporučujem da prikaz bude isključivo po marži, ali marža mora biti signal.
+
+## Pravilo
+
+Paket sa neznatno višom cenom, ali mnogo boljom maržom i istim kvalitetom, može dobiti viši rang.
+
+Ovo je veoma važno za poslovni rezultat platforme.
+
+---
+
+# 27. Diversity pravila u ranking-u
+
+Bez diversity logike rezultat može biti loš:
+
+* 10 skoro istih paketa iz istog hotela
+* sve opcije iste aviokompanije
+* nema raspona cena
+
+## Predlažem ograničenja
+
+* max 3 paketa po hotelu u top 20
+* max 5 paketa po airline family
+* obavezna zastupljenost price band-ova:
+
+  * budget
+  * mid
+  * premium
+
+---
+
+# 28. Business override pravila
+
+Business tim mora moći da utiče na ranking.
+
+## Podržati:
+
+* boost određeni hotel
+* boost određeni supplier
+* demote supplier sa lošom podrškom
+* boost promoted destination
+* boost package with contracted hotel
+* freeze ranking rule for campaign period
+
+## Važno
+
+Svi override-i moraju biti auditovani i vremenski ograničeni.
+
+---
+
+# 29. Badge engine
+
+Pored rankinga, sistem može da dodeljuje badge-eve.
+
+## Primeri
+
+* Best value
+* Family favorite
+* Recommended
+* Top seller
+* Flexible option
+* Lowest price
+* Premium stay
+* Popular cruise
+
+Badge ne menja cenu, ali menja konverziju.
+
+---
+
+# 30. Package ranking po kanalu
+
+B2C i B2B ne moraju imati isti ranking.
+
+## B2C
+
+Više teži:
+
+* konverziji
+* price competitiveness
+* vizuelnoj atraktivnosti
+* popularnosti
+
+## B2B
+
+Više teži:
+
+* agent zaradi
+* pouzdanosti
+* kreditnim pravilima
+* lakom servising-u
+
+---
+
+# 31. Cruise ranking specifičnosti
+
+Kod krstarenja dodatni signali mogu biti:
+
+* cruise line strength
+* ship popularity
+* cabin desirability
+* itinerary attractiveness
+* port convenience
+* included package value
+
+---
+
+# 32. AI-ready ranking dizajn
+
+Čak i ako MVP ne koristi pravi ML model, treba čuvati feature-e za kasniju optimizaciju.
+
+Čuvati po offer-u:
+
+* CTR
+* viewed count
+* booked count
+* reprice success rate
+* supplier confirm rate
+* cancellation rate
+* margin
+* price delta to cheapest
+* hotel rating
+* flight stops
+* transfer type
+* activity category
+
+To kasnije omogućava machine learning scoring bez redizajna baze.
+
+---
+
+# 33. Pricing engine API logika
+
+Predlažem interne servisne funkcije tipa:
+
+## 33.1 Calculate item price
+
+Ulaz:
+
+* item data
+* channel
+* user/agent
+* travel dates
+* supplier
+* destination
+
+Izlaz:
+
+* net
+* markup
+* fees
+* discounts
+* final sell
+
+## 33.2 Calculate package price
+
+Ulaz:
+
+* lista item-a
+* channel
+* promo code
+* package rules
+
+Izlaz:
+
+* item breakdown
+* bundle discount
+* final total
+* savings
+* margin
+
+## 33.3 Reprice snapshot
+
+Ulaz:
+
+* offer id
+* current channel context
+
+Izlaz:
+
+* updated snapshot
+* price changed yes/no
+* expiration
+
+---
+
+# 34. Primer internog pricing output-a
+
+```json
+{
+  "channel": "b2c",
+  "currency": "EUR",
+  "items": [
+    {
+      "type": "flight",
+      "net": 250,
+      "taxes": 40,
+      "fees": 10,
+      "markup": 20,
+      "discount": 0,
+      "sell": 320
+    },
+    {
+      "type": "hotel",
+      "net": 760,
+      "taxes": 40,
+      "fees": 0,
+      "markup": 140,
+      "discount": 40,
+      "sell": 900
+    }
+  ],
+  "bundleDiscount": 60,
+  "promoDiscount": 20,
+  "finalTotal": 1140,
+  "totalMargin": 160,
+  "displaySavings": 90
+}
+```
+
+---
+
+# 35. Minimalna pravila za MVP
+
+Za prvu verziju preporučujem da pricing engine obavezno podrži:
+
+* markup fixed i percent
+* commission fixed i percent
+* pricing po kanalu
+* pricing po product type
+* pricing po supplieru
+* pricing po destinaciji
+* package discount fixed i percent
+* promo code basic
+* pricing snapshot
+* reprice endpoint
+* ranking po: cena + kvalitet + marža
+
+---
+
+# 36. Šta može u kasnijim fazama
+
+Kasnije se može dodati:
+
+* tiered commission
+* dynamic demand-based markup
+* ML-based ranking
+* personalized pricing
+* loyalty pricing
+* competitor-aware price intelligence
+* automated campaign optimization
+
+---
+
+# 37. Zaključak ovog dela
+
+Sa ovim delom sada imate definisano:
+
+* kako se formira cena
+* kako rade markup i commission
+* kako se razlikuju B2C i B2B cene
+* kako radi package discount
+* kako se čuva pricing snapshot
+* kako se biraju i rangiraju paketi
+* kako business tim utiče na pricing i ranking
+
+To je direktna osnova za:
+
+* pricing service
+* package engine
+* admin pricing screens
+* B2B commercial model
+
+---
+
+# 38. Sledeći deo
+
+Sledeći logičan korak je **Deo 7: supplier integration architecture, mapping, normalization i error handling**.
+
+Tu ću detaljno razraditi:
+
+* kako povezati hotel / flight / transfer / activity / cruise dobavljače
+* normalization layer
+* content mapping
+* inventory mapping
+* timeout / retry pravila
+* supplier fallback logiku
+* greške i monitoring
+* test / sandbox / production model

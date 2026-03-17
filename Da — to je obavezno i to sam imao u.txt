@@ -1,0 +1,451 @@
+Da — to je **obavezno** i to sam imao u vidu, ali sada je dobro da to eksplicitno izdvojimo, jer to više nije samo OTA/booking engine, već **kompletan operativni travel ERP / mid-office + booking platforma**.
+
+Drugim rečima: ono što smo do sada definisali jeste jaka osnova, ali za vaš realan rad treba dodati još jedan veliki sloj:
+
+* **operativa rezervacija**
+* **finansijsko povezivanje**
+* **dobavljački obračuni**
+* **rooming i alokacije**
+* **kapaciteti**
+* **operativne liste**
+* **ručni i poluautomatski workflow**
+
+I da, to apsolutno treba da postoji.
+
+## Šta sam suštinski predvideo, a šta sada treba formalno proširiti
+
+Do sada smo već obuhvatili:
+
+* booking core
+* booking items
+* suppliers
+* payments
+* documents
+* agent/B2B sloj
+* offline item logiku
+* manual override
+* cancellations
+* invoices/proforma
+* supplier references
+
+Ali za vaš model poslovanja treba još jasnije definisati **backoffice operativni modul** sa sledećim celinama:
+
+## 1. Centralna forma jedne rezervacije
+
+To mora biti **glavni radni ekran sistema**.
+
+Ne samo “booking details”, nego **operativni dosije rezervacije**.
+
+Ta forma treba da objedini sve u vezi jedne rezervacije, bilo da je:
+
+* ručno uneta
+* importovana iz API konekcije
+* nastala iz online bookinga
+* kreirana od strane B2B agenta
+* nastala kao grupna rezervacija
+* kombinovana online + offline
+
+### Ta forma mora imati sekcije:
+
+#### A. Osnovni podaci rezervacije
+
+* booking reference
+* interni broj rezervacije
+* eksterni broj rezervacije
+* kanal prodaje
+* tip rezervacije
+* status rezervacije
+* datum kreiranja
+* datum putovanja
+* operater zadužen za rezervaciju
+* agent / prodajno mesto
+* source system
+
+#### B. Putnik / nosilac rezervacije
+
+* ime i prezime
+* kontakt
+* državljanstvo
+* broj pasoša
+* datum rođenja
+* napomene
+* više putnika / passenger list
+
+#### C. Stavke rezervacije
+
+* hotel
+* let
+* transfer
+* izlet
+* karta
+* osiguranje
+* viza
+* cruise
+* ručno dodate stavke
+
+Za svaku stavku:
+
+* supplier
+* supplier reference
+* status
+* datum od/do
+* količina
+* neto
+* prodajna cena
+* provizija
+* napomena
+
+#### D. Operativni deo
+
+* rooming status
+* raspodela po sobama
+* posebni zahtevi
+* meal plan
+* check-in/check-out
+* transfer details
+* pickup time
+* excursion date/time
+* manifest / passenger export status
+* voucher status
+* issue flags
+
+#### E. Finansijski deo
+
+* ukupna cena
+* neto trošak
+* prodajna cena
+* marža
+* provizija
+* uplate kupca
+* isplate dobavljačima
+* stanje duga / potraživanja
+* rokovi dospeća
+* refund status
+* kreditne note
+* valuta i kurs
+
+#### F. Dokumenti
+
+* voucher
+* račun
+* profaktura
+* rooming lista
+* avio karta
+* transfer lista
+* potvrda rezervacije
+* ugovor / prilog
+* ručno uploadovani dokumenti
+
+#### G. Interna komunikacija i evidencija
+
+* note operatera
+* status history
+* audit log
+* zadaci
+* check-lista za operaciju
+* interna upozorenja
+
+To je ekran bez kog vaš sistem nije realno upotrebljiv.
+
+---
+
+## 2. Finansijski modul
+
+Da, i to mora postojati kao zaseban, ali čvrsto povezan modul.
+
+Ne samo “payments”, nego pravi **travel finance / settlement sloj**.
+
+## Mora da povezuje:
+
+### prema rezervaciji
+
+* koliko je kupac uplatio
+* koliko još duguje
+* da li je račun zatvoren
+* da li postoji avans
+* da li postoji povraćaj
+
+### prema dobavljaču
+
+* koliki je net trošak
+* da li je supplier fakturisao
+* da li je isplaćen
+* rok plaćanja
+* broj fakture dobavljača
+* stanje obaveze
+* valuta dobavljača
+
+### prema agentu
+
+* provizija
+* agent debt / receivable
+* kreditni limit
+* agent invoice
+* settlement status
+
+## Finansijski modul treba da ima najmanje ove celine:
+
+### A. Customer receivables
+
+* rezervacije sa neizmirenim dugom
+* pregled uplata
+* rate plaćanja
+* dospeća
+
+### B. Supplier payables
+
+* obaveze prema hotelima
+* obaveze prema DMC-ima
+* obaveze prema avio dobavljačima
+* rokovi i status isplate
+
+### C. Cashflow po rezervaciji
+
+Za svaku rezervaciju:
+
+* prodajna vrednost
+* net cost
+* primljeno
+* plaćeno
+* preostalo
+* marža
+* realized / unrealized margin
+
+### D. Dokumenti i knjiženje
+
+* izlazni račun
+* ulazna faktura
+* knjižno odobrenje
+* refund dokument
+* avansni račun
+* povezivanje sa ERP-om / računovodstvom kasnije
+
+---
+
+## 3. Modul operativnih listi
+
+Da, i to je apsolutno potrebno.
+
+To treba da bude poseban operativni ekran ili skup ekrana.
+
+## Operativne liste treba da obuhvate:
+
+### A. Arrival list
+
+* dolasci po datumu
+* hotel
+* broj gostiju
+* rooming status
+* transfer status
+* voucher status
+
+### B. Departure list
+
+* odlasci po datumu
+* check-out status
+* transfer prema aerodromu
+* open balance warning
+
+### C. In-house list
+
+* gosti trenutno na destinaciji / u objektu
+* kontakt
+* posebni zahtevi
+* problemi na terenu
+
+### D. Excursion list
+
+* datum izleta
+* broj putnika
+* pickup points
+* vodič / supplier
+* status potvrde
+
+### E. Transfer list
+
+* pickup time
+* route
+* broj putnika
+* vozilo
+* supplier
+* status
+
+### F. Visa / documentation list
+
+* ko nema dostavljena dokumenta
+* pasoši
+* osiguranje
+* posebne napomene
+
+---
+
+## 4. Rooming modul
+
+Da, i on treba da postoji kao poseban podmodul rezervacije i grupa.
+
+Posebno ako radite:
+
+* grupna putovanja
+* allotment
+* više soba
+* kompleksne raspodele putnika
+
+## Rooming modul mora da podrži:
+
+* raspodelu putnika po sobama
+* room type
+* occupancy
+* 1/1, 1/2, 2/2, 2+1, 2+2 itd.
+* third/fourth adult logic
+* child age validation
+* sobniing eksport
+* rooming list PDF / Excel
+* izmene rooming-a kroz vreme
+* status: draft / sent / confirmed
+
+## Rooming prikaz treba da ima:
+
+* leva strana: lista putnika
+* desna strana: sobe / kapaciteti
+* drag and drop ili structured assignment
+* upozorenja za over-occupancy ili nevalidan mix
+
+---
+
+## 5. Pregled kapaciteta
+
+Da, i to je veoma važan operativni sloj.
+
+Ovo može imati dva modela:
+
+### A. Supplier-driven capacity
+
+Ako kapacitet dolazi preko API-ja / allotment feed-a:
+
+* raspoložive sobe
+* stop sale
+* min stay
+* CTA/CTD
+* release period
+
+### B. Interni capacity control
+
+Za vaše ugovorene kapacitete i allotmente:
+
+* hotel allotment
+* sobe po terminu
+* prodato
+* slobodno
+* release date
+* opcije / tentative booking
+* warning kad se kapacitet približava kraju
+
+## Kapacitet modul treba da prikaže:
+
+* po hotelu
+* po datumu
+* po sobnom tipu
+* po allotment-u
+* po partneru / dobavljaču
+
+To je posebno važno ako želite ozbiljan contracting i kontrolu prodaje.
+
+---
+
+## 6. Grupne rezervacije i operativa
+
+Ovo nismo još eksplicitno razradili, a mislim da vam je vrlo bitno.
+
+Treba da postoji i **Group / Series / Allotment modul** za:
+
+* grupe
+* garantovane polaske
+* allotment sobe
+* serije termina
+* rooming na nivou grupe
+* operativne liste po grupi
+* zbirni finansijski pregled
+
+---
+
+## 7. Ručni unos i povezivanje sa konekcijama
+
+Da, to takođe mora biti predviđeno.
+
+Jedna rezervacija može biti:
+
+* potpuno ručna
+* potpuno API
+* mešovita
+
+Na primer:
+
+* hotel preko API-ja
+* transfer ručno
+* izlet ručno
+* doplata ručno
+* račun ručno
+* supplier reference naknadno
+
+Zato sistem mora imati:
+
+* **source = api / manual / hybrid**
+* jasnu oznaku po stavci
+* mogućnost ručnog override-a
+* povezivanje stavki sa dobavljačem čak i kad nisu automatski povučene
+
+---
+
+## 8. Šta bih sada formalno dodao u arhitekturu
+
+Da odgovorim direktno: **da, to treba da bude deo sistema**, i sada bih ga formalno razdvojio u još 5 modula:
+
+### 1. Reservation Operations Module
+
+centralna forma rezervacije, taskovi, checkliste, operativa
+
+### 2. Finance & Settlement Module
+
+uplate, isplate, supplier payables, agent receivables, marža
+
+### 3. Rooming & Occupancy Module
+
+sobe, raspodela putnika, rooming liste, allotment
+
+### 4. Operational Lists Module
+
+arrival, departure, transfer, excursion, in-house, docs pending
+
+### 5. Capacity & Allotment Control Module
+
+kapaciteti, allotment, release, sold/free, warning sistemi
+
+---
+
+## 9. Moj iskren odgovor
+
+Dakle:
+
+* **osnova jeste bila predviđena**
+* ali **nije još bila razrađena do nivoa koji vama realno treba za svakodnevni rad**
+* i da, za vaš biznis to mora biti **podjednako važno kao i search/booking engine**
+
+Jer vi ne gradite samo:
+
+* online prodajni sajt
+
+nego:
+
+* **operativni sistem za turističku agenciju i distribuciju**
+
+A to je mnogo šire.
+
+## 10. Šta predlažem sada
+
+Najpametnije je da sledeće uradimo ovim redom:
+
+**Prvo:** da vam razradim **centralnu formu rezervacije** kao glavni operativni ekran
+**Drugo:** da posle toga razradim **finansijski modul**
+**Treće:** operativne liste, rooming i kapacitete
+
+To je najbolji redosled jer je forma rezervacije centar svega.

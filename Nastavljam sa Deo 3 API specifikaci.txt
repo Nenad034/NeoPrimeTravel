@@ -1,0 +1,1347 @@
+Nastavljam sa **Deo 3: API specifikacija po modulima**.
+
+Ovaj deo je pisan tako da može da posluži kao osnova za:
+
+* backend tim
+* frontend tim
+* integracioni tim
+* eksternu IT agenciju
+
+Cilj je da se jasno odvoji:
+
+* **search**
+* **offer**
+* **reprice**
+* **booking**
+* **post-booking**
+
+---
+
+# TEHNIČKI DOKUMENT ZA RAZVOJNI TIM
+
+## Unified Travel Booking Platform
+
+### Deo 3 — API specifikacija po modulima
+
+# 1. API principi
+
+Preporučeni stil:
+
+* REST API za većinu operacija
+* JSON request/response
+* JWT autentifikacija za korisničke i admin endpointe
+* idempotency za booking i payment operacije
+* versioning kroz `/api/v1/...`
+
+## 1.1 Opšta pravila
+
+### Response format
+
+Preporučeni standardni envelope:
+
+```json
+{
+  "success": true,
+  "data": {},
+  "meta": {},
+  "errors": []
+}
+```
+
+### Error format
+
+```json
+{
+  "success": false,
+  "data": null,
+  "errors": [
+    {
+      "code": "OFFER_EXPIRED",
+      "message": "Offer has expired."
+    }
+  ]
+}
+```
+
+### Headers
+
+* `Authorization: Bearer <token>`
+* `X-Request-Id`
+* `Idempotency-Key` za booking i payment POST pozive
+
+---
+
+# 2. AUTH MODUL
+
+# 2.1 Registracija korisnika
+
+```http
+POST /api/v1/auth/register
+```
+
+## Request
+
+```json
+{
+  "email": "user@example.com",
+  "password": "StrongPassword123",
+  "firstName": "Nenad",
+  "lastName": "Petrovic",
+  "phone": "+381601234567"
+}
+```
+
+## Response
+
+```json
+{
+  "success": true,
+  "data": {
+    "userId": 1001,
+    "email": "user@example.com"
+  }
+}
+```
+
+---
+
+# 2.2 Login
+
+```http
+POST /api/v1/auth/login
+```
+
+## Request
+
+```json
+{
+  "email": "user@example.com",
+  "password": "StrongPassword123"
+}
+```
+
+## Response
+
+```json
+{
+  "success": true,
+  "data": {
+    "accessToken": "jwt_token",
+    "refreshToken": "refresh_token",
+    "user": {
+      "id": 1001,
+      "email": "user@example.com",
+      "roles": ["customer"]
+    }
+  }
+}
+```
+
+---
+
+# 2.3 Refresh token
+
+```http
+POST /api/v1/auth/refresh
+```
+
+---
+
+# 2.4 Logout
+
+```http
+POST /api/v1/auth/logout
+```
+
+---
+
+# 3. USER / TRAVELER MODUL
+
+# 3.1 Get current user profile
+
+```http
+GET /api/v1/me
+```
+
+## Response
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1001,
+    "email": "user@example.com",
+    "firstName": "Nenad",
+    "lastName": "Petrovic",
+    "roles": ["customer"]
+  }
+}
+```
+
+---
+
+# 3.2 Update profile
+
+```http
+PUT /api/v1/me
+```
+
+---
+
+# 3.3 List saved travelers
+
+```http
+GET /api/v1/me/travelers
+```
+
+---
+
+# 3.4 Create traveler
+
+```http
+POST /api/v1/me/travelers
+```
+
+## Request
+
+```json
+{
+  "travelerType": "adult",
+  "firstName": "Nenad",
+  "lastName": "Petrovic",
+  "dateOfBirth": "1985-06-01",
+  "nationality": "RS",
+  "passportNumber": "123456789"
+}
+```
+
+---
+
+# 3.5 Update traveler
+
+```http
+PUT /api/v1/me/travelers/{travelerId}
+```
+
+---
+
+# 3.6 Delete traveler
+
+```http
+DELETE /api/v1/me/travelers/{travelerId}
+```
+
+---
+
+# 4. DESTINATION / REFERENCE MODUL
+
+# 4.1 Destination autocomplete
+
+```http
+GET /api/v1/reference/destinations/autocomplete?q=par
+```
+
+## Response
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 501,
+      "code": "PAR",
+      "name": "Paris",
+      "countryCode": "FR",
+      "type": "city"
+    }
+  ]
+}
+```
+
+---
+
+# 4.2 Airport autocomplete
+
+```http
+GET /api/v1/reference/airports/autocomplete?q=bel
+```
+
+---
+
+# 5. HOTEL API
+
+# 5.1 Hotel search
+
+```http
+POST /api/v1/hotels/search
+```
+
+## Request
+
+```json
+{
+  "destinationCode": "PAR",
+  "checkIn": "2026-07-10",
+  "checkOut": "2026-07-15",
+  "rooms": [
+    {
+      "adults": 2,
+      "children": 1,
+      "childAges": [8]
+    }
+  ],
+  "salesChannel": "b2c",
+  "filters": {
+    "stars": [4, 5],
+    "boardTypes": ["BB", "HB"],
+    "priceFrom": 0,
+    "priceTo": 2000
+  },
+  "sort": {
+    "by": "recommended",
+    "direction": "desc"
+  }
+}
+```
+
+## Response
+
+```json
+{
+  "success": true,
+  "data": {
+    "searchRequestId": 90001,
+    "results": [
+      {
+        "hotelId": 1201,
+        "hotelName": "Disneyland Hotel",
+        "destinationCode": "PAR",
+        "stars": 5,
+        "priceFrom": 920,
+        "currency": "EUR",
+        "boardType": "BB",
+        "refundable": false,
+        "thumbnailUrl": "https://cdn.example.com/h1.jpg"
+      }
+    ]
+  }
+}
+```
+
+---
+
+# 5.2 Hotel details
+
+```http
+GET /api/v1/hotels/{hotelId}
+```
+
+## Response
+
+Vraća:
+
+* opis
+* slike
+* sadržaje
+* check-in/out
+* map koordinate
+
+---
+
+# 5.3 Hotel availability / offers
+
+```http
+POST /api/v1/hotels/{hotelId}/offers
+```
+
+## Request
+
+```json
+{
+  "checkIn": "2026-07-10",
+  "checkOut": "2026-07-15",
+  "rooms": [
+    {
+      "adults": 2,
+      "children": 1,
+      "childAges": [8]
+    }
+  ],
+  "salesChannel": "b2c"
+}
+```
+
+## Response
+
+```json
+{
+  "success": true,
+  "data": {
+    "offers": [
+      {
+        "offerId": 300101,
+        "offerType": "hotel_only",
+        "roomName": "Superior Room",
+        "boardType": "BB",
+        "cancelPolicy": "non_refundable",
+        "price": {
+          "total": 920,
+          "currency": "EUR"
+        },
+        "expiresAt": "2026-03-16T08:20:00Z"
+      }
+    ]
+  }
+}
+```
+
+---
+
+# 6. FLIGHT API
+
+# 6.1 Flight search
+
+```http
+POST /api/v1/flights/search
+```
+
+## Request
+
+```json
+{
+  "origin": "BEG",
+  "destination": "CDG",
+  "departureDate": "2026-07-10",
+  "returnDate": "2026-07-15",
+  "cabinClass": "economy",
+  "passengers": {
+    "adults": 2,
+    "children": 1,
+    "infants": 0
+  },
+  "salesChannel": "b2c"
+}
+```
+
+## Response
+
+```json
+{
+  "success": true,
+  "data": {
+    "searchRequestId": 91001,
+    "results": [
+      {
+        "flightId": 7001,
+        "offerId": 310501,
+        "summary": "BEG-CDG roundtrip",
+        "airline": "Air France",
+        "stops": 0,
+        "departureTime": "2026-07-10T06:40:00",
+        "arrivalTime": "2026-07-10T09:15:00",
+        "returnDepartureTime": "2026-07-15T18:20:00",
+        "returnArrivalTime": "2026-07-15T20:45:00",
+        "fareFamily": "Economy Basic",
+        "baggageIncluded": false,
+        "price": {
+          "total": 310,
+          "currency": "EUR"
+        }
+      }
+    ]
+  }
+}
+```
+
+---
+
+# 6.2 Flight details
+
+```http
+GET /api/v1/flights/offers/{offerId}
+```
+
+Vraća:
+
+* segmente
+* tarifu
+* baggage
+* fare rules
+* refundable/changeable info
+
+---
+
+# 7. TRANSFER API
+
+# 7.1 Transfer search
+
+```http
+POST /api/v1/transfers/search
+```
+
+## Request
+
+```json
+{
+  "pickupType": "airport",
+  "pickupCode": "CDG",
+  "dropoffType": "hotel",
+  "dropoffCode": "HTL-1201",
+  "serviceDate": "2026-07-10",
+  "serviceTime": "09:30:00",
+  "passengers": 3,
+  "bags": 3,
+  "salesChannel": "b2c"
+}
+```
+
+## Response
+
+```json
+{
+  "success": true,
+  "data": {
+    "searchRequestId": 92001,
+    "results": [
+      {
+        "transferOfferId": 41011,
+        "serviceType": "private",
+        "vehicleType": "Sedan",
+        "capacity": 3,
+        "price": {
+          "total": 85,
+          "currency": "EUR"
+        },
+        "expiresAt": "2026-03-16T08:20:00Z"
+      }
+    ]
+  }
+}
+```
+
+---
+
+# 8. ACTIVITY / TICKET API
+
+# 8.1 Activity search
+
+```http
+POST /api/v1/activities/search
+```
+
+## Request
+
+```json
+{
+  "destinationCode": "PAR",
+  "dateFrom": "2026-07-10",
+  "dateTo": "2026-07-15",
+  "passengers": {
+    "adults": 2,
+    "children": 1
+  },
+  "categories": ["theme_park", "museum"],
+  "salesChannel": "b2c"
+}
+```
+
+## Response
+
+```json
+{
+  "success": true,
+  "data": {
+    "searchRequestId": 93001,
+    "results": [
+      {
+        "activityId": 5101,
+        "activityOfferId": 510101,
+        "name": "Disneyland 1-Day Ticket",
+        "date": "2026-07-12",
+        "category": "theme_park",
+        "price": {
+          "total": 130,
+          "currency": "EUR"
+        }
+      }
+    ]
+  }
+}
+```
+
+---
+
+# 8.2 Activity details
+
+```http
+GET /api/v1/activities/offers/{activityOfferId}
+```
+
+---
+
+# 9. CRUISE API
+
+# 9.1 Cruise search
+
+```http
+POST /api/v1/cruises/search
+```
+
+## Request
+
+```json
+{
+  "departurePortCode": "GENOVA",
+  "departureDateFrom": "2026-08-01",
+  "departureDateTo": "2026-08-31",
+  "nightsFrom": 5,
+  "nightsTo": 8,
+  "passengers": {
+    "adults": 2,
+    "children": 0
+  },
+  "salesChannel": "b2c"
+}
+```
+
+## Response
+
+```json
+{
+  "success": true,
+  "data": {
+    "searchRequestId": 94001,
+    "results": [
+      {
+        "cruiseId": 6101,
+        "cruiseOfferId": 610101,
+        "cruiseLine": "MSC Cruises",
+        "ship": "MSC Fantasia",
+        "departureDate": "2026-08-05",
+        "nights": 7,
+        "cabinType": "Balcony",
+        "price": {
+          "total": 1240,
+          "currency": "EUR"
+        }
+      }
+    ]
+  }
+}
+```
+
+---
+
+# 9.2 Cruise details
+
+```http
+GET /api/v1/cruises/offers/{cruiseOfferId}
+```
+
+Vraća:
+
+* itinerary days
+* ship info
+* cabin details
+* taxes i gratuities
+* cancellation uslove
+
+---
+
+# 10. PACKAGE API
+
+Ovo je najvažniji modul za dynamic packaging.
+
+# 10.1 Package search
+
+```http
+POST /api/v1/packages/search
+```
+
+## Request
+
+```json
+{
+  "origin": "BEG",
+  "destinationCode": "PAR",
+  "departureDate": "2026-07-10",
+  "returnDate": "2026-07-15",
+  "rooms": [
+    {
+      "adults": 2,
+      "children": 1,
+      "childAges": [8]
+    }
+  ],
+  "requiredProducts": ["flight", "hotel"],
+  "optionalProducts": ["transfer", "activity"],
+  "salesChannel": "b2c",
+  "filters": {
+    "hotelStars": [4, 5],
+    "boardTypes": ["BB"],
+    "budgetMax": 2000
+  },
+  "sort": {
+    "by": "recommended",
+    "direction": "desc"
+  }
+}
+```
+
+## Response
+
+```json
+{
+  "success": true,
+  "data": {
+    "searchRequestId": 95001,
+    "packages": [
+      {
+        "offerId": 800001,
+        "offerType": "hotel_flight_transfer_activity_package",
+        "title": "Paris Family Package",
+        "items": [
+          {
+            "type": "flight",
+            "summary": "BEG-CDG roundtrip"
+          },
+          {
+            "type": "hotel",
+            "name": "Disneyland Hotel",
+            "boardType": "BB"
+          },
+          {
+            "type": "transfer",
+            "serviceType": "private"
+          },
+          {
+            "type": "activity",
+            "name": "Disneyland 1-Day Ticket"
+          }
+        ],
+        "price": {
+          "total": 1540,
+          "currency": "EUR",
+          "savings": 110
+        },
+        "score": 88.6,
+        "expiresAt": "2026-03-16T08:20:00Z",
+        "badges": ["Best value", "Family favorite"]
+      }
+    ]
+  }
+}
+```
+
+---
+
+# 10.2 Package details
+
+```http
+GET /api/v1/packages/offers/{offerId}
+```
+
+Vraća pun prikaz:
+
+* sve stavke
+* pravila i uslove
+* price breakdown
+* passenger compatibility
+* cancellation uslove po itemu
+
+---
+
+# 10.3 Replace package item
+
+Za scenario kada korisnik menja transfer ili izlet.
+
+```http
+POST /api/v1/packages/offers/{offerId}/replace-item
+```
+
+## Request
+
+```json
+{
+  "itemType": "transfer",
+  "newOfferId": 41099
+}
+```
+
+---
+
+# 10.4 Reprice package offer
+
+Pre bookinga mora da postoji poseban endpoint.
+
+```http
+POST /api/v1/packages/offers/{offerId}/reprice
+```
+
+## Request
+
+```json
+{
+  "salesChannel": "b2c"
+}
+```
+
+## Response
+
+```json
+{
+  "success": true,
+  "data": {
+    "pricingSnapshotId": 99001,
+    "offerId": 800001,
+    "status": "valid",
+    "price": {
+      "total": 1560,
+      "currency": "EUR"
+    },
+    "priceChanged": true,
+    "previousPrice": 1540,
+    "expiresAt": "2026-03-16T08:35:00Z"
+  }
+}
+```
+
+---
+
+# 11. OFFER API
+
+Pošto svi proizvodi rade kroz “offer” koncept, korisno je imati zajednički offer sloj.
+
+# 11.1 Get generic offer
+
+```http
+GET /api/v1/offers/{offerId}
+```
+
+Vraća:
+
+* offer type
+* items
+* prices
+* status
+* expiration
+
+---
+
+# 11.2 Reprice generic offer
+
+```http
+POST /api/v1/offers/{offerId}/reprice
+```
+
+---
+
+# 12. BOOKING API
+
+Booking nikada ne treba raditi direktno iz search rezultata, već iz:
+
+* `offerId`
+* i po mogućstvu `pricingSnapshotId`
+
+# 12.1 Create booking from offer
+
+```http
+POST /api/v1/bookings
+```
+
+## Request
+
+```json
+{
+  "offerId": 800001,
+  "pricingSnapshotId": 99001,
+  "salesChannel": "b2c",
+  "contact": {
+    "email": "user@example.com",
+    "phone": "+381601234567"
+  },
+  "travelers": [
+    {
+      "travelerType": "adult",
+      "firstName": "Nenad",
+      "lastName": "Petrovic",
+      "dateOfBirth": "1985-06-01",
+      "nationality": "RS",
+      "passportNumber": "123456789"
+    },
+    {
+      "travelerType": "adult",
+      "firstName": "Ana",
+      "lastName": "Petrovic",
+      "dateOfBirth": "1987-02-14"
+    },
+    {
+      "travelerType": "child",
+      "firstName": "Luka",
+      "lastName": "Petrovic",
+      "dateOfBirth": "2018-04-10"
+    }
+  ],
+  "paymentMethod": "card"
+}
+```
+
+## Response
+
+```json
+{
+  "success": true,
+  "data": {
+    "bookingId": 1200001,
+    "reference": "OT-2026-000145",
+    "status": "awaiting_payment",
+    "amount": {
+      "total": 1560,
+      "currency": "EUR"
+    }
+  }
+}
+```
+
+---
+
+# 12.2 Get booking details
+
+```http
+GET /api/v1/bookings/{bookingId}
+```
+
+## Response
+
+Vraća:
+
+* master booking
+* booking items
+* travelers
+* payment status
+* documents
+* cancellation options
+
+---
+
+# 12.3 List my bookings
+
+```http
+GET /api/v1/me/bookings
+```
+
+---
+
+# 12.4 Cancel booking
+
+```http
+POST /api/v1/bookings/{bookingId}/cancel
+```
+
+## Request
+
+```json
+{
+  "reason": "Customer request"
+}
+```
+
+---
+
+# 12.5 Cancel single booking item
+
+```http
+POST /api/v1/bookings/{bookingId}/items/{bookingItemId}/cancel
+```
+
+Ovo je važno za multi-product rezervacije.
+
+---
+
+# 13. PAYMENT API
+
+# 13.1 Create payment intent
+
+```http
+POST /api/v1/bookings/{bookingId}/payments/intent
+```
+
+## Request
+
+```json
+{
+  "paymentMethod": "card"
+}
+```
+
+## Response
+
+```json
+{
+  "success": true,
+  "data": {
+    "paymentIntentId": "pi_123456",
+    "clientSecret": "secret_123456",
+    "amount": 1560,
+    "currency": "EUR"
+  }
+}
+```
+
+---
+
+# 13.2 Confirm payment
+
+```http
+POST /api/v1/bookings/{bookingId}/payments/confirm
+```
+
+---
+
+# 13.3 Payment status
+
+```http
+GET /api/v1/bookings/{bookingId}/payments
+```
+
+---
+
+# 13.4 Refund request
+
+```http
+POST /api/v1/bookings/{bookingId}/refunds
+```
+
+---
+
+# 14. DOCUMENT API
+
+# 14.1 List booking documents
+
+```http
+GET /api/v1/bookings/{bookingId}/documents
+```
+
+## Response
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "documentId": 70001,
+      "documentType": "voucher",
+      "fileName": "hotel-voucher.pdf",
+      "downloadUrl": "/api/v1/documents/70001/download"
+    },
+    {
+      "documentId": 70002,
+      "documentType": "itinerary",
+      "fileName": "master-itinerary.pdf",
+      "downloadUrl": "/api/v1/documents/70002/download"
+    }
+  ]
+}
+```
+
+---
+
+# 14.2 Download document
+
+```http
+GET /api/v1/documents/{documentId}/download
+```
+
+---
+
+# 15. B2B / AGENT API
+
+# 15.1 Agent dashboard
+
+```http
+GET /api/v1/agent/dashboard
+```
+
+Vraća:
+
+* agent profile
+* credit usage
+* open bookings
+* sales summary
+
+---
+
+# 15.2 Agent create booking
+
+Isti booking endpoint može da se koristi, ali sa:
+
+* `salesChannel = b2b`
+* agent autentifikacijom
+* posebnim pricing pravilima
+
+---
+
+# 15.3 Agent booking list
+
+```http
+GET /api/v1/agent/bookings
+```
+
+---
+
+# 15.4 Agent proforma invoice
+
+```http
+POST /api/v1/agent/bookings/{bookingId}/proforma
+```
+
+---
+
+# 16. ADMIN API
+
+# 16.1 Supplier list
+
+```http
+GET /api/v1/admin/suppliers
+```
+
+---
+
+# 16.2 Create / update supplier
+
+```http
+POST /api/v1/admin/suppliers
+PUT /api/v1/admin/suppliers/{supplierId}
+```
+
+---
+
+# 16.3 Pricing rules
+
+```http
+GET /api/v1/admin/pricing-rules
+POST /api/v1/admin/pricing-rules
+PUT /api/v1/admin/pricing-rules/{ruleId}
+```
+
+## Primer request-a
+
+```json
+{
+  "name": "B2C Paris hotel markup",
+  "salesChannel": "b2c",
+  "productType": "hotel",
+  "destinationId": 501,
+  "markupType": "percent",
+  "markupValue": 12.5,
+  "validFrom": "2026-01-01",
+  "validTo": "2026-12-31",
+  "isActive": true
+}
+```
+
+---
+
+# 16.4 Booking management
+
+```http
+GET /api/v1/admin/bookings
+GET /api/v1/admin/bookings/{bookingId}
+POST /api/v1/admin/bookings/{bookingId}/manual-status
+```
+
+---
+
+# 16.5 Audit logs
+
+```http
+GET /api/v1/admin/audit-logs
+```
+
+---
+
+# 17. WEBHOOK API
+
+Za payment i supplier callback-ove.
+
+# 17.1 Payment webhook
+
+```http
+POST /api/v1/webhooks/payments/{providerCode}
+```
+
+# 17.2 Supplier webhook
+
+```http
+POST /api/v1/webhooks/suppliers/{supplierCode}
+```
+
+Primeri upotrebe:
+
+* payment success/failure
+* airline schedule change
+* hotel booking confirmation
+* cruise update
+
+---
+
+# 18. STATUS TOK API LOGIKA
+
+# 18.1 Offer lifecycle
+
+Tipični statusi:
+
+* `available`
+* `expired`
+* `repriced`
+* `booked`
+* `unavailable`
+
+# 18.2 Booking lifecycle
+
+* `pending`
+* `awaiting_payment`
+* `processing`
+* `confirmed`
+* `partially_confirmed`
+* `failed`
+* `cancelled`
+* `refunded`
+
+# 18.3 Booking item lifecycle
+
+* `new`
+* `revalidated`
+* `reserved`
+* `ticketed`
+* `confirmed`
+* `cancel_requested`
+* `cancelled`
+* `failed`
+
+---
+
+# 19. VAŽNA PRAVILA IZMEĐU SEARCH, OFFER, REPRICE I BOOKING FAZE
+
+## Search
+
+Služi samo za inicijalni prikaz opcija.
+
+## Offer
+
+Predstavlja konkretnu opciju spremnu za izbor.
+
+## Reprice
+
+Obavezna faza pre bookinga za volatilne proizvode.
+
+## Booking
+
+Radi se samo iz validnog offer-a ili pricing snapshot-a.
+
+To znači da frontend ne sme:
+
+* direktno da rezerviše iz search liste
+* da preskače reprice za package i flight scenarije
+
+---
+
+# 20. IDEMPOTENCY PRAVILA
+
+Obavezno za:
+
+* `POST /bookings`
+* `POST /payments/intent`
+* `POST /payments/confirm`
+* `POST /cancel`
+
+Razlog:
+
+* sprečavanje duplih rezervacija
+* sprečavanje duplog charge-a
+
+---
+
+# 21. MINIMALNA VALIDACIONA PRAVILA
+
+## Kod search-a
+
+* check-out > check-in
+* povratni datum > odlazni datum
+* passenger counts validni
+* child ages obavezni kad postoje deca
+
+## Kod booking-a
+
+* travelers count mora odgovarati offer-u
+* traveler type mora odgovarati passenger mix-u
+* payment method mora biti dozvoljen za kanal
+* pricing snapshot ne sme biti istekao
+
+---
+
+# 22. PREPORUČENI RESPONSE META PODACI
+
+Za search i listing endpoint-e korisno je vraćati:
+
+```json
+{
+  "meta": {
+    "searchRequestId": 95001,
+    "currency": "EUR",
+    "resultCount": 20,
+    "expiresAt": "2026-03-16T08:20:00Z"
+  }
+}
+```
+
+---
+
+# 23. ŠTA TREBA FRONTEND TIM DA ZNA
+
+Frontend mora biti organizovan po fazama:
+
+1. pretraga
+2. results
+3. details
+4. offer selection
+5. traveler form
+6. payment
+7. confirmation
+8. my bookings / servicing
+
+Posebno:
+
+* paketni flow mora podržati itemized prikaz
+* repricing state mora biti jasno prikazan korisniku
+* dokumenta moraju biti dostupna po booking-u i po stavci
+
+---
+
+# 24. ZAKLJUČAK OVOG DELA
+
+Sa ovim delom sada imate:
+
+* funkcionalni scope
+* detaljnu bazu
+* API strukturu
+
+To je već dobra osnova da razvojni tim može da:
+
+* proceni obim
+* podeli backend servise
+* započne implementaciju
+
+---
+
+# 25. SLEDEĆI DEO
+
+Sledeći logičan korak je **Deo 4: user flow + state machine + booking orchestration logika**.
+
+Tu ću razraditi:
+
+* tačan tok po proizvodu
+* kako sistem prelazi iz stanja u stanje
+* rollback logiku
+* partial confirmation scenarije
+* multi-item rezervacije korak po korak

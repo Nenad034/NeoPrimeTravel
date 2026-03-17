@@ -1,0 +1,729 @@
+Odlično. I to je pravi sledeći korak.
+
+Sada ću napraviti **potpun i konsolidovan spisak svih modula platforme** kao **konačnu mapu sistema** — praktično **master module map / system map**.
+
+Ovo će biti dokument koji jasno pokazuje:
+
+* šta sve sistem sadrži
+* kako su moduli grupisani
+* šta je core
+* šta je operativa
+* šta je distribucija
+* šta je komunikacija
+* šta je marketing
+* šta je AI
+* šta je management sloj
+
+Tek posle toga ima smisla raditi UI, jer tek tada imamo potpunu sliku.
+
+---
+
+# MASTER SYSTEM MAP
+
+## Unified Travel Commerce, Operations & CRM Platform
+
+# 1. Glavne sistemske celine
+
+Predlažem da ceo sistem bude organizovan u **12 velikih domena**:
+
+1. **Identity, Users & Access**
+2. **CRM, Contacts & Accounts**
+3. **Products, Contracts & Inventory**
+4. **Search, Offers & Dynamic Packaging**
+5. **Booking & Reservation Operations**
+6. **Finance, Payments & Settlement**
+7. **Rooming, Capacity & Allotment**
+8. **B2B Distribution & Agent Portal**
+9. **Central Mail, Communication & Quality Control**
+10. **Marketing Automation & Campaigns**
+11. **AI Assistant, Intelligence & Automation**
+12. **Admin, Reporting, Monitoring & Platform Control**
+
+Ovo je po meni najzdravija podela.
+
+---
+
+# 2. DOMAIN 1 — Identity, Users & Access
+
+Ovo je osnova celog sistema.
+
+## Moduli:
+
+* User Management
+* Authentication
+* Authorization / Roles / Permissions
+* Team & Department Management
+* Agency User Management
+* Session & Security Control
+* Audit Identity Logs
+
+## Ključne funkcije:
+
+* login
+* SSO kasnije po potrebi
+* role-based access
+* multi-user accounts
+* agent users
+* internal users
+* mailbox permissions
+* AI permission scope
+* approval rights
+
+---
+
+# 3. DOMAIN 2 — CRM, Contacts & Accounts
+
+Ovo je centralni customer/account sloj.
+
+## Moduli:
+
+* B2C Contacts
+* B2B Agencies / Companies
+* Supplier Contacts
+* Contact 360
+* Agency 360
+* Communication Timeline
+* Tasks & Follow-ups
+* Notes & Tags
+* Customer / Agency Ownership
+
+## Ključne funkcije:
+
+* istorija kontakata
+* rezervacije po klijentu/agenciji
+* komunikacija
+* kampanje
+* zadaci
+* finansijski pregled po agenciji
+* account management
+
+---
+
+# 4. DOMAIN 3 — Products, Contracts & Inventory
+
+Ovo je product + contracting srce sistema.
+
+## Moduli:
+
+* Product Master
+* Hotel Management
+* Room Types
+* Board Plans
+* Activities / Excursions
+* Transfers
+* Cruises
+* Supplier Contracts
+* Seasons
+* Rates
+* Supplements
+* Discounts
+* Child Policies
+* Restrictions
+* Stop Sales
+* Min Stay / CTA / CTD
+* Product Content
+* Content Sync
+* Product Versioning
+
+## Ključne funkcije:
+
+* upravljanje hotelima
+* cenovnicima
+* pravilima prodaje
+* sadržajem
+* ugovorima sa dobavljačima
+
+---
+
+# 5. DOMAIN 4 — Search, Offers & Dynamic Packaging
+
+Ovo je komercijalno-pretraživački motor.
+
+## Moduli:
+
+* Destination Search
+* Hotel Search
+* Flight Search
+* Transfer Search
+* Activity Search
+* Cruise Search
+* Unified Search
+* Offer Engine
+* Repricing Engine
+* Dynamic Packaging Engine
+* Package Compatibility Engine
+* Ranking Engine
+* Search Cache
+* Offer Expiration & Snapshot Logic
+
+## Ključne funkcije:
+
+* pretraga
+* agregacija
+* deduplikacija
+* generisanje paketa
+* ponude
+* repricing
+* ranking
+
+---
+
+# 6. DOMAIN 5 — Booking & Reservation Operations
+
+Ovo je glavni operativni core sistema.
+
+## Moduli:
+
+* Booking Core
+* Booking Items
+* Reservation Dossier / Booking File
+* Passenger Management
+* Service Items Management
+* Booking Orchestration
+* Revalidation
+* Supplier Reservation Tracking
+* Reservation Status Engine
+* Reservation Timeline
+* Operational Checklist
+* Manual / Hybrid Booking Support
+* Offline Items
+* Group Bookings
+* Series / Departures
+* Reservation Notes
+
+## Ključne funkcije:
+
+* jedna rezervacija
+* više usluga
+* ručne i API rezervacije
+* puna operativna kontrola
+* group support
+* manual override
+
+---
+
+# 7. DOMAIN 6 — Finance, Payments & Settlement
+
+Ovo je travel finance sloj.
+
+## Moduli:
+
+* Payment Processing
+* Payment Providers
+* Payment Intents
+* Customer Receivables
+* Agent Receivables
+* Supplier Payables
+* Reservation Finance Summary
+* Settlement Log
+* Refund Management
+* Credit Notes
+* Finance Documents
+* Reconciliation
+* Commission Engine
+* Margin Analysis
+* Credit Limit Control
+* B2B Exposure Control
+* Financial Warnings
+
+## Ključne funkcije:
+
+* uplata
+* isplata
+* fakture
+* supplier obaveze
+* agencijski dug
+* refundi
+* marža
+* settlement
+
+---
+
+# 8. DOMAIN 7 — Rooming, Capacity & Allotment
+
+Ovo je jedan od glavnih operativnih slojeva.
+
+## Moduli:
+
+* Rooming Editor
+* Passenger-to-Room Assignment
+* Occupancy Validation
+* Rooming Export
+* Rooming Confirmation Tracking
+* Rooming Audit
+* Capacity Dashboard
+* Allotment Management
+* Release Control
+* Sold / Free Tracking
+* Overbooking Control
+* Channel Allocation
+* Group Rooming
+* Twin / Double Preferences
+* Auto Rooming Suggestions
+
+## Ključne funkcije:
+
+* sobe
+* rooming list
+* kapaciteti
+* allotment
+* release
+* sold/free pregled
+
+---
+
+# 9. DOMAIN 8 — B2B Distribution & Agent Portal
+
+Ovo je distributivni sloj.
+
+## Moduli:
+
+* Agent Accounts
+* Agency Profiles
+* B2B Search & Booking
+* Agent Pricing Rules
+* Agent Credit & Exposure
+* Agent Statements
+* Agent Documents
+* Agent Finance View
+* Agent Customer List
+* Agent Support Requests
+* Multi-user Agency Accounts
+* B2B Promotions
+* Agent Restrictions
+* Agent API Access (future-ready)
+* White-label Support (future-ready)
+
+## Ključne funkcije:
+
+* subagenti
+* agent cenovnici
+* credit limit
+* documents
+* statements
+* booking rad za partnere
+
+---
+
+# 10. DOMAIN 9 — Central Mail, Communication & Quality Control
+
+Ovo je communication operating system.
+
+## Moduli:
+
+* Central Mail Inbox
+* Shared Inboxes
+* Personal Mailboxes
+* Thread Management
+* Reply / Composer
+* Templates
+* Routing Rules
+* Unassigned Inbox
+* Linked Booking Communication
+* Linked Agency Communication
+* Attachment Management
+* CRM Communication Timeline
+* Tasks from Communication
+* Inbox Users
+* Outbound Quality Monitoring
+* Quality Review Queue
+* Manager Review Workflow
+* Best Practice Library
+* Communication Analytics
+
+## Ključne funkcije:
+
+* centralni mejlovi
+* shared inbox
+* povezivanje komunikacije sa rezervacijama
+* praćenje kvaliteta odgovora
+* AI scoring
+* timska obrada thread-ova
+
+---
+
+# 11. DOMAIN 10 — Marketing Automation & Campaigns
+
+Ovo je growth / retention / communication engine.
+
+## Moduli:
+
+* Campaign Management
+* Audiences / Segments
+* Email Campaigns
+* B2B Newsletters
+* B2C Newsletters
+* Social Publisher
+* Messaging Campaigns
+* Content Studio
+* Template Library
+* Campaign Automations
+* Approval Workflow
+* Campaign Analytics
+* Revenue Attribution
+* Consent / Opt-in Management
+* Channel Preferences
+* Content Calendar
+
+## Ključne funkcije:
+
+* newsletter
+* društvene mreže
+* Viber/WhatsApp/Telegram kampanje
+* segmentacija
+* automations
+* performance tracking
+
+---
+
+# 12. DOMAIN 11 — AI Assistant, Intelligence & Automation
+
+Ovo je inteligentni sloj sistema.
+
+## Moduli:
+
+* AI Assistant / Chat Ops
+* Ask Mode
+* Suggest Mode
+* Execute Mode
+* AI Command Center
+* AI Search Across System
+* AI Reporting Assistant
+* AI Pricing Assistant
+* AI Contract Assistant
+* AI Marketing Assistant
+* AI Communication Assistant
+* AI Summarization
+* AI Outbound Mail Scoring
+* AI Risk Detection
+* AI Recommendation Engine
+* AI Package Scoring
+* AI Conversion Prediction
+* AI Fraud Detection (future-ready)
+* AI Knowledge Extraction
+
+## Ključne funkcije:
+
+* razgovor sa sistemom
+* pretraga i analiza
+* predlozi izmena
+* kontrolisano izvršenje
+* AI ocena komunikacije
+* AI marketinški sadržaj
+* AI operativna pomoć
+
+---
+
+# 13. DOMAIN 12 — Admin, Reporting, Monitoring & Platform Control
+
+Ovo je management i platform control sloj.
+
+## Moduli:
+
+* Admin Dashboard
+* Booking Dashboard
+* Operations Dashboard
+* Finance Dashboard
+* Supplier Dashboard
+* Marketing Dashboard
+* Quality Dashboard
+* Reports
+* Exports
+* Audit Logs
+* Platform Settings
+* System Flags / Feature Flags
+* Supplier Monitoring
+* API Monitoring
+* Queue Monitoring
+* Error Monitoring
+* Security Logs
+* Data Import / Export
+* Sandbox / Test Tools
+
+## Ključne funkcije:
+
+* centralna kontrola sistema
+* monitoring
+* izveštaji
+* performanse
+* podešavanja
+* audit i bezbednost
+
+---
+
+# 14. CROSS-DOMAIN CORE SERVICES
+
+Pored poslovnih domena, sistem mora imati i tehničke core servise.
+
+## Core services:
+
+* API Gateway
+* Supplier Integration Layer
+* Normalization Layer
+* Pricing Service
+* Notification Service
+* Document Generation Service
+* File Storage Service
+* Search Cache Service
+* Event / Queue Service
+* Identity Service
+* Logging Service
+* Monitoring Service
+
+Ovo nisu “ekrani”, već infrastruktura koja drži celu platformu.
+
+---
+
+# 15. NAJVAŽNIJI MASTER ENTITETI SISTEMA
+
+Ako bismo sistem sveli na ključne entitete, to su:
+
+* User
+* Role
+* Contact
+* Agency
+* Supplier
+* Product
+* Contract
+* Rate
+* Offer
+* Booking
+* Booking Item
+* Passenger
+* Payment
+* Receivable
+* Payable
+* Room
+* Rooming Assignment
+* Allotment
+* Mail Thread
+* Mail Message
+* Campaign
+* Segment
+* Task
+* AI Action
+* Audit Log
+
+To su temelji celog modela.
+
+---
+
+# 16. GLAVNI POSLOVNI TOKOVI U CELOM SISTEMU
+
+Sistem mora podržati sledeće velike tokove:
+
+## 1. Search → Offer → Reprice → Booking
+
+komercijalni tok
+
+## 2. Reservation → Operations → Documents → Travel
+
+operativni tok
+
+## 3. Receivables → Payables → Settlement → Margin
+
+finansijski tok
+
+## 4. Product → Contract → Rates → Availability → Sale
+
+contracting tok
+
+## 5. Audience → Campaign → Delivery → Conversion
+
+marketing tok
+
+## 6. Mail → Thread → Task → Resolution
+
+communication tok
+
+## 7. Ask AI → Suggest → Approve → Execute
+
+AI tok
+
+---
+
+# 17. SYSTEM MAP PO SLOJEVIMA
+
+Da bude potpuno jasno, sistem može da se čita i po slojevima.
+
+## Sloj 1 — Commercial / Sales
+
+* Search
+* Offers
+* Packages
+* B2C Booking
+* B2B Booking
+
+## Sloj 2 — Mid Office / Operations
+
+* Reservation Dossier
+* Operational Lists
+* Rooming
+* Capacity
+* Documents
+
+## Sloj 3 — Finance
+
+* Receivables
+* Payables
+* Payments
+* Refunds
+* Settlement
+
+## Sloj 4 — CRM & Communication
+
+* Contacts
+* Agencies
+* Mail
+* Threads
+* Tasks
+* Communication Timeline
+
+## Sloj 5 — Marketing
+
+* Campaigns
+* Segments
+* Social
+* Messaging
+* Analytics
+
+## Sloj 6 — AI & Intelligence
+
+* AI Assistant
+* Scoring
+* Suggestions
+* Insights
+
+## Sloj 7 — Management & Control
+
+* Dashboards
+* Audit
+* Monitoring
+* Settings
+* Reports
+
+---
+
+# 18. ŠTA JE “CORE MVP”, A ŠTA JE “EXPANDED PLATFORM”
+
+Da razdvojimo realnost implementacije.
+
+## Core MVP
+
+* Users & Roles
+* CRM basic
+* Products & Contracts basic
+* Search & Offers
+* Booking Core
+* Reservation Dossier
+* Payments basic
+* Receivables/Payables basic
+* Rooming basic
+* B2B Portal basic
+* Central Mail basic
+* Documents
+* Reporting basic
+
+## Expanded Platform
+
+* Marketing Automation
+* Shared Inbox full
+* Inbox Users quality scoring
+* AI Assistant
+* Capacity dashboard advanced
+* Allotment advanced
+* Communication analytics
+* Campaign revenue attribution
+* AI-driven ranking and suggestions
+
+---
+
+# 19. MODULI KOJI SU APSOLUTNO KRITIČNI ZA VAŠ BIZNIS
+
+Po mom mišljenju, za vas su najkritičniji:
+
+1. Reservation Dossier
+2. Finance & Settlement
+3. Rooming & Capacity
+4. Product & Contracting
+5. B2B Distribution
+6. Central Mail / Communication
+7. Marketing Automation
+8. AI Assistant
+
+Jer to direktno pogađa vaš svakodnevni rad.
+
+---
+
+# 20. KONAČNA KRATKA MAPA SISTEMA
+
+Ako treba ultra-kondenzovana verzija za CTO / menadžment:
+
+## Core Business Modules
+
+* CRM
+* Products & Contracts
+* Search & Offers
+* Booking & Operations
+* Finance & Settlement
+* Rooming & Capacity
+* B2B Portal
+* Mail & Communication
+* Marketing
+* AI Assistant
+* Admin & Reporting
+
+## Core Technical Services
+
+* Supplier Integrations
+* Pricing Engine
+* Document Engine
+* Notification Engine
+* Identity & Access
+* Monitoring & Audit
+* Queue / Events
+* Storage & Search Cache
+
+---
+
+# 21. Zaključak
+
+Sada imamo **konačnu mapu cele platforme**.
+
+Ovo više nije samo booking sistem, nego kompletan:
+
+## **Travel Commerce + Operations + Finance + CRM + Marketing + AI Ecosystem**
+
+I sada, po prvi put, imamo stabilnu osnovu da pređemo na sledeći korak kako treba.
+
+---
+
+# 22. Sledeći pravi korak
+
+Sada je logično da pređemo na **UI / Design System i ključne ekrane**, jer sada tačno znamo:
+
+* koje module sistem ima
+* koji su glavni ekrani
+* koje informacije moraju biti prikazane
+* kako da dizajn sistem bude dosledan kroz celu platformu
+
+Sledeće bih radio ovim redom:
+
+### 1. Master UI / Design System
+
+### 2. Global layout system
+
+### 3. Ključni ekrani:
+
+* Dashboard
+* Reservation Dossier
+* Finance Workspace
+* Operational Lists
+* Rooming & Capacity
+* B2B Portal
+* Shared Inbox
+* Inbox Users
+* Marketing Workspace
+* AI Command Center
+
+To je sada pravi trenutak da krenemo sa UI.

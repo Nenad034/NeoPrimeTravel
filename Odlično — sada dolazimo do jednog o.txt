@@ -1,0 +1,580 @@
+Odlično — sada dolazimo do jednog od **najkritičnijih modula cele platforme**: **Product & Contracting modul**.
+Ovo je modul gde se upravlja:
+
+* hotelima
+* ugovorima sa dobavljačima
+* cenovnicima
+* sezonama
+* doplatama i popustima
+* stop-sale pravilima
+* minimum stay pravilima
+* allotmentima
+
+Drugim rečima, ovo je **sistem koji upravlja inventory-jem i cenama** koje se kasnije koriste u:
+
+* pretrazi
+* paketiranju
+* rezervacijama
+* finansijama
+* operativi
+
+---
+
+# 1. Svrha Product & Contracting modula
+
+Ovaj modul mora omogućiti:
+
+1. upravljanje hotelima i drugim proizvodima
+2. unos ugovora sa dobavljačima
+3. upravljanje cenama po sezoni
+4. upravljanje doplatama i popustima
+5. upravljanje allotmentima
+6. upravljanje pravilima prodaje
+
+Sve to mora biti fleksibilno jer u turizmu postoji ogromna varijacija.
+
+---
+
+# 2. Glavni koncept modula
+
+Predlažem sledeću strukturu:
+
+```text
+------------------------------------------------
+PRODUCT MANAGEMENT
+------------------------------------------------
+
+Products
+Contracts
+Seasons
+Rates
+Supplements
+Discounts
+Allotments
+Restrictions
+Stop Sales
+Content
+```
+
+---
+
+# 3. Product modul
+
+Product je osnovni entitet.
+
+Primeri proizvoda:
+
+* hotel
+* cruise
+* excursion
+* transfer
+* tour program
+* ticket
+* insurance
+
+Za hotel:
+
+### osnovni podaci
+
+* product id
+* name
+* destination
+* address
+* category
+* stars
+* supplier
+* latitude
+* longitude
+* description
+* facilities
+
+---
+
+# 4. Room types
+
+Hotel mora imati room types.
+
+Primer:
+
+```text
+Standard Room
+Deluxe Room
+Family Room
+Suite
+```
+
+Svaki room type mora imati:
+
+* room code
+* max occupancy
+* base occupancy
+* extra bed allowed
+* baby cot allowed
+
+---
+
+# 5. Board plans
+
+Board plan je način ishrane.
+
+Primeri:
+
+* RO (room only)
+* BB (bed & breakfast)
+* HB (half board)
+* FB (full board)
+* AI (all inclusive)
+
+Board plan mora biti povezan sa cenama i doplatama.
+
+---
+
+# 6. Contract modul
+
+Contract predstavlja ugovor sa dobavljačem.
+
+Primer:
+
+```text
+Supplier: Sea Star Hotel
+Contract period: 01.05 – 31.10
+Currency: EUR
+Market: Serbia
+```
+
+Polja ugovora:
+
+* supplier
+* product
+* contract period
+* currency
+* payment terms
+* cancellation policy
+* release period
+* notes
+
+---
+
+# 7. Seasons
+
+Cene u turizmu se menjaju po sezonama.
+
+Primer:
+
+```text
+Low season
+01.05 – 31.05
+
+Mid season
+01.06 – 30.06
+
+High season
+01.07 – 31.08
+```
+
+Svaka sezona ima:
+
+* start date
+* end date
+* season name
+* priority
+
+---
+
+# 8. Rates (cene)
+
+Rates su cene po sobi, po noći ili po osobi.
+
+Primer:
+
+```text
+Room: Deluxe
+Board: BB
+Season: High
+Price: 120 €
+```
+
+Cene mogu biti:
+
+* per room
+* per person
+* per adult
+* per child
+
+---
+
+# 9. Occupancy pricing
+
+Cena može zavisiti od occupancy.
+
+Primer:
+
+```text
+1/1 → 120 €
+1/2 → 90 €
+2/2 → 90 €
+extra adult → 70 €
+child → 50 €
+infant → free
+```
+
+Sistem mora podržati sve ove kombinacije.
+
+---
+
+# 10. Supplements
+
+Supplements su doplate.
+
+Primeri:
+
+* sea view
+* balcony
+* extra bed
+* baby cot
+* dinner supplement
+* festive dinner
+* airport transfer
+
+Primer doplate:
+
+```text
+Sea view supplement
++20 € per room per night
+```
+
+---
+
+# 11. Mandatory supplements
+
+Neke doplate su obavezne.
+
+Primer:
+
+* New Year dinner
+* Christmas dinner
+* resort fee
+* city tax
+
+Primer:
+
+```text
+Mandatory gala dinner
+31.12
+80 € per person
+```
+
+---
+
+# 12. Discounts
+
+Popusti mogu biti:
+
+* early booking
+* long stay
+* last minute
+* free nights
+* child discount
+* senior discount
+
+Primer:
+
+```text
+Early booking
+10% discount
+valid until 31.03
+```
+
+---
+
+# 13. Free nights
+
+Tipična turistička promocija.
+
+Primer:
+
+```text
+Stay 7 nights
+Pay 6 nights
+```
+
+ili
+
+```text
+Stay 10
+Pay 8
+```
+
+---
+
+# 14. Child policy
+
+Child policy je važna za hotel pricing.
+
+Primer:
+
+```text
+Child 0–2 → free
+Child 3–12 → 50%
+Child 13+ → adult
+```
+
+---
+
+# 15. Minimum stay
+
+Hotel može zahtevati minimalan broj noći.
+
+Primer:
+
+```text
+High season
+minimum stay 5 nights
+```
+
+---
+
+# 16. Stop sale
+
+Hotel može zatvoriti prodaju.
+
+Primer:
+
+```text
+Stop sale
+10–15 July
+```
+
+---
+
+# 17. CTA / CTD
+
+CTA = closed to arrival
+CTD = closed to departure
+
+Primer:
+
+```text
+CTA 01–05 August
+```
+
+Znači gost ne može početi boravak tih dana.
+
+---
+
+# 18. Release period
+
+Release je rok do kada sobe moraju biti potvrđene.
+
+Primer:
+
+```text
+Release: 7 days
+```
+
+Ako rezervacija nije potvrđena do tada:
+
+* hotel može vratiti sobu u prodaju.
+
+---
+
+# 19. Contract pricing UI
+
+UI mora biti jednostavan za operatera.
+
+Predlažem tabelarni unos:
+
+```text
+Season | Room | Board | Price
+--------------------------------
+Low    | STD  | BB    | 80
+Low    | DLX  | BB    | 100
+High   | STD  | BB    | 120
+High   | DLX  | BB    | 150
+```
+
+---
+
+# 20. Batch price editing
+
+Operater mora moći:
+
+* menjati više cena odjednom
+* kopirati sezonu
+* kopirati contract
+* import Excel
+
+---
+
+# 21. Price import
+
+Za velike hotele je važan **Excel import**.
+
+Sistem mora podržati:
+
+* upload template
+* mapiranje kolona
+* validation
+* preview
+* commit import
+
+---
+
+# 22. Content management
+
+Product modul mora imati i content deo.
+
+Podaci:
+
+* opis hotela
+* slike
+* facilities
+* room descriptions
+* SEO content
+
+---
+
+# 23. Content sync
+
+Content može dolaziti iz:
+
+* supplier API
+* manual entry
+* CMS
+* partner feed
+
+---
+
+# 24. Contract history
+
+Svaki ugovor mora imati istoriju.
+
+Primer:
+
+```text
+2025 contract
+2026 contract
+2027 contract
+```
+
+---
+
+# 25. Version control
+
+Kada se cena promeni, sistem mora zabeležiti:
+
+* ko je promenio
+* kada
+* šta je promenjeno
+
+---
+
+# 26. Contract dashboard
+
+Predlažem ekran:
+
+```text
+Hotel | Contract period | Status | Currency
+--------------------------------------------
+Sea Star | 2026 | Active | EUR
+Magnolia | 2026 | Active | EUR
+```
+
+---
+
+# 27. Contract alerts
+
+Sistem treba upozoriti kada:
+
+* contract expires soon
+* missing rates
+* missing supplements
+* invalid occupancy
+* overlapping seasons
+
+---
+
+# 28. Product search
+
+Operateri moraju brzo pronaći hotel ili proizvod.
+
+Filteri:
+
+* destination
+* supplier
+* category
+* contract status
+* season
+
+---
+
+# 29. Product hierarchy
+
+Za bolju organizaciju proizvoda:
+
+```text
+Destination
+→ Hotel
+→ Room Type
+→ Contract
+→ Rate
+```
+
+---
+
+# 30. Povezanost sa drugim modulima
+
+Product modul se koristi u:
+
+### search engine
+
+za prikaz proizvoda
+
+### pricing engine
+
+za izračunavanje cena
+
+### booking engine
+
+za rezervacije
+
+### rooming modul
+
+za raspodelu soba
+
+### operativne liste
+
+za dolaske i odlaske
+
+### finansije
+
+za net trošak
+
+---
+
+# 31. Sledeći korak
+
+Sada smo definisali:
+
+* rezervacije
+* finansije
+* operativu
+* rooming
+* kapacitete
+* contracting
+
+Preostaje još jedan veliki deo sistema koji nismo detaljno razradili:
+
+## **B2B agent portal**
+
+Tu treba definisati:
+
+* agent naloge
+* agent cenovnike
+* agent provizije
+* agent kredite
+* agent rezervacije
+* agent izvode
+* agent API pristup
+
+To je poslednji veliki modul pre nego što pređemo na **UI/CSS dizajn sistema** koji ste tražili na početku.

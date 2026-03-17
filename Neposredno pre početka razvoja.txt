@@ -1,0 +1,1006 @@
+Odlično. Sada prelazimo na **najkonkretniji deo cele dokumentacije** — ono što arhitekte rade neposredno pre početka razvoja.
+
+Ovo će imati **3 velika dela**:
+
+1️⃣ **Kompletna lista baza (≈500 tabela)** organizovana po domenima
+2️⃣ **Globalna UI Navigation mapa platforme**
+3️⃣ **UX / Design System specifikacija (Figma-ready)**
+
+Neću samo nabrojati tabele, već ću ih organizovati tačno kako bi ih **backend tim implementirao**.
+
+---
+
+# 1. KOMPLETNA STRUKTURA BAZE (≈500 tabela)
+
+Sistem je podeljen na **18 domena**.
+
+Ukupan broj tabela bi u realnoj implementaciji bio:
+
+```
+450 – 650 tabela
+```
+
+To je normalno za enterprise platformu ovog tipa.
+
+---
+
+# 1.1 IAM SCHEMA (Identity & Access)
+
+≈20 tabela
+
+```
+users
+user_profiles
+user_status_history
+roles
+permissions
+role_permissions
+user_roles
+teams
+team_members
+sessions
+api_clients
+api_keys
+api_key_usage
+password_resets
+login_attempts
+two_factor_devices
+user_preferences
+user_notifications
+audit_user_events
+security_incidents
+```
+
+---
+
+# 1.2 CRM SCHEMA
+
+≈40 tabela
+
+```
+contacts
+contact_addresses
+contact_documents
+contact_preferences
+contact_consents
+contact_tags
+contact_notes
+contact_documents
+contact_activity_log
+contact_travel_history
+
+agencies
+agency_branches
+agency_users
+agency_credit_limits
+agency_credit_history
+agency_statements
+agency_invoices
+agency_restrictions
+agency_tags
+agency_notes
+
+suppliers
+supplier_contacts
+supplier_contracts
+supplier_accounts
+supplier_documents
+supplier_bank_accounts
+supplier_tags
+supplier_notes
+```
+
+---
+
+# 1.3 PRODUCT SCHEMA
+
+≈50 tabela
+
+```
+destinations
+destination_regions
+destination_countries
+destination_translations
+destination_images
+
+products
+product_types
+product_tags
+product_images
+product_documents
+
+hotels
+hotel_chains
+hotel_brands
+hotel_images
+hotel_descriptions
+hotel_translations
+hotel_amenities
+hotel_policies
+hotel_location
+
+room_types
+room_type_images
+room_type_amenities
+
+board_types
+meal_plans
+
+airports
+ports
+transfer_points
+```
+
+---
+
+# 1.4 CONTRACTING SCHEMA
+
+≈70 tabela
+
+```
+contracts
+contract_versions
+contract_status_history
+contract_documents
+
+seasons
+season_periods
+
+rate_plans
+rate_plan_rules
+rate_plan_restrictions
+
+rate_prices
+rate_price_history
+
+supplements
+supplement_rules
+supplement_prices
+
+discounts
+discount_rules
+discount_prices
+
+allotments
+allotment_inventory
+allotment_release_rules
+allotment_history
+
+stop_sales
+stop_sale_rules
+
+occupancy_rules
+occupancy_prices
+
+pricing_conditions
+pricing_calculations
+pricing_simulations
+```
+
+---
+
+# 1.5 SEARCH SCHEMA
+
+≈30 tabela
+
+```
+search_requests
+search_sessions
+search_filters
+search_logs
+
+offer_groups
+offers
+offer_items
+offer_prices
+offer_expiration
+offer_ranking_scores
+
+offer_cache
+offer_snapshots
+
+reprice_requests
+reprice_results
+```
+
+---
+
+# 1.6 BOOKING SCHEMA
+
+≈60 tabela
+
+```
+bookings
+booking_status_history
+booking_channels
+booking_sources
+
+booking_contacts
+booking_passengers
+booking_passenger_documents
+
+booking_items
+booking_item_status_history
+booking_item_services
+
+supplier_reservations
+supplier_reservation_logs
+
+booking_notes
+booking_tags
+booking_documents
+booking_document_history
+
+booking_cancellations
+booking_cancellation_reasons
+
+booking_tasks
+booking_flags
+booking_alerts
+```
+
+---
+
+# 1.7 FINANCE SCHEMA
+
+≈60 tabela
+
+```
+payments
+payment_intents
+payment_methods
+payment_providers
+payment_transactions
+
+receivables
+receivable_status_history
+receivable_installments
+
+payables
+payable_status_history
+payable_installments
+
+refunds
+refund_requests
+refund_status_history
+
+finance_documents
+invoices
+credit_notes
+debit_notes
+
+agency_statements
+supplier_statements
+
+bank_accounts
+bank_movements
+bank_reconciliation
+
+currency_rates
+tax_rules
+tax_calculations
+```
+
+---
+
+# 1.8 OPERATIONS SCHEMA
+
+≈30 tabela
+
+```
+reservation_workspaces
+workspace_tasks
+workspace_flags
+
+operations_arrivals
+operations_departures
+operations_transfers
+operations_excursions
+
+dispatches
+dispatch_documents
+dispatch_status_history
+
+incidents
+incident_logs
+incident_resolutions
+
+alerts
+alert_rules
+alert_history
+```
+
+---
+
+# 1.9 ROOMING SCHEMA
+
+≈25 tabela
+
+```
+rooming_sets
+rooming_rooms
+rooming_passengers
+rooming_history
+
+rooming_validations
+rooming_exports
+
+capacity_snapshots
+capacity_inventory
+capacity_release_rules
+
+manifests
+manifest_passengers
+manifest_exports
+```
+
+---
+
+# 1.10 TOUR SCHEMA
+
+≈35 tabela
+
+```
+tour_programs
+tour_program_versions
+tour_program_status_history
+
+tour_itinerary_days
+tour_itinerary_services
+
+tour_departures
+tour_departure_status_history
+tour_departure_capacity
+
+tour_departure_prices
+tour_departure_discounts
+
+tour_guides
+tour_manifest
+tour_manifest_passengers
+
+tour_documents
+tour_dispatches
+```
+
+---
+
+# 1.11 CHARTER SCHEMA
+
+≈35 tabela
+
+```
+charter_seasons
+charter_routes
+charter_series
+
+charter_flights
+charter_flight_status_history
+
+seat_inventory
+seat_blocks
+seat_release_rules
+
+charter_hotel_links
+charter_package_prices
+
+charter_load_factor
+charter_alerts
+
+charter_manifests
+charter_manifest_passengers
+```
+
+---
+
+# 1.12 B2B SCHEMA
+
+≈20 tabela
+
+```
+agency_api_clients
+agency_api_keys
+agency_api_logs
+
+agency_commissions
+agency_commission_rules
+
+agency_reports
+agency_sales
+
+b2b_support_cases
+b2b_support_messages
+```
+
+---
+
+# 1.13 COMMUNICATION SCHEMA
+
+≈40 tabela
+
+```
+mailboxes
+mail_threads
+mail_messages
+mail_attachments
+
+mail_thread_status
+mail_thread_assignments
+
+mail_templates
+mail_signatures
+
+message_links
+message_flags
+
+communication_tasks
+communication_logs
+
+quality_reviews
+quality_scores
+quality_feedback
+```
+
+---
+
+# 1.14 MARKETING SCHEMA
+
+≈40 tabela
+
+```
+campaigns
+campaign_versions
+campaign_status_history
+
+audiences
+audience_segments
+audience_filters
+
+campaign_recipients
+campaign_delivery_logs
+campaign_click_logs
+
+marketing_automations
+automation_triggers
+automation_actions
+
+marketing_templates
+marketing_assets
+```
+
+---
+
+# 1.15 AI SCHEMA
+
+≈25 tabela
+
+```
+ai_sessions
+ai_requests
+ai_responses
+
+ai_usage_logs
+ai_token_usage
+ai_budget_limits
+
+ai_prompt_templates
+ai_execution_requests
+ai_execution_approvals
+
+ai_cache
+ai_training_feedback
+```
+
+---
+
+# 1.16 CMS SCHEMA
+
+≈30 tabela
+
+```
+pages
+page_versions
+page_publications
+
+page_blocks
+block_templates
+
+seo_metadata
+seo_keywords
+seo_suggestions
+
+redirects
+slugs
+sitemaps
+
+content_images
+content_assets
+```
+
+---
+
+# 1.17 CONTROL SCHEMA
+
+≈25 tabela
+
+```
+audit_logs
+api_request_logs
+feature_flags
+
+queue_jobs
+queue_dead_letters
+
+health_checks
+system_alerts
+system_incidents
+
+deployment_logs
+system_metrics
+```
+
+---
+
+# 1.18 INTEGRATION SCHEMA
+
+≈30 tabela
+
+```
+supplier_connectors
+supplier_api_logs
+supplier_payloads
+
+webhooks
+webhook_logs
+
+import_jobs
+import_results
+
+export_jobs
+export_results
+
+mapping_tables
+data_sync_logs
+```
+
+---
+
+# UKUPNO
+
+Realna procena:
+
+```
+≈480 – 600 tabela
+```
+
+što je potpuno normalno za platformu ovog obima.
+
+---
+
+# 2. GLOBALNA UI NAVIGATION MAPA
+
+Sada definišemo **glavni UI skeleton platforme**.
+
+---
+
+# 2.1 MAIN SIDEBAR
+
+```
+Dashboard
+Reservations
+Operations
+Finance
+Rooming
+Tours
+Charters
+Products
+Contracts
+CRM
+B2B
+Communication
+Marketing
+AI Assistant
+Website
+Reports
+System
+```
+
+---
+
+# 2.2 RESERVATIONS
+
+```
+All Reservations
+Reservation Workspace
+Manual Reservation
+Search Reservations
+Reservation Alerts
+```
+
+---
+
+# 2.3 OPERATIONS
+
+```
+Arrivals
+Departures
+Transfers
+Excursions
+Dispatches
+Operational Incidents
+```
+
+---
+
+# 2.4 FINANCE
+
+```
+Receivables
+Payables
+Payments
+Refunds
+Statements
+Reconciliation
+```
+
+---
+
+# 2.5 ROOMING
+
+```
+Rooming Lists
+Capacity
+Manifests
+Rooming Export
+```
+
+---
+
+# 2.6 TOURS
+
+```
+Programs
+Itineraries
+Departures
+Tour Pricing
+Tour Operations
+```
+
+---
+
+# 2.7 CHARTERS
+
+```
+Charter Seasons
+Flights
+Seat Inventory
+Hotel Links
+Charter Pricing
+Load Factor
+```
+
+---
+
+# 2.8 PRODUCTS
+
+```
+Destinations
+Hotels
+Room Types
+Amenities
+Transfers
+Excursions
+```
+
+---
+
+# 2.9 CONTRACTS
+
+```
+Supplier Contracts
+Seasons
+Rate Plans
+Supplements
+Allotments
+Stop Sales
+Pricing Rules
+```
+
+---
+
+# 2.10 CRM
+
+```
+Contacts
+Agencies
+Suppliers
+Notes
+Documents
+```
+
+---
+
+# 2.11 COMMUNICATION
+
+```
+Shared Inbox
+Inbox Users
+Threads
+Templates
+Quality Reviews
+```
+
+---
+
+# 2.12 MARKETING
+
+```
+Campaigns
+Audiences
+Automations
+Templates
+Analytics
+```
+
+---
+
+# 2.13 AI
+
+```
+Ask AI
+AI Suggestions
+Execution Requests
+AI Usage
+Token Budgets
+```
+
+---
+
+# 2.14 WEBSITE
+
+```
+Pages
+Destinations
+Hotels
+Tours
+Charters
+SEO
+Redirects
+Sitemap
+```
+
+---
+
+# 3. UX DESIGN SYSTEM
+
+Sada definišemo **UI stil platforme**.
+
+Vi ste rekli:
+
+> moderan, čist UI, drugačiji od postojećeg
+
+Predlažem stil između:
+
+```
+Linear
+Stripe Dashboard
+Notion
+Apple UI
+```
+
+---
+
+# 3.1 DESIGN PRINCIPI
+
+```
+clean
+minimal
+fast scanning
+information dense
+low visual noise
+```
+
+---
+
+# 3.2 COLOR SYSTEM
+
+Primary
+
+```
+Deep Blue
+#1A2B4B
+```
+
+Accent
+
+```
+Electric Blue
+#3A7AFE
+```
+
+Success
+
+```
+#17C964
+```
+
+Warning
+
+```
+#F5A524
+```
+
+Danger
+
+```
+#F31260
+```
+
+Background
+
+```
+#F7F9FC
+```
+
+---
+
+# 3.3 TYPOGRAPHY
+
+Primary font
+
+```
+Inter
+```
+
+Sizes
+
+```
+H1 28px
+H2 22px
+H3 18px
+Body 14px
+Caption 12px
+```
+
+---
+
+# 3.4 COMPONENTS
+
+Core components:
+
+```
+Card
+Table
+Toolbar
+Filters
+Sidebar
+Drawer
+Modal
+Badge
+Tag
+Timeline
+Activity feed
+```
+
+---
+
+# 3.5 WORKSPACE PATTERN
+
+Najvažniji UX pattern platforme.
+
+Svaki kompleksni objekat ima **workspace layout**.
+
+Primer:
+
+Reservation Workspace
+
+```
+Header
+Summary
+Tabs
+Right Panel
+Activity Timeline
+```
+
+---
+
+# 3.6 TAB PATTERN
+
+```
+Overview
+Passengers
+Services
+Rooming
+Finance
+Documents
+Notes
+History
+```
+
+---
+
+# 3.7 RIGHT PANEL
+
+Sticky panel:
+
+```
+financial summary
+alerts
+tasks
+quick actions
+```
+
+---
+
+# 3.8 TABLE DESIGN
+
+Tabela mora imati:
+
+```
+column sorting
+filters
+quick actions
+bulk actions
+export
+column visibility
+```
+
+---
+
+# 3.9 SEARCH BAR
+
+Global search:
+
+```
+booking
+contact
+agency
+hotel
+destination
+mail thread
+document
+```
+
+---
+
+# 3.10 DASHBOARD
+
+Dashboard mora prikazivati:
+
+```
+today arrivals
+today departures
+unpaid bookings
+overdue receivables
+charter load factor
+agent sales
+campaign results
+AI usage
+```
+
+---
+
+# ZAKLJUČAK
+
+Sada smo definisali:
+
+✔ kompletan **data model (~500 tabela)**
+✔ **UI navigation arhitekturu**
+✔ **UX design system**
+
+To znači da je projekat sada definisan na nivou na kojem:
+
+* arhitekte mogu da započnu razvoj
+* UX može da napravi Figma
+* backend može da napravi repo strukturu
+* product može da napravi backlog
+
+---
+
+Ako želite, sledeći korak mogu uraditi nešto **izuzetno korisno za razvoj**:
+
+1️⃣ nacrtati **kompletan sistemski dijagram (kao Expedia arhitektura)**
+2️⃣ nacrtati **finalni UI layout cele platforme**
+3️⃣ nacrtati **flow rezervacije hotel + avion + transfer + izlet**
+
+To bi bio **vizuelni završetak cele arhitekture**.

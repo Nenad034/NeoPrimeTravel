@@ -1,0 +1,44 @@
+# 20. PROŠIRENJE — MARKETPLACE MODEL I INFRA OPTIMIZACIJA
+
+Strategija za dalji skalabilni rast platforme (prelazak sa Tour Operatora na Platformu).
+
+---
+
+## 1. DMC Marketplace Model (Onboarding spoljnih partnera)
+
+Sistem dozvoljava drugim lokalnim agencijama (Suppliers) da unesu svoj inventar izleta i transfera direktno.
+
+### Portal za dobavljače:
+*   **Listing:** Unos opisa, slika i termina izleta.
+*   **Inventory Control:** Dobavljač vidi koliko je mesta rezervisano i zatvara prodaju (Stop Sale).
+*   **Settlement:** Automatsko generisanje faktura ("Payable") prema dobavljaču na osnovu realizovanih izleta.
+
+---
+
+## 2. Infrastructure Optimization (FinOps & Archiving)
+
+Sa milionima pretraga i 600 tabela, troškovi cloud infrastrukture moraju biti pod kontrolom.
+
+### Strategija arhiviranja:
+*   **Hot Storage (PostgreSQL):** Aktivna sezona (poslednjih 12 meseci) + svi budući polasci.
+*   **Cold Storage (Data Lake / S3):** Arhiva search logova starija od 6 meseci, stari mail attachment-i.
+*   **Partitioning:** Particionisanje tabela `search_requests` i `mail_messages` po mesecima radi performansi.
+
+---
+
+## 3. Design System & UI Centralizacija
+
+Da bi B2C, B2B i Admin izgledali konzistentno.
+
+### Dizajn tokeni:
+*   **Primarni Tokeni:** Boje, fontovi (Outfit/Inter), spacing, radijusi.
+*   **Centralni repozitorijum komponenti:** React/Next.js UI biblioteka koju koriste svi frontendi.
+*   **Theming:** Omogućavanje "White Label" rešenja (npr. B2B partner hoće da mu sajt izgleda zeleno umesto plavo).
+
+---
+
+## 4. Business Intelligence (Power BI / Looker API)
+
+*   **Financial Health:** Dashboard koji pokazuje "Live Margin" na svim aktivnim čarterima.
+*   **Agent Performance:** Praćenje vremena odgovora na email i konverzije po agentu.
+*   **Forecasting:** AI predviđanje popunjenosti hotela za naredni mesec na osnovu trendova pretrage.

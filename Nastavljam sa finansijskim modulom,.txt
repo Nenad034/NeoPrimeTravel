@@ -1,0 +1,732 @@
+Nastavljam sa **finansijskim modulom**, jer on ide odmah iza centralne forme rezervacije i mora biti potpuno povezan sa njom.
+
+Ovaj modul ne sme biti samo pregled uplata, već **kompletan settlement centar** koji povezuje:
+
+* rezervaciju
+* kupca
+* agenta
+* dobavljača
+* ulazne i izlazne dokumente
+* uplate i isplate
+* maržu i obaveze
+
+Za vaš tip poslovanja to je praktično **travel finance cockpit**.
+
+---
+
+# 1. Svrha finansijskog modula
+
+Finansijski modul mora da odgovori na 6 pitanja za svaku rezervaciju:
+
+1. Koliko je rezervacija prodata
+2. Koliko je net trošak prema dobavljačima
+3. Koliko je kupac uplatio
+4. Koliko još duguje
+5. Koliko treba platiti dobavljačima i kada
+6. Kolika je stvarna marža
+
+Dakle, ne pratimo samo “payment status”, nego pun finansijski život rezervacije.
+
+---
+
+# 2. Glavni koncept
+
+Predlažem da finansijski modul bude organizovan kroz 4 nivoa:
+
+### 1. Reservation Finance Summary
+
+finansijski sažetak jedne rezervacije
+
+### 2. Customer Receivables
+
+potraživanja od kupaca / agenata
+
+### 3. Supplier Payables
+
+obaveze prema dobavljačima
+
+### 4. Settlement & Margin
+
+zatvaranje finansijske slike i obračun marže
+
+---
+
+# 3. Finansijski tab unutar rezervacije
+
+U centralnoj formi rezervacije sekcija **Finance** mora imati modularni raspored.
+
+Predlažem layout:
+
+```text
+---------------------------------------------------------
+FINANCE SUMMARY CARDS
+---------------------------------------------------------
+
+---------------------------------------------------------
+CUSTOMER PAYMENTS | SUPPLIER PAYABLES | MARGIN & RESULT
+---------------------------------------------------------
+
+---------------------------------------------------------
+DOCUMENTS / INVOICES / CREDIT NOTES / REFUNDS
+---------------------------------------------------------
+```
+
+---
+
+# 4. Finance summary kartice
+
+Na vrhu finansijskog taba treba da stoje velike sažete kartice.
+
+## Kartice
+
+### Total Sell
+
+ukupna prodajna vrednost rezervacije
+
+### Total Net Cost
+
+ukupni net trošak prema dobavljačima
+
+### Paid In
+
+ukupno uplaćeno od kupca / agenta
+
+### Paid Out
+
+ukupno isplaćeno dobavljačima
+
+### Balance Due
+
+koliko još kupac duguje
+
+### Supplier Due
+
+koliko još treba platiti dobavljačima
+
+### Margin
+
+trenutna ili planirana marža
+
+### Finance Status
+
+npr:
+
+* Open
+* Partially Paid
+* Fully Paid
+* Supplier Pending
+* Settled
+* Refund Pending
+
+---
+
+# 5. Primer summary bloka
+
+```text
+Total Sell:        1.440 €
+Total Net Cost:    1.090 €
+Paid In:             500 €
+Paid Out:            300 €
+Customer Balance:    940 €
+Supplier Balance:    790 €
+Margin:              350 €
+Finance Status:      Open
+```
+
+---
+
+# 6. Customer receivables sekcija
+
+Ovde pratite sve što dolazi od kupca ili agenta.
+
+Tabela:
+
+| Date       | Type    | Amount | Currency | Method        | Status   | Reference |
+| ---------- | ------- | ------ | -------- | ------------- | -------- | --------- |
+| 01.03.2026 | Deposit | 500    | EUR      | Card          | Received | TXN-8821  |
+| 01.05.2026 | Balance | 940    | EUR      | Bank transfer | Pending  | INV-155   |
+
+## Akcije
+
+* Add payment
+* Mark payment received
+* Register bank transfer
+* Add refund
+* Link payment to invoice
+* Resend payment instructions
+
+---
+
+# 7. Payment tipovi
+
+Sistem mora razlikovati:
+
+* deposit
+* second installment
+* final balance
+* full payment
+* manual payment
+* bank transfer
+* card payment
+* agent credit settlement
+* refund
+* overpayment
+* adjustment
+
+---
+
+# 8. Statusi uplata
+
+Predlažem sledeće:
+
+* pending
+* received
+* partially_received
+* failed
+* refunded
+* reversed
+* reconciled
+
+---
+
+# 9. Supplier payables sekcija
+
+Ovo je ključni deo za vašu operativu.
+
+Za svaku stavku ili dobavljača morate znati:
+
+* koliko treba platiti
+* kome
+* po kom dokumentu
+* kada dospeva
+* da li je plaćeno
+
+Tabela:
+
+| Supplier         | Service  | Net Amount | Currency | Due Date   | Status | Supplier Invoice |
+| ---------------- | -------- | ---------- | -------- | ---------- | ------ | ---------------- |
+| Hotel Sea Star   | Hotel    | 800        | EUR      | 01.06.2026 | Unpaid | INV-H-221        |
+| Balkan Transfers | Transfer | 40         | EUR      | 09.07.2026 | Paid   | INV-T-019        |
+| Air Supplier     | Flight   | 220        | EUR      | 10.03.2026 | Paid   | BSP-4401         |
+
+## Akcije
+
+* Add supplier invoice
+* Mark supplier payment
+* Split payable
+* Change due date
+* Attach incoming invoice
+* Export payable report
+
+---
+
+# 10. Supplier payable logika
+
+Obaveze mogu nastati:
+
+* automatski iz booking item-a
+* ručno iz operativnog unosa
+* iz ugovorenog troška
+* iz naknadne doplate ili fakture dobavljača
+
+Zato svaki payable mora imati:
+
+* source booking item
+* supplier
+* due date
+* document reference
+* amount
+* status
+* payment date
+* note
+
+---
+
+# 11. Margin & settlement sekcija
+
+Ovde treba prikazati realan poslovni rezultat.
+
+## Polja
+
+* sell total
+* net total
+* expected margin
+* realized margin
+* unpaid receivables
+* unpaid payables
+* estimated profit after settlement
+
+## Dodatno
+
+* agent commission
+* internal service fee
+* extra cost
+* manual discount
+* refund impact
+
+---
+
+# 12. Realized vs expected margin
+
+Ovo je jako važno.
+
+### Expected margin
+
+računa se odmah po kreiranju rezervacije
+
+### Realized margin
+
+računa se kada:
+
+* kupac uplati
+* supplier trošak bude konačan
+* refundi i korekcije budu završeni
+
+Primer:
+
+```text
+Expected margin: 350 €
+Extra supplier charge: -40 €
+Refund to client: -20 €
+Realized margin: 290 €
+```
+
+---
+
+# 13. Dokumenta u finansijskom modulu
+
+Finansijski deo mora biti povezan sa dokumentima.
+
+## Izlazna dokumenta
+
+* proforma
+* invoice
+* receipt
+* credit note
+* refund document
+
+## Ulazna dokumenta
+
+* supplier invoice
+* supplier statement
+* payment proof
+* contract annex
+* manual finance attachment
+
+Svaki dokument treba da ima:
+
+* tip
+* broj dokumenta
+* datum
+* iznos
+* valuta
+* status
+* vezu sa rezervacijom i po potrebi sa stavkom
+
+---
+
+# 14. Predložene finansijske sekcije po rezervaciji
+
+Ja bih unutar Finance taba uveo 5 podsekcija:
+
+### Summary
+
+sažetak finansija
+
+### Receivables
+
+uplate od kupca/agenta
+
+### Payables
+
+obaveze prema dobavljaču
+
+### Documents
+
+finansijska dokumenta
+
+### Settlement Log
+
+sve korekcije, prepisi, refundi, knjiženja
+
+---
+
+# 15. Settlement log
+
+Ovo je veoma korisno za transparentnost.
+
+Primer:
+
+```text
+14.03.2026  Deposit invoice created         +500 €
+15.03.2026  Card payment received           +500 €
+22.03.2026  Hotel payable created           -800 €
+01.04.2026  Manual discount approved        -20 €
+05.04.2026  Supplier invoice uploaded       linked
+```
+
+To nije isto što i audit log.
+Audit log prati promene u sistemu.
+Settlement log prati finansijski tok rezervacije.
+
+---
+
+# 16. Veza sa agentima
+
+Ako je kanal B2B, finansijski modul mora imati dodatni sloj:
+
+* agent receivable
+* agent commission
+* credit usage
+* overdue balance
+* statement by period
+
+## Dodatna polja za B2B
+
+* agent name
+* agency code
+* payment terms
+* credit limit
+* current exposure
+* statement status
+
+---
+
+# 17. Agent credit logika
+
+Ako agent radi preko kredita:
+
+### Booking create
+
+sistem rezerviše iznos u exposure
+
+### Payment settlement
+
+kad agent izmiri obavezu, exposure se smanjuje
+
+### Ako nema dovoljno kredita
+
+* booking se blokira
+* ili ide u approval flow
+
+UI mora jasno da pokaže:
+
+```text
+Credit limit: 10.000 €
+Used: 8.420 €
+Available: 1.580 €
+Current booking exposure: 1.440 €
+```
+
+---
+
+# 18. Finansijski status rezervacije
+
+Pored booking statusa treba postojati i poseban finance status.
+
+Predlažem:
+
+* not_started
+* deposit_due
+* partially_paid
+* fully_paid
+* supplier_partially_paid
+* supplier_fully_paid
+* refund_pending
+* settled
+* overpaid
+* disputed
+
+Ovo je mnogo preciznije nego samo “paid/unpaid”.
+
+---
+
+# 19. Veza sa booking item-ima
+
+Svaka stavka rezervacije mora imati svoju finansijsku evidenciju.
+
+Primer:
+
+## Hotel item
+
+* sell: 1050
+* net: 800
+* supplier payable: 800
+* margin contribution: 250
+
+## Transfer item
+
+* sell: 70
+* net: 40
+* supplier payable: 40
+* margin contribution: 30
+
+To omogućava:
+
+* analizu profitabilnosti po usluzi
+* tačno knjiženje
+* parcijalne refund scenarije
+
+---
+
+# 20. Refund logika
+
+Refund modul mora biti direktno povezan sa rezervacijom i stavkama.
+
+## Refund može biti:
+
+* full reservation refund
+* partial item refund
+* goodwill refund
+* tax correction
+* supplier-forced refund
+
+Tabela:
+
+| Date | Refund Type | Related Item | Amount | Status | Reason |
+| ---- | ----------- | ------------ | ------ | ------ | ------ |
+
+Statusi:
+
+* requested
+* approved
+* processed
+* rejected
+* reconciled
+
+---
+
+# 21. Manual finance actions
+
+Za operativu je ključno da postoje kontrolisane ručne radnje.
+
+## Dozvoljene akcije
+
+* add manual payment
+* add manual payable
+* add extra cost
+* add discount
+* register overpayment
+* issue credit note
+* reconcile supplier invoice
+* mark bank payment sent
+* mark bank payment received
+
+Sve ove akcije moraju:
+
+* ostaviti trag
+* imati user/time stamp
+* biti auditovane
+
+---
+
+# 22. Finance dashboard van rezervacije
+
+Pored taba unutar rezervacije, mora postojati i poseban finansijski modul.
+
+Predlažem glavne ekrane:
+
+### Receivables list
+
+sve otvorene uplate kupaca i agenata
+
+### Payables list
+
+sve otvorene obaveze prema dobavljačima
+
+### Finance by booking
+
+rezervacije sa finansijskim stanjem
+
+### Refunds
+
+svi refund zahtevi i realizacije
+
+### Reconciliation
+
+spajanje uplata/isplata sa dokumentima
+
+### Margin analysis
+
+profitabilnost po rezervaciji, supplier-u, destinaciji
+
+---
+
+# 23. Receivables list
+
+Filteri:
+
+* booking reference
+* customer
+* agent
+* due date
+* status
+* amount range
+* overdue only
+
+Kolone:
+
+* booking
+* payer
+* amount due
+* paid
+* balance
+* due date
+* finance status
+* action
+
+Akcije:
+
+* open booking
+* record payment
+* send reminder
+* print invoice
+
+---
+
+# 24. Payables list
+
+Filteri:
+
+* supplier
+* due date
+* unpaid only
+* product type
+* destination
+* currency
+
+Kolone:
+
+* supplier
+* booking reference
+* service
+* net amount
+* due date
+* status
+* supplier invoice no.
+* action
+
+Akcije:
+
+* mark paid
+* attach invoice
+* export payment batch
+* open booking
+
+---
+
+# 25. Reconciliation ekran
+
+Ovo je ekran gde finansije mogu da povežu:
+
+* uplatu sa fakturom
+* isplatu sa supplier invoice
+* refund sa rezervacijom
+* bank statement sa rezervacionim prometom
+
+Veoma je važan za kasniju integraciju sa računovodstvom.
+
+---
+
+# 26. Predlog baze za finansijski deo
+
+Pored postojećih tabela, preporučujem još ove logičke entitete:
+
+### reservation_finance_summary
+
+agregirani finansijski pregled po rezervaciji
+
+### receivables
+
+potraživanja od kupaca/agenta
+
+### receivable_payments
+
+konkretne uplate
+
+### payables
+
+obaveze prema supplier-ima
+
+### payable_payments
+
+konkretne isplate
+
+### finance_documents
+
+izlazna i ulazna finansijska dokumenta
+
+### refund_requests
+
+zahtevi za refund
+
+### finance_adjustments
+
+ručne korekcije
+
+### settlement_log
+
+finansijski događaji po rezervaciji
+
+---
+
+# 27. Predlog UI stila za finansijski modul
+
+Pošto želite moderan i čist UI, finansijski modul ne treba da izgleda kao stari ERP.
+
+Ja bih ga radio kao:
+
+* čiste summary kartice
+* precizne tabele sa dosta whitespace-a
+* jasan status color coding
+* sticky side panel za totals
+* “timeline” prikaz settlement log-a
+* dokumenta kao file cards
+* veoma tih, premium UI bez previše vizuelne buke
+
+Dakle:
+
+* više “modern finance workspace”
+* manje “knjigovodstveni software iz 2012.”
+
+---
+
+# 28. Veza sa operativnim modulom
+
+Finansijski modul mora biti direktno povezan sa operativom.
+
+Na primer:
+
+* ako hotel nije potvrđen, payable može biti provisional
+* ako je rooming poslat, može krenuti supplier settlement
+* ako je refund odobren, booking status mora to reflektovati
+* ako je agent over limit, operativa vidi upozorenje
+
+To znači da finance nije odvojen sistem, nego sastavni deo reservation dossier-a.
+
+---
+
+# 29. Moj predlog redosleda dalje
+
+Sada kada smo razradili:
+
+* centralnu formu rezervacije
+* finansijski modul
+
+sledeći logičan korak je:
+
+### operativne liste
+
+jer one direktno izlaze iz rezervacije i finansija
+
+Tu bih razradio:
+
+* arrival list
+* departure list
+* in-house list
+* transfer list
+* excursion list
+* docs pending list
+* unpaid arrivals warning list
+
+To je sledeći pravi operativni sloj.

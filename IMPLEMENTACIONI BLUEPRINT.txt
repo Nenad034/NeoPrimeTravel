@@ -1,0 +1,966 @@
+Odlično. Nastavljam sa sledećim slojem:
+
+# IMPLEMENTACIONI BLUEPRINT
+
+## Kako ovu platformu pretvoriti u realan, izvodljiv plan razvoja
+
+Sada više ne pričamo samo o arhitekturi, već o:
+
+* redosledu izrade
+* zavisnostima između modula
+* sastavu tima
+* realnim fazama
+* MVP granicama
+* rizicima
+* prioritetima
+
+Ovo je deo koji CTO, product owner i delivery lead koriste da odluče:
+
+* šta se radi prvo
+* šta može paralelno
+* šta ne sme prerano
+* gde su najveći rizici
+* kada platforma postaje upotrebljiva
+
+---
+
+# 1. Osnovni princip implementacije
+
+Ovako veliki sistem ne treba graditi “sve odjednom”.
+
+Treba ga graditi po principu:
+
+## 1.1 Core first
+
+Prvo ono bez čega nema realnog rada:
+
+* korisnici
+* CRM
+* proizvodi
+* ugovori
+* search
+* booking
+* finansije
+* osnovna operativa
+
+## 1.2 Operations before fancy AI
+
+Pre AI i naprednog marketinga mora raditi:
+
+* rezervacija
+* rooming
+* dokumenta
+* uplata/isplata
+* operativne liste
+* B2B rad
+
+## 1.3 AI kao kontrolisani sloj
+
+AI ulazi tek kada su:
+
+* podaci čisti
+* workflow stabilan
+* permission model jasan
+* trošak kontrolisan
+
+---
+
+# 2. Glavni delivery princip
+
+Predlažem da razvoj bude organizovan u **6 velikih faza**.
+
+1. Foundation & Core Data
+2. Core Commerce & Reservation
+3. Operations & Finance
+4. Tour Operator & Charter
+5. Communication, B2B & Website Publishing
+6. Marketing, AI & Optimization
+
+To je najzdraviji redosled.
+
+---
+
+# 3. FAZA 1 — FOUNDATION & CORE DATA
+
+Ovo je baza svega.
+
+## Cilj
+
+Napraviti platformu koja može da:
+
+* primi korisnike
+* vodi CRM
+* vodi proizvode
+* vodi dobavljače
+* vodi ugovore i cenovnike
+* ima tehnički skeleton
+
+## Moduli u fazi 1
+
+* Identity & Access
+* CRM & Accounts
+* Product Master
+* Contracting & Rates
+* osnovna CMS/SEO struktura
+* osnovni admin panel
+* audit log
+* osnovna API i queue infrastruktura
+
+## Obavezni rezultati
+
+* login / role / permissions
+* contacts / agencies / suppliers
+* hoteli / room types / board types
+* ugovori / sezone / rate plans / supplements
+* pricing rules osnovno
+* osnovni import ugovora
+* object storage
+* queue skeleton
+* API skeleton
+* osnovni monitoring
+
+## Šta još ne mora
+
+* booking engine full
+* payments full
+* B2B portal full
+* AI
+* marketing
+* mail inbox
+
+## Procena trajanja
+
+**8–12 nedelja**
+
+---
+
+# 4. FAZA 2 — CORE COMMERCE & RESERVATION
+
+Ovo je prva faza u kojoj sistem počinje da “prodaje”.
+
+## Cilj
+
+Napraviti:
+
+* search
+* offers
+* booking
+* reservation dossier
+
+## Moduli
+
+* Search & Offers
+* Booking Core
+* basic Reservation Dossier
+* passenger management
+* document generation basic
+* supplier reservation tracking basic
+* public website search API
+* B2C basic search/offer/booking flow
+
+## Obavezni rezultati
+
+* search request
+* offer generation
+* offer reprice
+* create booking
+* booking items
+* passengers
+* supplier reference tracking
+* status workflow
+* voucher / confirmation basic
+* reservation header + overview + services + notes
+
+## Minimalne integracije
+
+* najmanje 1–2 supplier konekcije
+* ili ugovoreni/fixed inventory model dok se API ne širi
+
+## Procena trajanja
+
+**10–14 nedelja**
+
+---
+
+# 5. FAZA 3 — OPERATIONS & FINANCE
+
+Ovo je faza u kojoj sistem postaje stvarno upotrebljiv za agenciju.
+
+## Cilj
+
+Da operativa i finansije mogu da rade svakodnevno iz sistema.
+
+## Moduli
+
+* Reservation Operations
+* Finance & Settlement
+* Rooming & Capacity basic
+* Operational Lists
+* payment intent / payment tracking
+* receivables / payables
+* finance documents
+* rooming export
+* manifest basic
+
+## Obavezni rezultati
+
+* reservation workspace
+* operativni flagovi
+* arrival/departure/transfer liste
+* receivables
+* payables
+* payments
+* refunds basic
+* finance summary by booking
+* rooming editor basic
+* occupancy validation
+* manifest export
+* doc status tracking
+
+## Ovo je tačka gde sistem prvi put realno zamenjuje deo postojećeg rada.
+
+## Procena trajanja
+
+**12–16 nedelja**
+
+---
+
+# 6. FAZA 4 — TOUR OPERATOR & CHARTER
+
+Ovo je ključna faza za vas kao tour operatora.
+
+## Cilj
+
+Da sistem podrži:
+
+* grupna putovanja
+* polaske
+* itinerere
+* charter smene
+* seat inventory
+* hybrid fixed + API pakete
+
+## Moduli
+
+* Tour Operator Programs
+* Tour Departures
+* Itinerary Builder
+* Group pricing
+* Guide / manifest / operations
+* Charter Seasons
+* Charter Flights
+* Duration templates
+* Seat control
+* Load factor
+* Charter pricing
+* Hybrid Product Builder
+
+## Obavezni rezultati
+
+* kreiranje programa
+* više polazaka po programu
+* publish programa na sajt
+* charter sezona
+* 7/10/14 noći logika
+* hotel link na charter sezonu
+* seat inventory
+* load factor dashboard basic
+* hybrid paket: fixed + API
+* price refresh rules
+* override contract vs API pravila
+
+## Procena trajanja
+
+**14–18 nedelja**
+
+---
+
+# 7. FAZA 5 — COMMUNICATION, B2B & WEBSITE PUBLISHING
+
+Ovo je faza centralizacije rada i spoljnog izlaza sistema.
+
+## Cilj
+
+Da:
+
+* subagenti rade iz sistema
+* komunikacija pređe u sistem
+* sajt se hrani iz platforme
+
+## Moduli
+
+* B2B Distribution
+* Agency credit / statements
+* Shared Inbox
+* Central Mail
+* Inbox Users / quality monitoring basic
+* CRM communication timeline
+* CMS / SEO / publishing
+* Public Website API complete
+* B2C content pages
+* B2B support cases
+
+## Obavezni rezultati
+
+* agent login
+* agent search/booking
+* agent statements
+* agent documents
+* agency restrictions
+* inbox / thread / reply
+* link booking ↔ mail
+* inbox users log
+* quality review queue basic
+* page management
+* SEO metadata
+* public pages for:
+
+  * destinations
+  * hotels
+  * tours
+  * charters
+* publishing snapshots
+
+## Procena trajanja
+
+**12–16 nedelja**
+
+---
+
+# 8. FAZA 6 — MARKETING, AI & OPTIMIZATION
+
+Ovo je growth i intelligence faza.
+
+## Cilj
+
+Da sistem postane:
+
+* marketinški aktivan
+* AI-assisted
+* troškovno kontrolisan
+* optimizovan
+
+## Moduli
+
+* Marketing Automation
+* Campaigns / Audiences
+* Messaging campaigns
+* AI Assistant / Chat Ops
+* B2C chatbot
+* B2B chatbot
+* AI governance / token budgets
+* outbound mail quality scoring advanced
+* AI SEO suggestions
+* recommendation layer
+* advanced analytics
+
+## Obavezni rezultati
+
+* newsletteri
+* segmenti
+* Viber/WhatsApp/Telegram workflow where available
+* campaign analytics
+* AI ask mode
+* AI suggest mode
+* controlled execute mode
+* token budgets
+* chatbot with deterministic-first routing
+* AI mail scoring
+* AI SEO assistance
+
+## Procena trajanja
+
+**12–18 nedelja**
+
+---
+
+# 9. UKUPAN REALAN ROADMAP
+
+Ako se radi ozbiljno i pravilno:
+
+## Brza, ali realna varijanta
+
+**12–16 meseci** do veoma ozbiljne platforme
+
+## Pun enterprise opseg
+
+**18–24 meseca**
+
+To je realna procena za kvalitetan sistem ovog obima.
+
+---
+
+# 10. MVP DEFINICIJA
+
+Važno je jasno odvojiti MVP od “full vision”.
+
+## 10.1 Core MVP
+
+Po mom mišljenju, pravi MVP za vas mora uključiti:
+
+* users / roles
+* CRM basic
+* products / contracts / rates
+* search / offers
+* booking core
+* reservation dossier basic
+* finance basic
+* rooming basic
+* operational lists basic
+* B2B basic
+* website publishing basic
+* tour operator basic
+* charter basic
+
+To je već veliki MVP, ali za vas je to realan minimum.
+
+## 10.2 Šta NIJE MVP
+
+* full omnichannel communication
+* advanced AI execute mode
+* complete marketing automation suite
+* advanced attribution
+* full white-label
+* advanced AI personalization
+
+---
+
+# 11. TIMSKA STRUKTURA
+
+Za ovakav projekat treba veoma jasno podeljen tim.
+
+## 11.1 Minimalni ozbiljan tim
+
+### Product / delivery
+
+* 1 Product Lead
+* 1 Project / Delivery Manager
+
+### Architecture / tech
+
+* 1 Solution Architect / Tech Lead
+
+### Backend
+
+* 4–6 backend developera
+
+### Frontend
+
+* 2–4 frontend developera
+
+### QA
+
+* 2 QA / test inženjera
+
+### DevOps / infra
+
+* 1 DevOps
+
+### Design
+
+* 1 Product / UX designer
+
+### Data / AI
+
+* 1 data/AI engineer kasnije ili part-time u početku
+
+## Minimalno ukupno:
+
+**12–16 ljudi**
+
+---
+
+# 12. TIMSKA PODELA PO STREAM-OVIMA
+
+Najzdravije je podeliti rad po stream-ovima.
+
+## Stream A — Core Commerce
+
+* products
+* contracts
+* search
+* offers
+* bookings
+
+## Stream B — Operations & Finance
+
+* reservation dossier
+* finance
+* rooming
+* manifests
+* operational lists
+
+## Stream C — Distribution & Website
+
+* B2B
+* public API
+* CMS/SEO
+* website publishing
+
+## Stream D — Communication / Marketing / AI
+
+* mail
+* CRM comms
+* campaigns
+* chatbot
+* AI governance
+
+---
+
+# 13. ZAVISNOSTI IZMEĐU STREAM-OVA
+
+## Najvažnije zavisnosti
+
+### Core Commerce je osnova za:
+
+* B2B
+* website offers
+* finance
+* tour/charter booking
+
+### CRM je osnova za:
+
+* B2B
+* communication
+* marketing
+* support
+
+### Finance zavisi od:
+
+* booking core
+* agency rules
+* payment integrations
+
+### Mail i communication zavise od:
+
+* CRM
+* booking references
+* users/teams
+
+### AI zavisi od:
+
+* stabilnih podataka
+* permission modela
+* messaging / CRM / SEO / reporting slojeva
+
+---
+
+# 14. ŠTA MOŽE PARALELNO
+
+Ne mora sve sekvencijalno.
+
+## Paralelno može:
+
+* IAM + CRM + Product Master
+* CMS skeleton + public API skeleton
+* finance model dok se radi booking core
+* B2B UI skeleton dok se završava pricing
+* mail inbox skeleton dok se završava CRM timeline
+* charter domain model dok se radi tour program UI
+
+## Ne treba paralelno prerano:
+
+* AI execute mode pre finalnog permission modela
+* marketing automation pre clean contact/consent modela
+* advanced website publishing pre stabilnih offer/publication snapshot-a
+
+---
+
+# 15. TEHNIČKI RIZICI PROJEKTA
+
+Ovo je vrlo važno.
+
+## 15.1 Najveći rizici
+
+### 1. Supplier integration complexity
+
+Različiti API-i, loš kvalitet odgovora, različiti modeli cena.
+
+### 2. Pricing complexity
+
+Occupancy, supplements, promotions, package logic, charter/fixed/hybrid model.
+
+### 3. Booking orchestration
+
+Posebno kada imate više item-a i mixed sources.
+
+### 4. Finance correctness
+
+Receivables, payables, margin, refunds, agency credit.
+
+### 5. Rooming / charter / allotment logic
+
+Vrlo lako nastane haos ako model nije strog.
+
+### 6. Scope explosion
+
+Sistem je ogroman i lako “pojede sam sebe” ako nema discipline.
+
+---
+
+# 16. ORGANIZACIONI RIZICI
+
+## 16.1 Najčešći
+
+* previše ideja odjednom
+* stalno ubacivanje novog scope-a bez freeze-a
+* nedovoljno jasna ownership podela
+* mešanje “želim odmah” sa “zaista mora u ovoj fazi”
+* kasno uključivanje QA
+* nedovoljno detaljni acceptance criteria
+
+---
+
+# 17. KAKO SMANJITI RIZIK
+
+## 17.1 Preporuke
+
+### Freeze po fazama
+
+Svaka faza mora imati zaključan scope.
+
+### Domain owners
+
+Svaki veliki domen mora imati vlasnika:
+
+* booking
+* finance
+* charter
+* mail
+* AI
+* website
+
+### Golden workflows first
+
+Prvo testirati najvažnije tokove:
+
+* dynamic booking
+* group booking
+* charter booking
+* payment
+* refund
+* rooming
+* B2B booking
+* confirmation email
+* website publishing
+
+### Test data strategy
+
+Od početka imati realne test scenarije.
+
+---
+
+# 18. QA STRATEGIJA
+
+QA mora biti domen-specifičan.
+
+## 18.1 Test slojevi
+
+* unit tests
+* integration tests
+* contract tests
+* end-to-end tests
+* UAT po poslovnim scenarijima
+
+## 18.2 Golden E2E scenariji
+
+Obavezni:
+
+1. B2C hotel+flight+transfer booking
+2. B2B booking sa kreditom
+3. Group departure booking
+4. Charter package booking
+5. Refund flow
+6. Rooming export + confirmation
+7. Invoice + supplier payable
+8. Mail thread linked to booking
+9. Campaign → click → booking attribution
+10. AI ask mode nad realnim podacima
+
+---
+
+# 19. UAT STRATEGIJA
+
+Preporuka: UAT po poslovnim ulogama.
+
+## Uloge za UAT
+
+* rezervacije
+* operativa
+* finansije
+* contracting
+* B2B sales
+* marketing
+* management
+
+Svaka uloga treba da testira svoje realne dnevne tokove.
+
+---
+
+# 20. GO-LIVE STRATEGIJA
+
+Ne preporučujem “big bang” go-live za sve module.
+
+## Bolji model:
+
+### Phase go-live
+
+1. internal core
+2. finance + ops
+3. tour + charter
+4. B2B portal
+5. website publishing
+6. communication/mail
+7. marketing + AI
+
+To značajno smanjuje rizik.
+
+---
+
+# 21. DATA MIGRATION STRATEGIJA
+
+Ako imate postojeće podatke, migracija mora biti planirana kao poseban projekat.
+
+## 21.1 Migrišu se:
+
+* contacts
+* agencies
+* suppliers
+* products/hotels
+* contracts/rates
+* active bookings
+* unpaid receivables/payables
+* charter seasons
+* tour programs
+* templates/content
+
+## 21.2 Ne mora odmah sve:
+
+* stari raw email archive
+* svi istorijski search logovi
+* svi marketing eventovi
+* svi stari analytics snapshot-i
+
+---
+
+# 22. MVP GO-LIVE PREDLOG
+
+Po meni bi prvi pravi go-live mogao biti:
+
+## Stage 1
+
+Internal backoffice:
+
+* products
+* contracts
+* booking
+* finance
+* rooming basic
+* ops lists
+
+## Stage 2
+
+Tour / charter operations
+
+## Stage 3
+
+B2B portal
+
+## Stage 4
+
+Public site powered by platform
+
+## Stage 5
+
+Central mail + communication
+
+## Stage 6
+
+Marketing + AI
+
+---
+
+# 23. DELIVERY METRIKE
+
+Da biste znali da projekat ide kako treba, pratite:
+
+* scope completion per phase
+* % critical workflows passing
+* defect leakage
+* release stability
+* queue failure rate
+* supplier connector stability
+* average search latency
+* booking success rate
+* finance reconciliation accuracy
+* public publishing freshness
+
+---
+
+# 24. DEFINITION OF DONE
+
+Za ovakav projekat “done” ne znači samo da ekran postoji.
+
+## Modul je done kada:
+
+* data model završen
+* API završen
+* UI završen
+* permissions završene
+* audit pokriven
+* eventi pokriveni
+* queue/async pokriven
+* testovi postoje
+* UAT prošao
+* monitoring postoji
+* dokumentacija postoji
+
+---
+
+# 25. ŠTA JE APSOLUTNO KRITIČNO PRE PRODUKCIJE
+
+Pre produkcije obavezno mora biti stabilno:
+
+* auth / permissions
+* booking create / confirm / cancel
+* payment flows
+* receivables / payables
+* rooming & manifests za aktivne polaske
+* charter seat logic
+* contract pricing calculation
+* supplier connector error handling
+* document generation
+* backups / restore test
+* audit logs
+* monitoring / alerting
+
+---
+
+# 26. KOJI MODULI MOGU BITI “BETA”
+
+Ovo može u beta režim:
+
+* AI execute mode
+* advanced mail quality coaching
+* AI SEO suggestions
+* campaign revenue attribution advanced
+* white-label B2B
+* advanced recommendation engine
+* advanced dynamic repricing suggestions
+
+---
+
+# 27. IMPLEMENTACIONI REDOSLED PO TEHNIČKOM PRIORITETU
+
+Ako saberemo sve:
+
+## Prvo
+
+* IAM
+* CRM
+* Product
+* Contracting
+* Pricing
+
+## Zatim
+
+* Search
+* Offer
+* Booking
+
+## Onda
+
+* Finance
+* Ops
+* Rooming
+
+## Posle
+
+* Tour / Charter
+
+## Onda
+
+* B2B
+* CMS / Public API
+
+## Posle
+
+* Mail / Communication
+
+## Na kraju
+
+* Marketing
+* AI
+* advanced optimization
+
+To je najracionalniji redosled.
+
+---
+
+# 28. MOJ ISKREN ZAKLJUČAK O PROJEKTU
+
+Ovo je potpuno izvodljiv projekat, ali:
+
+* veliki je
+* ozbiljan je
+* mora se voditi kao enterprise program
+* ne sme se graditi stihijski
+* mora imati jasan scope po fazama
+
+Vi ne pravite:
+
+* samo sajt
+* samo booking engine
+* samo CRM
+
+nego:
+
+## kompletan Travel Operating System
+
+I zato je ispravan pristup upravo ovaj koji sada radimo:
+
+* arhitektura
+* data model
+* API
+* event/queue
+* deployment
+* implementation blueprint
+
+---
+
+# 29. Šta sledi sada
+
+Sada smo završili i:
+
+* implementacioni blueprint
+* faze razvoja
+* timsku strukturu
+* delivery strategiju
+* go-live pristup
+* rizike i QA/UAT logiku
+
+To znači da smo praktično završili **tehničko-arhitektonski deo dokumentacije**.
+
+Sledeći prirodan korak je jedan od ova dva:
+
+## A.
+
+da pređemo na **formalni Software Architecture Document (SAD)** u finalnom, profesionalnom obliku
+
+ili
+
+## B.
+
+da pređemo na **UI/UX arhitekturu platforme**, odnosno:
+
+* glavni navigation system
+* left nav / top nav strukturu
+* workspace pattern
+* screen hierarchy
+* design system spec
+
+Pošto ste ranije tražili i kompletan vizual, najlogičnije je sada da sledeće uradimo:
+
+# **formalni finalni arhitektonski dokument + UI/UX arhitektura**
+
+Ako idemo redom, prvo ću sastaviti finalni strukturisani arhitektonski dokument.

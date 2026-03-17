@@ -1,0 +1,865 @@
+Odlično. Nastavljam i formalno dodajem ova **3 nova modula** u celokupnu arhitekturu sistema.
+
+To znači da vaš sistem sada više nije samo:
+
+* booking engine
+* operativni sistem
+* finansijski sistem
+* B2B platforma
+
+nego postaje pravi:
+
+## **Travel Commerce + Operations + CRM + Marketing + AI Platform**
+
+Krenuću redom:
+
+# 1. Marketing Automation & Campaigns modul
+
+Ovaj modul treba da bude centralno mesto za:
+
+* B2C kampanje
+* B2B kampanje
+* newslettere
+* društvene mreže
+* messaging kanale
+* automatizovane sekvence
+* AI generisani sadržaj
+* praćenje učinka kampanja
+
+Ne bih ga pravio kao “dodatak”, nego kao ozbiljan poslovni modul.
+
+---
+
+## 1.1 Ciljevi marketing modula
+
+Marketing modul mora omogućiti:
+
+1. planiranje i kreiranje kampanja
+2. segmentaciju publike
+3. slanje sadržaja po više kanala
+4. automatizaciju marketing tokova
+5. praćenje učinka kampanja
+6. povezivanje marketinga sa rezervacijama i prihodima
+
+To je ključno, jer prava vrednost nije samo “poslali smo newsletter”, nego:
+
+* ko ga je dobio
+* ko je kliknuo
+* ko je rezervisao
+* koliki je revenue kampanje
+
+---
+
+## 1.2 Glavne sekcije marketing modula
+
+Predlažem sledeću strukturu:
+
+```text
+Campaigns
+Audiences / Segments
+Email Marketing
+Social Publisher
+Messaging Campaigns
+Automations
+Templates
+Content Studio
+Approvals
+Analytics
+```
+
+---
+
+## 1.3 Campaigns
+
+Centralna lista svih kampanja.
+
+### Statusi:
+
+* draft
+* scheduled
+* in_review
+* active
+* paused
+* completed
+* archived
+
+### Kolone:
+
+* campaign name
+* channel
+* audience
+* schedule
+* owner
+* status
+* sent count
+* delivered
+* clicks
+* conversions
+* revenue
+
+### Tipovi kampanja:
+
+* B2C newsletter
+* B2B newsletter
+* hotel promo
+* destination promo
+* flash sale
+* social campaign
+* Viber/WhatsApp/Telegram blast
+* abandoned booking campaign
+* pre-travel automation
+* post-travel follow-up
+
+---
+
+## 1.4 Audiences / Segments
+
+Ovo je veoma važno, jer marketing bez segmentacije brzo postane spam.
+
+Segmenti moraju moći da se prave po:
+
+### B2C kriterijumima
+
+* destinacija interesa
+* istorija rezervacija
+* budžet
+* porodica / par / solo
+* datum poslednje rezervacije
+* kanal komunikacije
+* engagement score
+* da li je otvorio prethodne kampanje
+
+### B2B kriterijumima
+
+* agent grupa
+* tržište
+* destinacije koje prodaju
+* ostvarena prodaja
+* otvorena dugovanja
+* neaktivni agenti
+* partner status
+* specijalni ugovorni uslovi
+
+### Primer segmenta
+
+* “B2C korisnici zainteresovani za Crnu Goru”
+* “B2B agenti bez rezervacije u poslednjih 60 dana”
+* “Klijenti koji su gledali Halkidiki, a nisu rezervisali”
+* “Agenti sa aktivnim kreditom i prodajom iznad 20.000 EUR”
+
+---
+
+## 1.5 Email Marketing
+
+Email deo mora podržati:
+
+* newsletter editor
+* reusable content blocks
+* segmentirano slanje
+* scheduled send
+* A/B subject test
+* personalization fields
+* unsubscribe i consent logiku
+
+### Obavezne funkcije:
+
+* send test email
+* preview desktop/mobile
+* resend to non-openers
+* clone campaign
+* version history
+
+### Personalization primeri:
+
+* ime korisnika
+* destinacija interesa
+* agent ime
+* naziv hotela
+* datum putovanja
+* dugovanje / reminder info
+* upcoming departure reminder
+
+---
+
+## 1.6 Social Publisher
+
+Ovo je važan modul ako želite da sistem bude centralno radno mesto i za marketing tim.
+
+Treba da podrži:
+
+* draft objava
+* schedule objava
+* manual publish
+* multi-channel planning
+* content kalendar
+* AI caption generation
+* approval workflow
+
+### Kanali
+
+* Facebook
+* Instagram
+* eventualno LinkedIn
+* kasnije TikTok ako bude smisleno
+
+### Po objavi
+
+* kanal
+* datum i vreme
+* vizual
+* caption
+* CTA link
+* status
+* owner
+* approval status
+
+---
+
+## 1.7 Messaging Campaigns
+
+Ovde ulaze:
+
+* Viber
+* WhatsApp
+* Telegram
+* eventualno SMS
+
+Ovo je vrlo moćno, ali mora biti strogo kontrolisano.
+
+### Podržati:
+
+* broadcast poruke
+* segmentirane poruke
+* reminder poruke
+* payment reminders
+* booking reminders
+* emergency operational messages
+
+### Primeri:
+
+* “Poštovani, vaš voucher za putovanje je spreman”
+* “Specijalna akcija za letovanje u Budvi”
+* “Poštovani agenti, aktivirana je nova SPO ponuda”
+* “Podsećamo vas da je uplata dospela”
+
+### Obavezno:
+
+* consent management
+* opt-out logika
+* channel permissions
+* delivery log
+* template approval
+
+---
+
+## 1.8 Automations
+
+Ovo je jedan od najvrednijih delova.
+
+Automations omogućavaju da sistem sam reaguje na događaje.
+
+### Primeri:
+
+* user searched destination 3x → send promo email
+* booking created → send confirmation
+* 30 days before travel → send reminder
+* unpaid balance 7 days before travel → send payment reminder
+* B2B agent inactive 45 days → send reactivation campaign
+* contract hotel with low occupancy → push marketing campaign
+* high-margin hotel available → add to newsletter suggestion list
+
+### Automation gradivni elementi:
+
+* trigger
+* condition
+* audience
+* delay
+* action
+* channel
+* approval requirement
+
+---
+
+## 1.9 Templates
+
+Sistem mora imati biblioteku šablona za:
+
+* newsletter
+* promo email
+* payment reminder
+* pre-travel reminder
+* B2B offer email
+* Viber message
+* WhatsApp message
+* social caption
+* banner copy
+
+### Template mora imati:
+
+* naziv
+* kanal
+* jezik
+* verziju
+* status
+* owner
+* preview
+
+---
+
+## 1.10 Content Studio
+
+Ovo bi bio centralni kreativni prostor.
+
+Tu tim pravi:
+
+* newsletter blokove
+* promo tekstove
+* captione
+* CTA varijante
+* B2B obaveštenja
+* push poruke
+* short-form content
+
+I ovde treba da postoji AI pomoć:
+
+* generate draft
+* rewrite
+* shorten
+* make more premium
+* make more B2B
+* translate/adapt tone
+
+---
+
+## 1.11 Approval workflow
+
+Pošto ćete imati više tipova komunikacije, treba da postoji approval.
+
+### Primer:
+
+Marketing user napiše kampanju
+→ status: draft
+→ pošalje na review
+→ manager odobri
+→ status: scheduled
+
+Za neke kanale approval može biti obavezan:
+
+* B2B mass campaign
+* payment-related messaging
+* large social campaign
+* AI-generated content before publish
+
+---
+
+## 1.12 Analytics
+
+Marketing modul mora da meri rezultate.
+
+### KPI:
+
+* sent
+* delivered
+* opened
+* clicked
+* CTR
+* conversion
+* booking count
+* revenue
+* revenue per recipient
+* unsubscribe
+* bounce
+* complaint rate
+
+### Posebno važno:
+
+kampanja mora moći da se veže za:
+
+* rezervacije
+* upite
+* revenue
+* agent engagement
+
+---
+
+# 2. AI Assistant / Chat Ops modul
+
+Ovo je drugi novi veliki modul i po meni jedan od najmoćnijih.
+
+Ovde govorimo o **internom AI asistentu povezanom sa sistemom**.
+
+Ne samo chatbot za klijente, nego prvenstveno:
+
+* internal assistant
+* query engine
+* ops assistant
+* pricing assistant
+* campaign assistant
+
+---
+
+## 2.1 Osnovna ideja
+
+Korisnik razgovara sa sistemom prirodnim jezikom.
+
+Na primer:
+
+* “Koliko imamo slobodnih soba u Sea Star hotelu 15. jula?”
+* “Pokaži mi rezervacije za Budvu koje nemaju rooming”
+* “Promeni early booking popust sa 10% na 12% za hotel Tara u junu”
+* “Prikaži sve neplaćene dolaske naredna 3 dana”
+* “Napravi draft B2B newslettera za Halkidiki”
+* “Koji agenti nisu imali booking u poslednjih 45 dana?”
+
+---
+
+## 2.2 Tri nivoa rada AI asistenta
+
+### 1. Ask mode
+
+samo čita i odgovara
+
+### 2. Suggest mode
+
+predlaže izmene, ali ne izvršava
+
+### 3. Execute mode
+
+izvršava izmene uz potvrdu i dozvole
+
+Ovo je ključno.
+
+---
+
+## 2.3 Ask mode
+
+Upiti:
+
+* pretraga rezervacija
+* finansijski izveštaji
+* status rooming-a
+* pregled allotmenta
+* marketing performance
+* supplier problemi
+* communication history
+
+Primer:
+
+* “Koje rezervacije za Crnu Goru nisu do kraja plaćene?”
+* “Koji hoteli imaju stop sale u julu?”
+* “Pokaži mi sve transfer liste za sutra”
+
+---
+
+## 2.4 Suggest mode
+
+AI predlaže akciju, ali ne menja sistem automatski.
+
+Primer:
+
+* “Predlažem da se povećaju cene za ovaj hotel za 5% zbog visoke tražnje”
+* “Predlažem slanje reminder kampanje agentima sa dugovanjem”
+* “Predlažem rooming raspodelu za ovu grupu”
+* “Predlažem da ovaj newsletter ide segmentu X”
+
+Ovo je posebno korisno za operativu i marketing.
+
+---
+
+## 2.5 Execute mode
+
+Ovo je najosetljiviji nivo.
+
+AI može uraditi:
+
+* izmenu popusta
+* aktivaciju kampanje
+* slanje draft-a na approval
+* dodelu roominga
+* generisanje operativne liste
+* kreiranje zadatka
+* promenu određenog pricing pravila
+
+Ali samo ako:
+
+* korisnik ima dozvolu
+* akcija je dozvoljena za AI
+* korisnik potvrdi
+* sistem upiše audit log
+
+---
+
+## 2.6 AI Command Center ekran
+
+Predlažem poseban ekran/modul:
+
+* chat panel
+* history panel
+* result cards
+* suggested actions
+* approval queue
+* execution log
+
+### Svaka AI sesija treba da ima:
+
+* ko je pitao
+* kada
+* koji modul je korišćen
+* odgovor
+* da li je bilo predloga
+* da li je izvršena akcija
+
+---
+
+## 2.7 Tipovi AI akcija po domenima
+
+### Booking / Operations
+
+* search bookings
+* summarize issue
+* list arrivals/departures
+* detect missing rooming/docs
+* generate manifests
+
+### Finance
+
+* list receivables/payables
+* summarize agent debt
+* detect overdue supplier payments
+* show margin analysis
+
+### Contracting / Pricing
+
+* show rules
+* compare hotel pricing
+* suggest price change
+* prepare rule update
+
+### Marketing
+
+* draft campaign
+* create segments
+* summarize campaign performance
+* generate captions/newsletters
+
+### CRM / Communication
+
+* summarize conversation history
+* show last interactions
+* draft reply
+* detect unhappy clients/agents
+
+---
+
+## 2.8 AI safety model
+
+Obavezno mora postojati:
+
+* permission-based action scope
+* confirmation dialogs
+* action previews
+* audit log
+* rollback where possible
+* protected actions list
+
+Na primer:
+AI ne bi smeo bez dodatne potvrde da:
+
+* masovno pošalje kampanju
+* obriše pricing rule
+* odobri refund
+* promeni kreditni limit
+* otkaže rezervaciju
+
+---
+
+# 3. Unified CRM Communication Hub
+
+Treći novi modul je po meni možda i najvažniji za svakodnevni rad.
+
+Ovo je **centralni pregled sve komunikacije** sa:
+
+* klijentima
+* agentima
+* partnerima
+* dobavljačima
+
+---
+
+## 3.1 Svrha
+
+Da više ne postoji situacija da je:
+
+* jedan mejl u Outlook-u
+* jedan Viber na telefonu
+* WhatsApp kod komercijaliste
+* note u Excel-u
+* rezervacija u sistemu
+* marketing kampanja u drugom alatu
+
+Sve mora biti objedinjeno u jednu vremensku liniju.
+
+---
+
+## 3.2 Glavne sekcije CRM Communication Hub-a
+
+Predlažem:
+
+```text
+Contacts
+Companies / Agencies
+Communication Timeline
+Email Threads
+Messaging Threads
+Campaign History
+Tasks / Follow-ups
+Linked Bookings
+Internal Notes
+```
+
+---
+
+## 3.3 Contact 360 ekran
+
+Za svakog B2C klijenta ili B2B agenciju treba postojati “360 view”.
+
+### Prikaz:
+
+* osnovni profil
+* kontakti
+* rezervacije
+* finansijski status
+* kampanje primljene
+* komunikacija
+* otvoreni taskovi
+* account owner / operator
+* sentiment / priority flags kasnije
+
+Ovo postaje glavni CRM ekran.
+
+---
+
+## 3.4 Unified Communication Timeline
+
+Ovo je srce modula.
+
+Timeline prikazuje hronološki:
+
+* incoming email
+* outgoing email
+* manual note
+* WhatsApp/Viber/Telegram event
+* booking created
+* payment reminder sent
+* voucher sent
+* campaign delivered
+* support case opened
+* cancellation requested
+* AI summary created
+
+To znači da za jednog klijenta ili agenciju imate sve na jednom mestu.
+
+---
+
+## 3.5 Email Threads
+
+Treba podržati:
+
+* inbound emails
+* outbound emails
+* thread linking
+* tagging
+* povezivanje sa kontaktom, rezervacijom i agencijom
+
+### Svaki email zapis:
+
+* from
+* to
+* cc
+* subject
+* thread id
+* body snippet
+* attachments
+* related booking
+* related contact
+* direction (inbound/outbound)
+
+---
+
+## 3.6 Messaging Threads
+
+Gde je tehnički moguće, pratiti i:
+
+* WhatsApp
+* Viber
+* Telegram
+* internal messages
+
+Ne mora sve odmah da bude full 2-way sync, ali arhitektura treba da ga dozvoli.
+
+---
+
+## 3.7 Linked Bookings
+
+Komunikacija mora biti vezana za:
+
+* booking
+* offer
+* support case
+* campaign
+* agent/account
+
+Na primer, iz rezervacije treba videti:
+
+* svi mejlovi vezani za tu rezervaciju
+* poslate dokumente
+* payment reminders
+* note operatera
+
+---
+
+## 3.8 Campaign History u CRM-u
+
+Za svakog kontakta/agenciju treba videti:
+
+* koje kampanje je primio
+* da li je otvorio
+* da li je kliknuo
+* da li je iz toga nastala rezervacija
+* unsubscribe status
+
+To je ogroman plus za prodaju i marketing.
+
+---
+
+## 3.9 Tasks / Follow-ups
+
+Veoma korisno je da uz komunikaciju postoje zadaci.
+
+Primer:
+
+* “Pozvati klijenta sutra”
+* “Poslati novu ponudu agentu”
+* “Sačekati odgovor hotela”
+* “Proveriti rooming izmene”
+
+### Task polja:
+
+* related contact
+* related booking
+* assigned to
+* due date
+* status
+* notes
+
+---
+
+## 3.10 Internal Notes
+
+Pored stvarne komunikacije, sistem mora imati:
+
+* privatne note
+* timske note
+* operativne beleške
+* account management beleške
+
+Naravno, ne vide ih svi korisnici.
+
+---
+
+## 3.11 CRM Search
+
+Pretraga mora da radi preko:
+
+* imena
+* email adrese
+* telefona
+* booking ref
+* agency name
+* company code
+* passport no. po potrebi
+* message content
+* email subject
+
+To je ključno da tim brzo pronađe istoriju.
+
+---
+
+## 3.12 CRM Alerts
+
+Sistem može pokazivati upozorenja:
+
+* VIP client
+* overdue agent
+* client complaint history
+* urgent travel in next 48h
+* no response in thread 5 days
+* repeated payment issues
+* high-value agency
+
+---
+
+# 4. Kako se ova 3 modula povezuju sa ostatkom sistema
+
+Oni nisu odvojeni, nego ulaze u samu srž platforme.
+
+## Marketing modul se povezuje sa:
+
+* CRM kontaktima
+* rezervacijama
+* segmentima
+* revenue analitikom
+
+## AI Assistant se povezuje sa:
+
+* booking modulom
+* finansijama
+* operativom
+* pricing pravilima
+* marketingom
+* CRM-om
+
+## Communication Hub se povezuje sa:
+
+* rezervacijama
+* agentima
+* dokumentima
+* taskovima
+* kampanjama
+* support slučajevima
+
+---
+
+# 5. Moj zaključak
+
+Ovo što ste tražili:
+
+* ima veliki smisao
+* veoma je moderno
+* realno rešava svakodnevne probleme
+* pravi ogromnu razliku između “još jednog sistema” i stvarnog centralnog poslovnog alata
+
+Po meni, ova 3 modula treba da budu **zvaničan deo master arhitekture**.
+
+---
+
+# 6. Šta predlažem sledeće
+
+Sada imamo dve prirodne opcije:
+
+### A.
+
+da odmah razradim **svaki od ova 3 modula detaljno**, kao što smo radili za rezervacije, finansije, rooming itd.
+
+ili
+
+### B.
+
+da sada pređemo na **UI/CSS dizajn sistem**, ali tako da u njega uključim i:
+
+* marketing workspace
+* AI command center
+* CRM communication timeline
+
+Najlogičnije je da sada nastavimo sa:
+**detaljnom razradom Marketing modula**, pa posle AI Assistant, pa CRM Hub.

@@ -1,0 +1,46 @@
+# 18. DODATNI MODUL — GROWTH HACKING I OSIGURANJE
+
+Marketing i psihologija prodaje konvertuju "prozore pretrage" u "plaćene rezervacije".
+
+---
+
+## 1. Scarcity & Urgency Engine (Psihologija prodaje)
+
+Logika koja se unosi u B2C Search API da bi se podstakla brža odluka kupca.
+
+### Tipovi "Nudge" signala:
+*   **Live Viewer Count:** "12 ljudi trenutno gleda ovaj hotel".
+*   **Inventory Alert:** "Samo još 2 sobe po ovoj ceni".
+*   **Social Proof:** "Poslednja rezervacija za ovaj hotel napravljena pre 45 minuta".
+*   **Dynamic Price Drop:** "Cena snižena za 8% od vaše poslednje posete".
+
+---
+
+## 2. Insurance Engine (API integracija sa osiguranjem)
+
+Osiguranje nije samo "dodatak", već poseban entitet sa sopstvenim pravilima.
+
+### Integracioni tok:
+*   **Dynamic Quote:** Prilikom pravljenja rezrvacije, sistem šalje zahtev osiguravajućoj kući (npr. DDOR, Dunav, Generali) sa datumima i uzrastom putnika.
+*   **Instant Policy:** Čim je booking plaćen, sistem automatski generiše i šalje polisu osiguranja putniku bez ručnog unosa agenta.
+*   **Tabela `insurance_policies`:**
+    *   `id`
+    *   `booking_id`
+    *   `provider_id`
+    *   `policy_number`
+    *   `premium_amount`
+    *   `status` (active, cancelled)
+
+---
+
+## 3. SEO Nudger (AI assisted)
+
+*   **Internal Linking:** Automatsko generisanje linkova u blog tekstovima ka najprodavanijim paketima u tom momentu.
+*   **Landing Page Builder:** Dinamičko kreiranje stranica tipa "Last Minute Egipat iz Beograda" na osnovu trenutnog load factora čartera.
+
+---
+
+## 4. Loyalty & Referral Program
+
+*   **Referral Code:** Dobijanje popusta ako klijent dovede drugog putnika.
+*   **Tiered Status:** Silver/Gold klijenti dobijaju rani pristup čarter sezonama.

@@ -1,0 +1,54 @@
+# 16. DODATNI MODUL — FISKALIZACIJA I LOKALNA USKLAĐENOST (COMPLIANCE)
+
+Ovaj modul osigurava da platforma Neo Travel funkcioniše u potpunosti u skladu sa lokalnim zakonima (Srbija i region), posebno u domenu finansija i zaštite podataka.
+
+---
+
+## 1. Fiskalni Adapter (ESIR / L-PFR Integracija)
+
+Sistem mora automatski komunicirati sa procesorom fiskalnih računa (PFR) prilikom svake uplate.
+
+### Funkcionalnosti:
+*   **Automatska fiskalizacija:** Kod svake uspešne transakcije (kartica, e-banking potvrda) sistem šalje podatke na fiskalizaciju.
+*   **Štampa QR koda:** Fiskalni elementi se automatski dodaju na račun/vaučer koji se šalje putniku.
+*   **Refundacija:** Logika za automatsko izdavanje naloga za ispravku/refundaciju po zakonu.
+*   **Dnevni izveštaji:** Automatsko usaglašavanje internog prometa sa cloud/lokalnim fiskalnim registrom.
+
+---
+
+## 2. Sistem E-Faktura (SEF Integracija)
+
+Za B2B partnere i korporativne klijente, integracija sa državnim sistemom e-faktura.
+
+### Workflow:
+1.  **Booking confirmed** → Generisanje e-fakture.
+2.  **SEF Push** → Slanje na portal e-faktura (API konekcija).
+3.  **Status Sync** → Praćenje da li je klijent odobrio ili odbio e-fakturu u realnom vremenu.
+
+---
+
+## 3. GDPR & Data Privacy (Politika zadržavanja podataka)
+
+Putne agencije čuvaju osetljive podatke (pasoši, JMBG).
+
+### Pravila automatizacije:
+*   **Passport Purge:** Automatsko brisanje skenova pasoša i brojeva dokumenata 30 dana nakon povratka sa putovanja (ostaju samo ime i prezime za arhivu).
+*   **Right to be Forgotten:** Jednim klikom u CRM-u se anonimizuju svi lični podaci klijenta.
+*   **Activity Logs:** Svaki pristup pasoškim podacima od strane operatora se loguje (ko je gledao, kada, zašto).
+
+---
+
+## 4. PDV i Specifična putna logika
+
+*   **Maržni porez:** Logika za automatsko odvajanje PDV-a na razliku u ceni (marža) za turističke usluge.
+*   **Agencijske provizije:** Sistem mora jasno razdvojiti promet u ime i za račun trećeg lica od sopstvene prodaje.
+
+---
+
+## 5. Tabela: `compliance_audit_logs`
+*   `id` (PK)
+*   `entity_type` (booking, contact, invoice)
+*   `action` (fiscalization, data_purge, sef_push)
+*   `status` (success, fail)
+*   `response_payload` (JSON od državnih sistema)
+*   `created_at`

@@ -1,0 +1,1120 @@
+Nastavljam sa **Deo 2: ER dijagram logika + detaljna SQL schema sa relacijama**.
+
+Ovaj deo je zamišljen kao osnova za backend arhitektu i bazu sistema. Struktura je postavljena tako da podrži:
+
+* samo hotel
+* samo let
+* paket aranžmane
+* transfere
+* aktivnosti / ulaznice
+* krstarenja
+* B2C, B2B i interni agentski rad
+
+---
+
+# TEHNIČKI DOKUMENT ZA RAZVOJNI TIM
+
+## Unified Travel Booking Platform
+
+### Deo 2 — ER dijagram logika + detaljna SQL schema
+
+# 1. Arhitektonski princip baze
+
+Baza je organizovana kroz 4 glavne domene:
+
+1. **Identity & Access**
+2. **Product & Content**
+3. **Search / Offer / Booking**
+4. **Finance / Documents / Admin**
+
+Suština modela je:
+
+* jedan **master booking**
+* više **booking items**
+* svi proizvodi tretirani kao zasebne stavke
+* offer/snapshot sloj između pretrage i bookinga
+* jasna odvojenost između:
+
+  * statičkog sadržaja
+  * dinamičke raspoloživosti i cena
+  * transakcionih zapisa
+
+---
+
+# 2. Logika glavnih relacija
+
+## 2.1 Glavna relacija sistema
+
+```text
+users
+ ├── travelers
+ ├── search_requests
+ ├── bookings
+ │    ├── booking_items
+ │    │    ├── booking_item_travelers
+ │    │    ├── supplier_reservations
+ │    │    ├── cancellation_requests
+ │    │    └── tickets / vouchers
+ │    ├── payments
+ │    ├── documents
+ │    ├── invoices
+ │    └── refunds
+ └── agent_profiles
+```
+
+## 2.2 Produktna relacija
+
+```text
+destinations
+ ├── hotels
+ │    ├── hotel_rooms
+ │    ├── hotel_images
+ │    ├── hotel_facilities
+ │    └── hotel_supplier_maps
+ ├── activities
+ ├── transfers
+ └── cruises / ports
+```
+
+## 2.3 Flight relacija
+
+```text
+airports
+ ├── flights
+ │    ├── flight_segments
+ │    ├── flight_fares
+ │    └── airlines
+```
+
+## 2.4 Offer relacija
+
+```text
+search_requests
+ ├── search_results_cache
+ ├── offers
+ │    ├── offer_items
+ │    ├── pricing_snapshots
+ │    └── ranking_features
+```
+
+---
+
+# 3. Identity & Access schema
+
+## 3.1 users
+
+```sql
+CREATE TABLE users (
+    id BIGSERIAL PRIMARY KEY,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password_hash TEXT,
+    first_name VARCHAR(120),
+    last_name VARCHAR(120),
+    phone VARCHAR(60),
+    country_code VARCHAR(10),
+    locale VARCHAR(10),
+    status VARCHAR(30) NOT NULL DEFAULT 'active',
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+```
+
+## 3.2 roles
+
+```sql
+CREATE TABLE roles (
+    id BIGSERIAL PRIMARY KEY,
+    code VARCHAR(50) NOT NULL UNIQUE,
+    name VARCHAR(100) NOT NULL
+);
+```
+
+Primeri:
+
+* customer
+* agent
+* admin
+* support
+* finance
+
+## 3.3 user_roles
+
+```sql
+CREATE TABLE user_roles (
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    role_id BIGINT NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+    PRIMARY KEY (user_id, role_id)
+);
+```
+
+## 3.4 agent_profiles
+
+```sql
+CREATE TABLE agent_profiles (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+    agency_name VARCHAR(255) NOT NULL,
+    agency_code VARCHAR(100) UNIQUE,
+    credit_limit NUMERIC(14,2) DEFAULT 0,
+    payment_terms_days INTEGER DEFAULT 0,
+    commission_model VARCHAR(50),
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+```
+
+## 3.5 travelers
+
+Putnici sačuvani za buduće rezervacije.
+
+```sql
+CREATE TABLE travelers (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    traveler_type VARCHAR(20) NOT NULL, -- adult, child, infant
+    first_name VARCHAR(120) NOT NULL,
+    last_name VARCHAR(120) NOT NULL,
+    gender VARCHAR(20),
+    date_of_birth DATE,
+    nationality VARCHAR(80),
+    passport_number VARCHAR(100),
+    passport_expiry DATE,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+```
+
+---
+
+# 4. Location & Reference schema
+
+## 4.1 destinations
+
+```sql
+CREATE TABLE destinations (
+    id BIGSERIAL PRIMARY KEY,
+    code VARCHAR(50) NOT NULL UNIQUE,
+    name VARCHAR(255) NOT NULL,
+    country_name VARCHAR(120),
+    country_code VARCHAR(10),
+    region_name VARCHAR(120),
+    latitude NUMERIC(10,7),
+    longitude NUMERIC(10,7),
+    destination_type VARCHAR(30), -- city, resort, island, region, theme_park
+    is_active BOOLEAN NOT NULL DEFAULT TRUE
+);
+```
+
+## 4.2 airports
+
+```sql
+CREATE TABLE airports (
+    id BIGSERIAL PRIMARY KEY,
+    iata_code VARCHAR(3) NOT NULL UNIQUE,
+    icao_code VARCHAR(4),
+    name VARCHAR(255) NOT NULL,
+    city_name VARCHAR(120),
+    country_code VARCHAR(10),
+    latitude NUMERIC(10,7),
+    longitude NUMERIC(10,7),
+    timezone VARCHAR(80)
+);
+```
+
+## 4.3 airlines
+
+```sql
+CREATE TABLE airlines (
+    id BIGSERIAL PRIMARY KEY,
+    iata_code VARCHAR(3),
+    icao_code VARCHAR(4),
+    name VARCHAR(255) NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE
+);
+```
+
+## 4.4 ports
+
+Za krstarenja.
+
+```sql
+CREATE TABLE ports (
+    id BIGSERIAL PRIMARY KEY,
+    code VARCHAR(50) NOT NULL UNIQUE,
+    name VARCHAR(255) NOT NULL,
+    city_name VARCHAR(120),
+    country_code VARCHAR(10),
+    latitude NUMERIC(10,7),
+    longitude NUMERIC(10,7)
+);
+```
+
+---
+
+# 5. Supplier schema
+
+## 5.1 suppliers
+
+```sql
+CREATE TABLE suppliers (
+    id BIGSERIAL PRIMARY KEY,
+    code VARCHAR(100) NOT NULL UNIQUE,
+    name VARCHAR(255) NOT NULL,
+    supplier_type VARCHAR(30) NOT NULL, -- hotel, flight, transfer, activity, cruise
+    api_endpoint TEXT,
+    status VARCHAR(30) NOT NULL DEFAULT 'active',
+    priority_order INTEGER DEFAULT 100,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+```
+
+## 5.2 supplier_credentials
+
+```sql
+CREATE TABLE supplier_credentials (
+    id BIGSERIAL PRIMARY KEY,
+    supplier_id BIGINT NOT NULL REFERENCES suppliers(id) ON DELETE CASCADE,
+    credential_name VARCHAR(120) NOT NULL,
+    credential_value_encrypted TEXT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+```
+
+## 5.3 supplier_channel_rules
+
+```sql
+CREATE TABLE supplier_channel_rules (
+    id BIGSERIAL PRIMARY KEY,
+    supplier_id BIGINT NOT NULL REFERENCES suppliers(id) ON DELETE CASCADE,
+    sales_channel VARCHAR(30) NOT NULL, -- b2c, b2b, internal
+    is_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    allow_package BOOLEAN NOT NULL DEFAULT TRUE,
+    allow_discount BOOLEAN NOT NULL DEFAULT TRUE
+);
+```
+
+---
+
+# 6. Hotel schema
+
+## 6.1 hotels
+
+```sql
+CREATE TABLE hotels (
+    id BIGSERIAL PRIMARY KEY,
+    destination_id BIGINT REFERENCES destinations(id),
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    address_line TEXT,
+    city_name VARCHAR(120),
+    country_code VARCHAR(10),
+    latitude NUMERIC(10,7),
+    longitude NUMERIC(10,7),
+    stars NUMERIC(2,1),
+    checkin_time VARCHAR(20),
+    checkout_time VARCHAR(20),
+    status VARCHAR(30) NOT NULL DEFAULT 'active',
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+```
+
+## 6.2 hotel_supplier_maps
+
+Pošto isti hotel može doći od više supplier-a.
+
+```sql
+CREATE TABLE hotel_supplier_maps (
+    id BIGSERIAL PRIMARY KEY,
+    hotel_id BIGINT NOT NULL REFERENCES hotels(id) ON DELETE CASCADE,
+    supplier_id BIGINT NOT NULL REFERENCES suppliers(id) ON DELETE CASCADE,
+    supplier_hotel_code VARCHAR(255) NOT NULL,
+    is_preferred BOOLEAN NOT NULL DEFAULT FALSE,
+    UNIQUE (supplier_id, supplier_hotel_code)
+);
+```
+
+## 6.3 hotel_rooms
+
+```sql
+CREATE TABLE hotel_rooms (
+    id BIGSERIAL PRIMARY KEY,
+    hotel_id BIGINT NOT NULL REFERENCES hotels(id) ON DELETE CASCADE,
+    code VARCHAR(100),
+    name VARCHAR(255) NOT NULL,
+    max_adults INTEGER NOT NULL DEFAULT 2,
+    max_children INTEGER NOT NULL DEFAULT 0,
+    max_infants INTEGER NOT NULL DEFAULT 0,
+    room_description TEXT
+);
+```
+
+## 6.4 board_types
+
+```sql
+CREATE TABLE board_types (
+    id BIGSERIAL PRIMARY KEY,
+    code VARCHAR(20) NOT NULL UNIQUE, -- RO, BB, HB, FB, AI
+    name VARCHAR(100) NOT NULL
+);
+```
+
+## 6.5 hotel_rate_plans
+
+```sql
+CREATE TABLE hotel_rate_plans (
+    id BIGSERIAL PRIMARY KEY,
+    room_id BIGINT NOT NULL REFERENCES hotel_rooms(id) ON DELETE CASCADE,
+    board_type_id BIGINT REFERENCES board_types(id),
+    supplier_id BIGINT REFERENCES suppliers(id),
+    rate_plan_code VARCHAR(120),
+    rate_name VARCHAR(255),
+    cancellation_type VARCHAR(50), -- refundable, non_refundable, partial
+    is_package_eligible BOOLEAN NOT NULL DEFAULT TRUE
+);
+```
+
+## 6.6 hotel_images
+
+```sql
+CREATE TABLE hotel_images (
+    id BIGSERIAL PRIMARY KEY,
+    hotel_id BIGINT NOT NULL REFERENCES hotels(id) ON DELETE CASCADE,
+    image_url TEXT NOT NULL,
+    sort_order INTEGER DEFAULT 0
+);
+```
+
+## 6.7 hotel_facilities
+
+```sql
+CREATE TABLE hotel_facilities (
+    id BIGSERIAL PRIMARY KEY,
+    code VARCHAR(100) NOT NULL UNIQUE,
+    name VARCHAR(255) NOT NULL
+);
+```
+
+## 6.8 hotel_facility_map
+
+```sql
+CREATE TABLE hotel_facility_map (
+    hotel_id BIGINT NOT NULL REFERENCES hotels(id) ON DELETE CASCADE,
+    facility_id BIGINT NOT NULL REFERENCES hotel_facilities(id) ON DELETE CASCADE,
+    PRIMARY KEY (hotel_id, facility_id)
+);
+```
+
+---
+
+# 7. Flight schema
+
+## 7.1 flights
+
+Ovo može biti “marketed itinerary header”.
+
+```sql
+CREATE TABLE flights (
+    id BIGSERIAL PRIMARY KEY,
+    supplier_id BIGINT REFERENCES suppliers(id),
+    validating_airline_id BIGINT REFERENCES airlines(id),
+    origin_airport_id BIGINT REFERENCES airports(id),
+    destination_airport_id BIGINT REFERENCES airports(id),
+    travel_type VARCHAR(20), -- one_way, return, multi_city
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+```
+
+## 7.2 flight_segments
+
+```sql
+CREATE TABLE flight_segments (
+    id BIGSERIAL PRIMARY KEY,
+    flight_id BIGINT NOT NULL REFERENCES flights(id) ON DELETE CASCADE,
+    segment_order INTEGER NOT NULL,
+    airline_id BIGINT REFERENCES airlines(id),
+    flight_number VARCHAR(30),
+    departure_airport_id BIGINT REFERENCES airports(id),
+    arrival_airport_id BIGINT REFERENCES airports(id),
+    departure_time TIMESTAMP NOT NULL,
+    arrival_time TIMESTAMP NOT NULL,
+    booking_class VARCHAR(10),
+    cabin_class VARCHAR(30)
+);
+```
+
+## 7.3 flight_fares
+
+```sql
+CREATE TABLE flight_fares (
+    id BIGSERIAL PRIMARY KEY,
+    flight_id BIGINT NOT NULL REFERENCES flights(id) ON DELETE CASCADE,
+    supplier_id BIGINT REFERENCES suppliers(id),
+    fare_family VARCHAR(120),
+    fare_basis_code VARCHAR(50),
+    baggage_included BOOLEAN DEFAULT FALSE,
+    seats_available INTEGER,
+    is_refundable BOOLEAN DEFAULT FALSE,
+    is_changeable BOOLEAN DEFAULT FALSE,
+    base_price NUMERIC(14,2) NOT NULL,
+    tax_amount NUMERIC(14,2) NOT NULL DEFAULT 0,
+    total_price NUMERIC(14,2) NOT NULL,
+    currency VARCHAR(10) NOT NULL
+);
+```
+
+---
+
+# 8. Transfer schema
+
+## 8.1 transfer_routes
+
+```sql
+CREATE TABLE transfer_routes (
+    id BIGSERIAL PRIMARY KEY,
+    supplier_id BIGINT REFERENCES suppliers(id),
+    origin_type VARCHAR(30) NOT NULL, -- airport, hotel, port, station
+    origin_code VARCHAR(100) NOT NULL,
+    destination_type VARCHAR(30) NOT NULL,
+    destination_code VARCHAR(100) NOT NULL,
+    destination_id BIGINT REFERENCES destinations(id),
+    is_active BOOLEAN NOT NULL DEFAULT TRUE
+);
+```
+
+## 8.2 transfer_vehicle_types
+
+```sql
+CREATE TABLE transfer_vehicle_types (
+    id BIGSERIAL PRIMARY KEY,
+    code VARCHAR(50) NOT NULL UNIQUE,
+    name VARCHAR(120) NOT NULL,
+    max_passengers INTEGER NOT NULL,
+    max_bags INTEGER
+);
+```
+
+## 8.3 transfer_offers
+
+```sql
+CREATE TABLE transfer_offers (
+    id BIGSERIAL PRIMARY KEY,
+    route_id BIGINT NOT NULL REFERENCES transfer_routes(id) ON DELETE CASCADE,
+    vehicle_type_id BIGINT REFERENCES transfer_vehicle_types(id),
+    service_type VARCHAR(30), -- private, shared
+    base_price NUMERIC(14,2) NOT NULL,
+    currency VARCHAR(10) NOT NULL,
+    is_package_eligible BOOLEAN NOT NULL DEFAULT TRUE
+);
+```
+
+---
+
+# 9. Activities / tickets schema
+
+## 9.1 activity_categories
+
+```sql
+CREATE TABLE activity_categories (
+    id BIGSERIAL PRIMARY KEY,
+    code VARCHAR(50) NOT NULL UNIQUE,
+    name VARCHAR(120) NOT NULL
+);
+```
+
+## 9.2 activities
+
+```sql
+CREATE TABLE activities (
+    id BIGSERIAL PRIMARY KEY,
+    supplier_id BIGINT REFERENCES suppliers(id),
+    destination_id BIGINT REFERENCES destinations(id),
+    category_id BIGINT REFERENCES activity_categories(id),
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    meeting_point TEXT,
+    duration_minutes INTEGER,
+    is_ticketed BOOLEAN NOT NULL DEFAULT FALSE,
+    is_package_eligible BOOLEAN NOT NULL DEFAULT TRUE,
+    status VARCHAR(30) NOT NULL DEFAULT 'active'
+);
+```
+
+## 9.3 activity_options
+
+```sql
+CREATE TABLE activity_options (
+    id BIGSERIAL PRIMARY KEY,
+    activity_id BIGINT NOT NULL REFERENCES activities(id) ON DELETE CASCADE,
+    option_name VARCHAR(255) NOT NULL,
+    option_code VARCHAR(100),
+    price_type VARCHAR(30), -- per_person, per_group
+    base_price NUMERIC(14,2) NOT NULL,
+    currency VARCHAR(10) NOT NULL
+);
+```
+
+## 9.4 activity_calendar
+
+```sql
+CREATE TABLE activity_calendar (
+    id BIGSERIAL PRIMARY KEY,
+    activity_option_id BIGINT NOT NULL REFERENCES activity_options(id) ON DELETE CASCADE,
+    activity_date DATE NOT NULL,
+    availability INTEGER,
+    status VARCHAR(30) DEFAULT 'available'
+);
+```
+
+---
+
+# 10. Cruise schema
+
+## 10.1 cruise_lines
+
+```sql
+CREATE TABLE cruise_lines (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL UNIQUE
+);
+```
+
+## 10.2 ships
+
+```sql
+CREATE TABLE ships (
+    id BIGSERIAL PRIMARY KEY,
+    cruise_line_id BIGINT NOT NULL REFERENCES cruise_lines(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    description TEXT
+);
+```
+
+## 10.3 cruises
+
+Jedan konkretan sailing / departure.
+
+```sql
+CREATE TABLE cruises (
+    id BIGSERIAL PRIMARY KEY,
+    supplier_id BIGINT REFERENCES suppliers(id),
+    cruise_line_id BIGINT REFERENCES cruise_lines(id),
+    ship_id BIGINT REFERENCES ships(id),
+    departure_port_id BIGINT REFERENCES ports(id),
+    departure_date DATE NOT NULL,
+    return_date DATE,
+    nights INTEGER NOT NULL,
+    status VARCHAR(30) NOT NULL DEFAULT 'active'
+);
+```
+
+## 10.4 cruise_itinerary_days
+
+```sql
+CREATE TABLE cruise_itinerary_days (
+    id BIGSERIAL PRIMARY KEY,
+    cruise_id BIGINT NOT NULL REFERENCES cruises(id) ON DELETE CASCADE,
+    day_number INTEGER NOT NULL,
+    port_id BIGINT REFERENCES ports(id),
+    arrival_time VARCHAR(20),
+    departure_time VARCHAR(20),
+    is_sea_day BOOLEAN NOT NULL DEFAULT FALSE
+);
+```
+
+## 10.5 cabin_types
+
+```sql
+CREATE TABLE cabin_types (
+    id BIGSERIAL PRIMARY KEY,
+    code VARCHAR(50) NOT NULL UNIQUE, -- inside, ocean_view, balcony, suite
+    name VARCHAR(120) NOT NULL
+);
+```
+
+## 10.6 cruise_cabin_offers
+
+```sql
+CREATE TABLE cruise_cabin_offers (
+    id BIGSERIAL PRIMARY KEY,
+    cruise_id BIGINT NOT NULL REFERENCES cruises(id) ON DELETE CASCADE,
+    cabin_type_id BIGINT REFERENCES cabin_types(id),
+    max_adults INTEGER NOT NULL DEFAULT 2,
+    max_children INTEGER NOT NULL DEFAULT 0,
+    base_price NUMERIC(14,2) NOT NULL,
+    port_taxes NUMERIC(14,2) NOT NULL DEFAULT 0,
+    gratuities NUMERIC(14,2) NOT NULL DEFAULT 0,
+    currency VARCHAR(10) NOT NULL,
+    is_package_eligible BOOLEAN NOT NULL DEFAULT TRUE
+);
+```
+
+---
+
+# 11. Search / Offer schema
+
+Ovo je veoma važno jer odvaja **pretragu** od **rezervacije**.
+
+## 11.1 search_requests
+
+```sql
+CREATE TABLE search_requests (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT REFERENCES users(id),
+    sales_channel VARCHAR(30) NOT NULL, -- b2c, b2b, internal
+    search_type VARCHAR(50) NOT NULL, -- hotel, flight, package, cruise
+    request_payload JSONB NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+```
+
+## 11.2 search_results_cache
+
+```sql
+CREATE TABLE search_results_cache (
+    id BIGSERIAL PRIMARY KEY,
+    search_request_id BIGINT NOT NULL REFERENCES search_requests(id) ON DELETE CASCADE,
+    cache_key VARCHAR(255) NOT NULL,
+    result_payload JSONB NOT NULL,
+    expires_at TIMESTAMP NOT NULL
+);
+```
+
+## 11.3 offers
+
+Offer je “ponuda spremna za prikaz ili booking”.
+
+```sql
+CREATE TABLE offers (
+    id BIGSERIAL PRIMARY KEY,
+    search_request_id BIGINT NOT NULL REFERENCES search_requests(id) ON DELETE CASCADE,
+    offer_type VARCHAR(50) NOT NULL, -- hotel_only, flight_only, package, cruise_only
+    offer_hash VARCHAR(255) NOT NULL,
+    status VARCHAR(30) NOT NULL DEFAULT 'available',
+    total_price NUMERIC(14,2) NOT NULL,
+    currency VARCHAR(10) NOT NULL,
+    score NUMERIC(10,2),
+    margin_amount NUMERIC(14,2),
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    expires_at TIMESTAMP
+);
+```
+
+## 11.4 offer_items
+
+```sql
+CREATE TABLE offer_items (
+    id BIGSERIAL PRIMARY KEY,
+    offer_id BIGINT NOT NULL REFERENCES offers(id) ON DELETE CASCADE,
+    item_type VARCHAR(30) NOT NULL, -- hotel, flight, transfer, activity, cruise
+    item_ref_type VARCHAR(50) NOT NULL, -- hotel_rate_plan, flight_fare, transfer_offer, activity_option, cruise_cabin_offer
+    item_ref_id BIGINT NOT NULL,
+    supplier_id BIGINT REFERENCES suppliers(id),
+    net_price NUMERIC(14,2) NOT NULL,
+    sell_price NUMERIC(14,2) NOT NULL,
+    currency VARCHAR(10) NOT NULL
+);
+```
+
+## 11.5 pricing_snapshots
+
+```sql
+CREATE TABLE pricing_snapshots (
+    id BIGSERIAL PRIMARY KEY,
+    offer_id BIGINT NOT NULL REFERENCES offers(id) ON DELETE CASCADE,
+    pricing_payload JSONB NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    expires_at TIMESTAMP NOT NULL
+);
+```
+
+## 11.6 ranking_features
+
+```sql
+CREATE TABLE ranking_features (
+    id BIGSERIAL PRIMARY KEY,
+    offer_id BIGINT NOT NULL REFERENCES offers(id) ON DELETE CASCADE,
+    conversion_score NUMERIC(10,4),
+    margin_score NUMERIC(10,4),
+    popularity_score NUMERIC(10,4),
+    convenience_score NUMERIC(10,4),
+    flexibility_score NUMERIC(10,4),
+    final_score NUMERIC(10,4)
+);
+```
+
+---
+
+# 12. Booking schema
+
+Ovo je centralni transakcioni sloj.
+
+## 12.1 bookings
+
+```sql
+CREATE TABLE bookings (
+    id BIGSERIAL PRIMARY KEY,
+    reference VARCHAR(50) NOT NULL UNIQUE,
+    user_id BIGINT REFERENCES users(id),
+    agent_profile_id BIGINT REFERENCES agent_profiles(id),
+    sales_channel VARCHAR(30) NOT NULL, -- b2c, b2b, internal
+    booking_type VARCHAR(50) NOT NULL,
+    status VARCHAR(30) NOT NULL DEFAULT 'pending',
+    currency VARCHAR(10) NOT NULL,
+    total_amount NUMERIC(14,2) NOT NULL DEFAULT 0,
+    net_amount NUMERIC(14,2) DEFAULT 0,
+    markup_amount NUMERIC(14,2) DEFAULT 0,
+    commission_amount NUMERIC(14,2) DEFAULT 0,
+    offer_id BIGINT REFERENCES offers(id),
+    pricing_snapshot_id BIGINT REFERENCES pricing_snapshots(id),
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+```
+
+## 12.2 booking_items
+
+```sql
+CREATE TABLE booking_items (
+    id BIGSERIAL PRIMARY KEY,
+    booking_id BIGINT NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+    item_type VARCHAR(30) NOT NULL,
+    item_ref_type VARCHAR(50),
+    item_ref_id BIGINT,
+    supplier_id BIGINT REFERENCES suppliers(id),
+    supplier_reference VARCHAR(255),
+    status VARCHAR(30) NOT NULL DEFAULT 'new',
+    start_date DATE,
+    end_date DATE,
+    gross_amount NUMERIC(14,2) NOT NULL DEFAULT 0,
+    net_amount NUMERIC(14,2) NOT NULL DEFAULT 0,
+    markup_amount NUMERIC(14,2) NOT NULL DEFAULT 0,
+    commission_amount NUMERIC(14,2) NOT NULL DEFAULT 0,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+```
+
+## 12.3 booking_travelers
+
+Povezuje putnike sa booking-om.
+
+```sql
+CREATE TABLE booking_travelers (
+    id BIGSERIAL PRIMARY KEY,
+    booking_id BIGINT NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+    traveler_type VARCHAR(20) NOT NULL,
+    first_name VARCHAR(120) NOT NULL,
+    last_name VARCHAR(120) NOT NULL,
+    gender VARCHAR(20),
+    date_of_birth DATE,
+    nationality VARCHAR(80),
+    passport_number VARCHAR(100),
+    passport_expiry DATE
+);
+```
+
+## 12.4 booking_item_travelers
+
+Ako pojedine stavke imaju specifične putnike.
+
+```sql
+CREATE TABLE booking_item_travelers (
+    booking_item_id BIGINT NOT NULL REFERENCES booking_items(id) ON DELETE CASCADE,
+    booking_traveler_id BIGINT NOT NULL REFERENCES booking_travelers(id) ON DELETE CASCADE,
+    PRIMARY KEY (booking_item_id, booking_traveler_id)
+);
+```
+
+## 12.5 supplier_reservations
+
+Čuva odgovor dobavljača po stavci.
+
+```sql
+CREATE TABLE supplier_reservations (
+    id BIGSERIAL PRIMARY KEY,
+    booking_item_id BIGINT NOT NULL REFERENCES booking_items(id) ON DELETE CASCADE,
+    supplier_id BIGINT NOT NULL REFERENCES suppliers(id),
+    reservation_reference VARCHAR(255),
+    reservation_payload JSONB,
+    status VARCHAR(30) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+```
+
+---
+
+# 13. Payment / finance schema
+
+## 13.1 payment_providers
+
+```sql
+CREATE TABLE payment_providers (
+    id BIGSERIAL PRIMARY KEY,
+    code VARCHAR(50) NOT NULL UNIQUE,
+    name VARCHAR(120) NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE
+);
+```
+
+## 13.2 payments
+
+```sql
+CREATE TABLE payments (
+    id BIGSERIAL PRIMARY KEY,
+    booking_id BIGINT NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+    payment_provider_id BIGINT REFERENCES payment_providers(id),
+    payment_method VARCHAR(30) NOT NULL, -- card, bank_transfer, agent_credit
+    status VARCHAR(30) NOT NULL, -- authorized, captured, failed, refunded
+    amount NUMERIC(14,2) NOT NULL,
+    currency VARCHAR(10) NOT NULL,
+    external_transaction_id VARCHAR(255),
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+```
+
+## 13.3 refunds
+
+```sql
+CREATE TABLE refunds (
+    id BIGSERIAL PRIMARY KEY,
+    payment_id BIGINT NOT NULL REFERENCES payments(id) ON DELETE CASCADE,
+    refund_amount NUMERIC(14,2) NOT NULL,
+    currency VARCHAR(10) NOT NULL,
+    reason TEXT,
+    status VARCHAR(30) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+```
+
+## 13.4 commissions
+
+```sql
+CREATE TABLE commissions (
+    id BIGSERIAL PRIMARY KEY,
+    booking_item_id BIGINT NOT NULL REFERENCES booking_items(id) ON DELETE CASCADE,
+    agent_profile_id BIGINT REFERENCES agent_profiles(id),
+    commission_rate NUMERIC(8,4),
+    commission_amount NUMERIC(14,2) NOT NULL DEFAULT 0
+);
+```
+
+## 13.5 pricing_rules
+
+```sql
+CREATE TABLE pricing_rules (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    sales_channel VARCHAR(30),
+    product_type VARCHAR(30),
+    supplier_id BIGINT REFERENCES suppliers(id),
+    destination_id BIGINT REFERENCES destinations(id),
+    markup_type VARCHAR(20), -- fixed, percent
+    markup_value NUMERIC(14,4),
+    commission_type VARCHAR(20), -- fixed, percent
+    commission_value NUMERIC(14,4),
+    valid_from DATE,
+    valid_to DATE,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE
+);
+```
+
+---
+
+# 14. Documents schema
+
+## 14.1 documents
+
+```sql
+CREATE TABLE documents (
+    id BIGSERIAL PRIMARY KEY,
+    booking_id BIGINT NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+    booking_item_id BIGINT REFERENCES booking_items(id) ON DELETE CASCADE,
+    document_type VARCHAR(30) NOT NULL, -- voucher, itinerary, invoice, proforma, ticket
+    file_path TEXT NOT NULL,
+    file_name VARCHAR(255),
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+```
+
+## 14.2 invoices
+
+```sql
+CREATE TABLE invoices (
+    id BIGSERIAL PRIMARY KEY,
+    booking_id BIGINT NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+    invoice_type VARCHAR(30) NOT NULL, -- invoice, proforma, credit_note
+    invoice_number VARCHAR(100),
+    total_amount NUMERIC(14,2) NOT NULL,
+    currency VARCHAR(10) NOT NULL,
+    issue_date DATE NOT NULL,
+    due_date DATE
+);
+```
+
+---
+
+# 15. Cancellation / servicing schema
+
+## 15.1 cancellation_requests
+
+```sql
+CREATE TABLE cancellation_requests (
+    id BIGSERIAL PRIMARY KEY,
+    booking_id BIGINT REFERENCES bookings(id) ON DELETE CASCADE,
+    booking_item_id BIGINT REFERENCES booking_items(id) ON DELETE CASCADE,
+    requested_by_user_id BIGINT REFERENCES users(id),
+    reason TEXT,
+    status VARCHAR(30) NOT NULL DEFAULT 'requested',
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+```
+
+## 15.2 booking_status_history
+
+```sql
+CREATE TABLE booking_status_history (
+    id BIGSERIAL PRIMARY KEY,
+    booking_id BIGINT NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+    old_status VARCHAR(30),
+    new_status VARCHAR(30) NOT NULL,
+    changed_by_user_id BIGINT REFERENCES users(id),
+    changed_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+```
+
+## 15.3 booking_item_status_history
+
+```sql
+CREATE TABLE booking_item_status_history (
+    id BIGSERIAL PRIMARY KEY,
+    booking_item_id BIGINT NOT NULL REFERENCES booking_items(id) ON DELETE CASCADE,
+    old_status VARCHAR(30),
+    new_status VARCHAR(30) NOT NULL,
+    changed_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+```
+
+---
+
+# 16. Admin / audit schema
+
+## 16.1 audit_logs
+
+```sql
+CREATE TABLE audit_logs (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT REFERENCES users(id),
+    entity_type VARCHAR(100) NOT NULL,
+    entity_id BIGINT,
+    action VARCHAR(50) NOT NULL,
+    old_value JSONB,
+    new_value JSONB,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+```
+
+## 16.2 system_settings
+
+```sql
+CREATE TABLE system_settings (
+    id BIGSERIAL PRIMARY KEY,
+    setting_key VARCHAR(150) NOT NULL UNIQUE,
+    setting_value JSONB NOT NULL,
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+```
+
+---
+
+# 17. Minimalni ER zaključci po ključnim relacijama
+
+## Jedan korisnik
+
+* ima više putnika
+* može imati više rezervacija
+* može biti i agent ako ima agent profile
+
+## Jedna rezervacija
+
+* ima više booking items
+* ima više putnika
+* može imati više payment zapisa
+* može imati više dokumenata
+* nastaje iz jednog offer-a i jednog pricing snapshot-a
+
+## Jedan booking item
+
+* pripada jednoj rezervaciji
+* ima jedan supplier
+* može imati više supplier reservation logova
+* može imati sopstveni dokument
+* može biti povezan sa više putnika
+
+## Jedan offer
+
+* pripada jednoj search request instanci
+* ima više offer items
+* ima jedan ili više pricing snapshot-a
+* može kasnije postati booking
+
+---
+
+# 18. Zašto je ovaj model dobar
+
+Ovaj model rešava nekoliko ključnih problema:
+
+## 1. Multi-product booking
+
+Jedna rezervacija može imati više različitih proizvoda.
+
+## 2. Supplier heterogenost
+
+Svaka stavka čuva supplier reference odvojeno.
+
+## 3. B2B i B2C u istoj bazi
+
+Kanal prodaje je deo svakog booking-a i offer-a.
+
+## 4. Paketiranje
+
+Offer i offer_items služe kao most između search i booking faze.
+
+## 5. Post-booking fleksibilnost
+
+Moguće je otkazivati pojedine stavke i pratiti njihov status.
+
+---
+
+# 19. Šta bih preporučio razvojnom timu odmah posle ovog dela
+
+Posle ove baze treba zaključati još 3 stvari:
+
+1. **enum vrednosti i status dictionary**
+2. **index strategiju**
+3. **pravila za offer expiration i repricing**
+
+To je važno pre izrade pravog SQL deployment-a.
+
+---
+
+# 20. Sledeći deo
+
+Sledeći logičan korak je **Deo 3: API specifikacija po modulima**:
+
+* auth
+* users / travelers
+* hotels
+* flights
+* transfers
+* activities
+* cruises
+* packages
+* bookings
+* payments
+* documents
+* admin
+
+U tom delu ću dati:
+
+* endpointe
+* request/response logiku
+* osnovne payload primere
+* pravila između search, offer, reprice i booking faze.

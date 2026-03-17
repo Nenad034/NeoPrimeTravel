@@ -1,0 +1,876 @@
+Odlično. Nastavljam i sada ću sistematski da formiram **kompletnu tehničku dokumentaciju platforme** na osnovu svega što smo definisali.
+Radi preglednosti, dokumentacija će biti organizovana kao pravi **Software Architecture Document (SAD)** kakav koriste velike tehnološke kompanije.
+
+Ovo je **prva verzija kompletne tehničke specifikacije (Master Architecture Spec)**.
+
+---
+
+# 1. PLATFORM OVERVIEW
+
+## Naziv sistema
+
+**Unified Travel Commerce Platform (UTCP)**
+
+## Tip sistema
+
+Enterprise travel platform za:
+
+* Tour Operator
+* OTA / Dynamic Travel
+* Charter operations
+* B2B distribution
+* CRM
+* Marketing automation
+* AI assisted operations
+* Website content delivery
+
+## Primarni korisnici
+
+### Interni korisnici
+
+* Reservation operators
+* Sales
+* Operations
+* Finance
+* Contracting managers
+* Marketing team
+* Management
+
+### Eksterni korisnici
+
+**B2C**
+
+* individualni putnici
+
+**B2B**
+
+* subagenti
+* partner agencije
+
+**Suppliers**
+
+* hoteli
+* avio kompanije
+* transfer kompanije
+* DMC partneri
+
+---
+
+# 2. PLATFORM OBJECTIVES
+
+Platforma mora omogućiti:
+
+1. prodaju individualnih putovanja
+2. prodaju grupnih putovanja
+3. upravljanje charter sezonama
+4. kombinovanje API i ugovorenih usluga
+5. B2C prodaju
+6. B2B distribuciju
+7. operativno upravljanje putovanjima
+8. finansijsko praćenje
+9. centralizovanu komunikaciju
+10. marketing automatizaciju
+11. SEO / content delivery
+12. AI asistenciju uz kontrolu tokena
+
+---
+
+# 3. HIGH LEVEL SYSTEM ARCHITECTURE
+
+Platforma je podeljena u **3 sloja**.
+
+```text
+PRESENTATION LAYER
+(B2C Website / B2B Portal / Admin UI)
+
+APPLICATION LAYER
+(Core Business Services)
+
+INFRASTRUCTURE LAYER
+(Data / Integrations / AI / Messaging)
+```
+
+---
+
+# 4. CORE DOMAINS
+
+Platforma je organizovana u **15 domena**.
+
+1. Identity & Access
+2. CRM
+3. Products & Contracts
+4. Search & Offers
+5. Booking Engine
+6. Finance
+7. Rooming & Capacity
+8. B2B Distribution
+9. Communication & Mail
+10. Marketing Automation
+11. AI Assistant
+12. Admin & Monitoring
+13. Tour Operator Programs
+14. Charter Operations
+15. Content / SEO / Website Delivery
+
+---
+
+# 5. DOMAIN 1 — IDENTITY & ACCESS
+
+## Funkcija
+
+Upravljanje korisnicima i pristupom.
+
+### Moduli
+
+User Management
+Role Management
+Permission System
+Authentication
+Session Management
+Security Logs
+
+---
+
+### User Types
+
+**Internal Users**
+
+* Admin
+* Reservation Agent
+* Sales
+* Operations
+* Finance
+* Marketing
+
+**External Users**
+
+* B2C customer
+* B2B agent
+* supplier user
+
+---
+
+### Role Based Access
+
+Primer:
+
+```text
+Admin
+Reservation Manager
+Reservation Agent
+Finance Manager
+Finance Agent
+Marketing Manager
+Operations Manager
+B2B Agent
+```
+
+---
+
+### Security Requirements
+
+* MFA support
+* password policy
+* session expiration
+* IP restrictions
+* audit logs
+
+---
+
+# 6. DOMAIN 2 — CRM
+
+CRM čuva sve poslovne kontakte.
+
+## Entities
+
+Contact
+Agency
+Supplier
+Lead
+
+---
+
+## Contact Fields
+
+```text
+id
+first_name
+last_name
+email
+phone
+nationality
+language
+customer_type
+notes
+```
+
+---
+
+## Agency Fields
+
+```text
+agency_id
+agency_name
+country
+market
+credit_limit
+payment_terms
+commission_level
+status
+account_manager
+```
+
+---
+
+## CRM Features
+
+* Contact 360
+* Agency 360
+* communication timeline
+* tasks
+* notes
+* marketing segments
+
+---
+
+# 7. DOMAIN 3 — PRODUCTS & CONTRACTS
+
+Ovo je srce sistema za sadržaj i cene.
+
+---
+
+## Product Types
+
+Hotel
+Tour program
+Charter package
+Transfer
+Activity
+Cruise
+
+---
+
+## Product Master
+
+```text
+product_id
+name
+destination
+category
+supplier
+description
+coordinates
+rating
+```
+
+---
+
+## Hotel Substructure
+
+Hotel
+Room Types
+Board Plans
+
+---
+
+### Room Type Fields
+
+```text
+room_id
+room_name
+max_occupancy
+base_occupancy
+extra_bed_allowed
+```
+
+---
+
+### Board Plan
+
+```text
+BB
+HB
+FB
+AI
+RO
+```
+
+---
+
+## Contract Module
+
+Contracts definišu poslovne uslove.
+
+```text
+contract_id
+supplier
+start_date
+end_date
+currency
+release_days
+payment_terms
+```
+
+---
+
+## Pricing Structure
+
+Seasons
+Rates
+Supplements
+Discounts
+
+---
+
+### Season
+
+```text
+season_id
+start_date
+end_date
+name
+priority
+```
+
+---
+
+### Rates
+
+```text
+room
+board
+season
+price
+currency
+```
+
+---
+
+### Supplements
+
+Primeri:
+
+* sea view
+* extra bed
+* gala dinner
+
+---
+
+### Discounts
+
+* early booking
+* long stay
+* free nights
+
+---
+
+# 8. DOMAIN 4 — SEARCH & OFFER ENGINE
+
+Search engine generiše ponude.
+
+---
+
+## Search Types
+
+Hotel search
+Flight search
+Package search
+Tour program search
+Charter search
+
+---
+
+## Offer Engine
+
+Offer predstavlja snapshot ponude.
+
+```text
+offer_id
+components
+price
+currency
+expiration_time
+source
+```
+
+---
+
+## Offer Expiration
+
+Offer ima TTL.
+
+Primer:
+
+```text
+TTL = 10 minutes
+```
+
+---
+
+# 9. DOMAIN 5 — BOOKING ENGINE
+
+Booking je centralni entitet.
+
+---
+
+## Booking Structure
+
+```text
+booking
+booking_items
+passengers
+payments
+documents
+```
+
+---
+
+## Booking Item
+
+```text
+item_type
+supplier
+status
+price
+currency
+```
+
+---
+
+## Booking Status
+
+```text
+draft
+pending
+confirmed
+ticketed
+cancelled
+completed
+```
+
+---
+
+# 10. DOMAIN 6 — FINANCE
+
+Finansijski modul prati sve tokove novca.
+
+---
+
+## Entities
+
+Payment
+Receivable
+Payable
+Refund
+
+---
+
+## Payment Methods
+
+* card
+* bank transfer
+* cash
+* agency credit
+
+---
+
+## Financial Features
+
+* invoice generation
+* credit control
+* supplier settlement
+* margin analysis
+
+---
+
+# 11. DOMAIN 7 — ROOMING & CAPACITY
+
+Rooming raspodeljuje putnike.
+
+---
+
+## Rooming Structure
+
+```text
+booking
+room
+passenger
+occupancy_type
+```
+
+---
+
+## Capacity
+
+Za grupe i čartere.
+
+```text
+total_capacity
+sold
+free
+waiting_list
+```
+
+---
+
+# 12. DOMAIN 8 — B2B DISTRIBUTION
+
+B2B portal za subagente.
+
+---
+
+## Features
+
+* search
+* booking
+* credit balance
+* statements
+* documents
+* support
+
+---
+
+# 13. DOMAIN 9 — COMMUNICATION SYSTEM
+
+Centralni mail modul.
+
+---
+
+## Mailboxes
+
+personal inbox
+shared inbox
+
+---
+
+## Thread Structure
+
+```text
+thread
+messages
+attachments
+participants
+```
+
+---
+
+## Inbox Users
+
+log svih outbound mailova.
+
+AI ocenjivanje:
+
+* tone
+* clarity
+* completeness
+
+---
+
+# 14. DOMAIN 10 — MARKETING AUTOMATION
+
+---
+
+## Modules
+
+Campaigns
+Segments
+Email marketing
+Messaging campaigns
+Social publisher
+
+---
+
+## Channels
+
+* email
+* viber
+* whatsapp
+* telegram
+
+---
+
+# 15. DOMAIN 11 — AI ASSISTANT
+
+AI je pomoćni sloj.
+
+---
+
+## Modes
+
+Ask Mode
+Suggest Mode
+Execute Mode
+
+---
+
+## AI Tasks
+
+* content generation
+* communication analysis
+* search assistance
+* reporting
+
+---
+
+# 16. DOMAIN 12 — ADMIN & MONITORING
+
+---
+
+## Dashboards
+
+Operations
+Finance
+Marketing
+System health
+
+---
+
+## Monitoring
+
+* API health
+* queue monitoring
+* system logs
+
+---
+
+# 17. DOMAIN 13 — TOUR OPERATOR PROGRAMS
+
+---
+
+## Entities
+
+Program
+Departure
+Itinerary
+Guide
+Manifest
+
+---
+
+## Program Structure
+
+```text
+program
+departure
+itinerary_days
+included_services
+optional_services
+pricing
+```
+
+---
+
+# 18. DOMAIN 14 — CHARTER MANAGEMENT
+
+---
+
+## Entities
+
+Charter season
+Flights
+Seat inventory
+Hotel allotments
+
+---
+
+## Charter Packages
+
+7 nights
+10 nights
+14 nights
+
+---
+
+# 19. DOMAIN 15 — WEBSITE & SEO
+
+---
+
+## Content Types
+
+Destination pages
+Hotel pages
+Tour pages
+Blog articles
+Landing pages
+
+---
+
+## SEO Fields
+
+```text
+meta_title
+meta_description
+keywords
+slug
+canonical
+schema_markup
+```
+
+---
+
+# 20. B2C WEBSITE STRUCTURE
+
+---
+
+## Pages
+
+Home
+Destinations
+Hotels
+Tours
+Charter programs
+Search
+Offers
+Blog
+
+---
+
+# 21. AI TOKEN GOVERNANCE
+
+---
+
+## Rules
+
+AI samo kada je potrebno.
+
+Kod koristi:
+
+* pricing
+* rules
+* validation
+* search
+
+AI koristi:
+
+* NLP
+* summarization
+* recommendations
+
+---
+
+## Token Control
+
+* per module limit
+* per user limit
+* per day budget
+
+---
+
+# 22. INTEGRATION LAYER
+
+Platforma mora imati konekcije ka:
+
+* hotel APIs
+* flight APIs
+* payment gateways
+* messaging providers
+
+---
+
+# 23. CORE INFRASTRUCTURE
+
+---
+
+## Services
+
+API Gateway
+Message Queue
+Search Index
+Cache Layer
+File Storage
+
+---
+
+# 24. DATA STORAGE
+
+---
+
+## Databases
+
+Relational DB (main)
+
+Search index (Elastic)
+
+Cache (Redis)
+
+Object storage (documents)
+
+---
+
+# 25. DEPLOYMENT
+
+---
+
+## Environment
+
+Development
+Staging
+Production
+
+---
+
+# 26. ROADMAP IMPLEMENTATION
+
+---
+
+## Phase 1
+
+Core platform
+CRM
+Products
+Booking
+Finance
+
+---
+
+## Phase 2
+
+Rooming
+B2B portal
+Mail system
+
+---
+
+## Phase 3
+
+Tour programs
+Charter module
+
+---
+
+## Phase 4
+
+Marketing automation
+AI assistant
+SEO CMS
+
+---
+
+# 27. ZAKLJUČAK
+
+Na osnovu svega što smo definisali, platforma koju planirate je:
+
+**Enterprise Travel Operating System**
+
+koji objedinjuje:
+
+* OTA
+* Tour Operator
+* Charter
+* CRM
+* Marketing
+* AI
+* Content platform
+* Website engine
+
+u jedinstveni sistem.
+
+---
+
+Ako želite, sledeći korak mogu uraditi nešto što je **neverovatno korisno za ovakav projekat**:
+
+1️⃣ **vizuelnu arhitekturu cele platforme (enterprise diagram)**
+2️⃣ **ERD model baze podataka sa svim tabelama**
+3️⃣ **UI wireframe svih glavnih ekrana**
+
+To je sledeći korak koji obično rade CTO i arhitekte posle ovakve dokumentacije.

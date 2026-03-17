@@ -1,0 +1,2099 @@
+Odlično. Krećemo sada u **najsitniji detalj**.
+
+Ovo je **Detailed Relational Model — Domains 1 do 5**, sa fokusom na:
+
+* tabele
+* ključne kolone
+* PK/FK logiku
+* unique pravila
+* enum vrednosti
+* business constraints
+* indeksnu logiku
+* relacije među domenima
+
+Obrađujem redom:
+
+1. Identity & Access
+2. CRM & Accounts
+3. Product Master
+4. Contracting & Rates
+5. Search & Offers
+
+---
+
+# DOMAIN 1 — IDENTITY & ACCESS
+
+Ovaj domen kontroliše:
+
+* autentifikaciju
+* autorizaciju
+* timove
+* role i permission sistem
+* sesije
+* bezbednosne događaje
+
+## 1.1 `users`
+
+**Svrha:** osnovni identitet korisnika.
+
+### Kolone
+
+* `id` BIGINT PK
+* `email` VARCHAR(255) NOT NULL
+* `username` VARCHAR(120) NULL
+* `password_hash` TEXT NOT NULL
+* `status_code` VARCHAR(30) NOT NULL
+* `user_type_code` VARCHAR(30) NOT NULL
+* `is_internal` BOOLEAN NOT NULL DEFAULT false
+* `is_b2b_user` BOOLEAN NOT NULL DEFAULT false
+* `is_supplier_user` BOOLEAN NOT NULL DEFAULT false
+* `last_login_at` TIMESTAMP NULL
+* `created_at` TIMESTAMP NOT NULL
+* `updated_at` TIMESTAMP NOT NULL
+* `deleted_at` TIMESTAMP NULL
+
+### PK
+
+* `pk_users (id)`
+
+### Unique
+
+* `uq_users_email (email)`
+* `uq_users_username (username)` nullable unique
+
+### Enum
+
+`status_code`
+
+* active
+* inactive
+* suspended
+* locked
+* pending_activation
+
+`user_type_code`
+
+* internal
+* b2c
+* b2b
+* supplier
+* system
+
+### Indexes
+
+* `idx_users_status_code`
+* `idx_users_last_login_at`
+
+---
+
+## 1.2 `user_profiles`
+
+**Svrha:** prošireni profil.
+
+### Kolone
+
+* `id` BIGINT PK
+* `user_id` BIGINT NOT NULL FK -> users.id
+* `first_name` VARCHAR(120) NOT NULL
+* `last_name` VARCHAR(120) NOT NULL
+* `display_name` VARCHAR(255) NULL
+* `phone` VARCHAR(80) NULL
+* `language_code` VARCHAR(10) NULL
+* `timezone` VARCHAR(80) NULL
+* `title` VARCHAR(120) NULL
+* `signature_html` TEXT NULL
+* `avatar_file_id` BIGINT NULL
+* `created_at`
+* `updated_at`
+
+### Unique
+
+* `uq_user_profiles_user_id (user_id)`
+
+### FK
+
+* `fk_user_profiles_user_id`
+
+---
+
+## 1.3 `roles`
+
+### Kolone
+
+* `id`
+* `code` VARCHAR(80) NOT NULL
+* `name` VARCHAR(120) NOT NULL
+* `scope_code` VARCHAR(30) NOT NULL
+* `is_system` BOOLEAN NOT NULL DEFAULT false
+* `created_at`
+* `updated_at`
+
+### Unique
+
+* `uq_roles_code`
+
+### Enum
+
+`scope_code`
+
+* internal
+* b2b
+* supplier
+* mixed
+* system
+
+---
+
+## 1.4 `permissions`
+
+### Kolone
+
+* `id`
+* `code` VARCHAR(120) NOT NULL
+* `module_code` VARCHAR(80) NOT NULL
+* `action_code` VARCHAR(80) NOT NULL
+* `description` TEXT NULL
+* `created_at`
+
+### Unique
+
+* `uq_permissions_code`
+* `uq_permissions_module_action (module_code, action_code)`
+
+### Primeri
+
+* booking.view
+* booking.edit
+* booking.cancel
+* finance.refund_create
+* mail.thread_assign
+* ai.execute_pricing_change
+
+---
+
+## 1.5 `role_permissions`
+
+### Kolone
+
+* `id`
+* `role_id` BIGINT NOT NULL FK
+* `permission_id` BIGINT NOT NULL FK
+* `created_at`
+
+### Unique
+
+* `uq_role_permissions (role_id, permission_id)`
+
+---
+
+## 1.6 `user_roles`
+
+### Kolone
+
+* `id`
+* `user_id` BIGINT NOT NULL FK
+* `role_id` BIGINT NOT NULL FK
+* `valid_from` TIMESTAMP NULL
+* `valid_to` TIMESTAMP NULL
+* `created_at`
+
+### Unique
+
+* `uq_user_roles_open (user_id, role_id, valid_to)`
+  u praksi često partial unique gde je `valid_to is null`
+
+---
+
+## 1.7 `teams`
+
+### Kolone
+
+* `id`
+* `name`
+* `team_type_code`
+* `department_id` BIGINT NULL
+* `status_code`
+* `created_at`
+
+### Enum
+
+`team_type_code`
+
+* sales
+* operations
+* finance
+* marketing
+* b2b_support
+* contracting
+* management
+* tech
+
+### Unique
+
+* `uq_teams_name`
+
+---
+
+## 1.8 `team_members`
+
+### Kolone
+
+* `id`
+* `team_id` BIGINT NOT NULL FK
+* `user_id` BIGINT NOT NULL FK
+* `membership_role_code` VARCHAR(30) NOT NULL
+* `is_primary` BOOLEAN NOT NULL DEFAULT false
+* `created_at`
+
+### Enum
+
+`membership_role_code`
+
+* member
+* lead
+* manager
+* observer
+
+### Unique
+
+* `uq_team_members (team_id, user_id)`
+
+---
+
+## 1.9 `departments`
+
+### Kolone
+
+* `id`
+* `code`
+* `name`
+* `status_code`
+* `created_at`
+
+### Unique
+
+* `uq_departments_code`
+* `uq_departments_name`
+
+---
+
+## 1.10 `sessions`
+
+### Kolone
+
+* `id`
+* `user_id` BIGINT NOT NULL FK
+* `session_token_hash` TEXT NOT NULL
+* `device_id` BIGINT NULL
+* `ip_address` VARCHAR(64) NULL
+* `user_agent` TEXT NULL
+* `started_at` TIMESTAMP NOT NULL
+* `expires_at` TIMESTAMP NOT NULL
+* `revoked_at` TIMESTAMP NULL
+
+### Unique
+
+* `uq_sessions_token_hash`
+
+### Indexes
+
+* `idx_sessions_user_id`
+* `idx_sessions_expires_at`
+
+---
+
+## 1.11 `api_clients`
+
+### Kolone
+
+* `id`
+* `name`
+* `client_type_code`
+* `owner_user_id` BIGINT NULL
+* `owner_agency_id` BIGINT NULL
+* `status_code`
+* `rate_limit_per_minute` INTEGER NULL
+* `created_at`
+
+### Enum
+
+`client_type_code`
+
+* internal_service
+* partner_api
+* website_public
+* b2b_agency
+* webhook_consumer
+
+---
+
+## 1.12 `security_events`
+
+### Kolone
+
+* `id`
+* `user_id` BIGINT NULL
+* `event_type_code`
+* `severity_code`
+* `ip_address`
+* `details_json`
+* `created_at`
+
+### Enum
+
+`event_type_code`
+
+* login_failed
+* login_success
+* password_reset
+* mfa_failed
+* session_revoked
+* suspicious_ip
+* permission_denied
+
+---
+
+## 1.13 Ključne relacije domena 1
+
+* `users 1:1 user_profiles`
+* `users N:M roles`
+* `roles N:M permissions`
+* `users N:M teams`
+* `teams N:1 departments`
+* `users 1:N sessions`
+* `users 1:N security_events`
+
+---
+
+## 1.14 Poslovna pravila
+
+1. Jedan korisnik može imati više rola.
+2. Internal user može biti član više timova.
+3. B2B user mora biti povezan sa agencijom u domenu B2B.
+4. Execute AI akcije zahtevaju specifične permission-e.
+5. Suspended korisnik ne može imati aktivnu sesiju.
+
+---
+
+# DOMAIN 2 — CRM & ACCOUNTS
+
+Ovaj domen čuva:
+
+* B2C kontakte
+* B2B agencije
+* supplier kontakte
+* preference
+* marketing consent
+* ownership i notes
+
+## 2.1 `contacts`
+
+### Kolone
+
+* `id`
+* `contact_type_code` VARCHAR(30) NOT NULL
+* `agency_id` BIGINT NULL
+* `first_name` VARCHAR(120) NOT NULL
+* `last_name` VARCHAR(120) NOT NULL
+* `primary_email` VARCHAR(255) NULL
+* `primary_phone` VARCHAR(80) NULL
+* `status_code` VARCHAR(30) NOT NULL
+* `language_code` VARCHAR(10) NULL
+* `country_code` VARCHAR(10) NULL
+* `owner_user_id` BIGINT NULL
+* `created_at`
+* `updated_at`
+* `deleted_at`
+
+### Enum
+
+`contact_type_code`
+
+* b2c
+* b2b_person
+* supplier_contact
+* lead
+
+`status_code`
+
+* active
+* inactive
+* archived
+* blacklisted
+
+### Indexes
+
+* `idx_contacts_agency_id`
+* `idx_contacts_owner_user_id`
+* `idx_contacts_primary_email`
+
+---
+
+## 2.2 `contact_profiles`
+
+### Kolone
+
+* `id`
+* `contact_id` BIGINT NOT NULL FK
+* `date_of_birth` DATE NULL
+* `nationality_code` VARCHAR(10) NULL
+* `passport_number` VARCHAR(100) NULL
+* `passport_expiry_date` DATE NULL
+* `gender_code` VARCHAR(20) NULL
+* `customer_segment_code` VARCHAR(30) NULL
+* `vip_level_code` VARCHAR(30) NULL
+* `notes_internal` TEXT NULL
+
+### Unique
+
+* `uq_contact_profiles_contact_id`
+
+---
+
+## 2.3 `contact_emails`
+
+### Kolone
+
+* `id`
+* `contact_id`
+* `email`
+* `email_type_code`
+* `is_primary`
+* `is_verified`
+* `created_at`
+
+### Enum
+
+`email_type_code`
+
+* personal
+* work
+* billing
+* travel
+* alternate
+
+### Unique
+
+* `uq_contact_emails_contact_email (contact_id, email)`
+
+---
+
+## 2.4 `contact_phones`
+
+### Kolone
+
+* `id`
+* `contact_id`
+* `phone`
+* `phone_type_code`
+* `is_primary`
+* `is_whatsapp_enabled`
+* `is_viber_enabled`
+* `is_telegram_enabled`
+
+### Enum
+
+`phone_type_code`
+
+* mobile
+* work
+* home
+* emergency
+
+---
+
+## 2.5 `contact_addresses`
+
+### Kolone
+
+* `id`
+* `contact_id`
+* `address_type_code`
+* `line_1`
+* `line_2`
+* `city`
+* `postal_code`
+* `country_code`
+* `is_primary`
+
+### Enum
+
+`address_type_code`
+
+* home
+* billing
+* work
+* delivery
+
+---
+
+## 2.6 `contact_marketing_consents`
+
+### Kolone
+
+* `id`
+* `contact_id`
+* `channel_code`
+* `consent_status_code`
+* `consent_source_code`
+* `granted_at`
+* `revoked_at`
+* `proof_reference` TEXT NULL
+
+### Enum
+
+`channel_code`
+
+* email
+* sms
+* viber
+* whatsapp
+* telegram
+* phone
+
+`consent_status_code`
+
+* granted
+* revoked
+* pending
+* unknown
+
+---
+
+## 2.7 `contact_travel_preferences`
+
+### Kolone
+
+* `id`
+* `contact_id`
+* `preferred_airport_code`
+* `budget_min_amount`
+* `budget_max_amount`
+* `preferred_board_code`
+* `travel_style_code`
+* `direct_flights_only`
+* `preferred_destinations_json`
+* `preferred_hotel_categories_json`
+* `updated_at`
+
+### Enum
+
+`travel_style_code`
+
+* family
+* couple
+* luxury
+* budget
+* city_break
+* adventure
+* pilgrimage
+* group_travel
+
+---
+
+## 2.8 `contact_notes`
+
+### Kolone
+
+* `id`
+* `contact_id`
+* `note_type_code`
+* `note_text`
+* `created_by_user_id`
+* `created_at`
+
+### Enum
+
+`note_type_code`
+
+* sales
+* support
+* vip
+* complaint
+* finance
+* travel_preference
+
+---
+
+## 2.9 `agencies`
+
+### Kolone
+
+* `id`
+* `agency_code`
+* `legal_name`
+* `commercial_name`
+* `market_id` BIGINT NULL
+* `primary_email`
+* `primary_phone`
+* `website_url`
+* `tax_number`
+* `registration_number`
+* `status_code`
+* `account_manager_user_id` BIGINT NULL
+* `created_at`
+* `updated_at`
+
+### Unique
+
+* `uq_agencies_agency_code`
+* `uq_agencies_tax_number` nullable unique as business rule if needed
+
+### Enum
+
+`status_code`
+
+* active
+* inactive
+* blocked
+* pending_approval
+
+---
+
+## 2.10 `agency_profiles`
+
+### Kolone
+
+* `id`
+* `agency_id`
+* `agency_type_code`
+* `country_code`
+* `city`
+* `language_code`
+* `notes_internal`
+* `priority_code`
+* `sales_status_code`
+* `created_at`
+
+### Enum
+
+`agency_type_code`
+
+* subagent
+* distributor
+* ota_partner
+* corporate
+* supplier_partner
+
+`priority_code`
+
+* standard
+* premium
+* vip
+
+---
+
+## 2.11 `agency_credit_profiles`
+
+### Kolone
+
+* `id`
+* `agency_id`
+* `credit_limit_amount`
+* `currency_code`
+* `current_exposure_amount`
+* `overdue_amount`
+* `hard_stop_enabled`
+* `approval_required_over_limit`
+* `last_recalculated_at`
+
+### Unique
+
+* `uq_agency_credit_profiles_agency_id`
+
+---
+
+## 2.12 `agency_payment_terms`
+
+### Kolone
+
+* `id`
+* `agency_id`
+* `payment_term_code`
+* `days_due`
+* `deposit_percent`
+* `balance_due_days_before_travel`
+* `invoice_cycle_code`
+
+### Enum
+
+`payment_term_code`
+
+* immediate
+* advance_partial
+* credit
+* mixed
+
+`invoice_cycle_code`
+
+* per_booking
+* weekly
+* biweekly
+* monthly
+
+---
+
+## 2.13 `agency_commission_profiles`
+
+### Kolone
+
+* `id`
+* `agency_id`
+* `pricing_model_code`
+* `default_commission_percent`
+* `default_markup_percent`
+* `statement_cycle_code`
+* `is_net_model`
+
+### Enum
+
+`pricing_model_code`
+
+* gross_commission
+* net
+* contracted_sell
+
+---
+
+## 2.14 `supplier_profiles`
+
+### Kolone
+
+* `id`
+* `supplier_id`
+* `supplier_type_code`
+* `api_mode_code`
+* `default_currency_code`
+* `default_market_id`
+* `response_time_sla_ms`
+* `reliability_score`
+* `status_code`
+
+### Enum
+
+`supplier_type_code`
+
+* hotel
+* flight
+* transfer
+* activity
+* cruise
+* dmc
+* payment
+* mail
+* messaging
+
+`api_mode_code`
+
+* none
+* manual
+* xml
+* restful
+* graphql
+* hybrid
+
+---
+
+## 2.15 Ključne relacije domena 2
+
+* `agencies 1:N contacts`
+* `contacts 1:N contact_emails`
+* `contacts 1:N contact_phones`
+* `contacts 1:N contact_notes`
+* `contacts 1:1 contact_profiles`
+* `agencies 1:1 agency_credit_profiles`
+* `agencies 1:1 agency_payment_terms`
+* `agencies 1:1 agency_commission_profiles`
+
+---
+
+## 2.16 Poslovna pravila
+
+1. Kontakt može pripadati agenciji, ali B2C kontakt ne mora.
+2. Agencija mora imati tačno jedan aktivan credit profile.
+3. Contact marketing consent se vodi po kanalu.
+4. Agency account manager je interni korisnik.
+5. Blacklisted kontakt ne ulazi u marketinške segmente.
+
+---
+
+# DOMAIN 3 — PRODUCT MASTER
+
+Ovaj domen čuva kanonsku strukturu proizvoda.
+
+## 3.1 `destinations`
+
+### Kolone
+
+* `id`
+* `destination_code`
+* `destination_type_code`
+* `name`
+* `slug`
+* `parent_destination_id` BIGINT NULL
+* `country_code`
+* `latitude`
+* `longitude`
+* `status_code`
+* `created_at`
+* `updated_at`
+
+### Enum
+
+`destination_type_code`
+
+* country
+* region
+* city
+* resort
+* island
+* attraction
+* park
+
+### Unique
+
+* `uq_destinations_code`
+* `uq_destinations_slug`
+
+---
+
+## 3.2 `destination_hierarchies`
+
+Ako želite eksplicitnu closure tabelu.
+
+### Kolone
+
+* `id`
+* `ancestor_destination_id`
+* `descendant_destination_id`
+* `depth`
+
+### Unique
+
+* `uq_destination_hierarchies (ancestor_destination_id, descendant_destination_id)`
+
+---
+
+## 3.3 `products`
+
+### Kolone
+
+* `id`
+* `product_type_code`
+* `name`
+* `destination_id`
+* `supplier_id` NULL
+* `brand_id` NULL
+* `market_id` NULL
+* `status_code`
+* `publication_status_code`
+* `source_type_code`
+* `created_at`
+* `updated_at`
+
+### Enum
+
+`product_type_code`
+
+* hotel
+* transfer
+* activity
+* cruise
+* tour_program
+* charter_program
+* static_package
+
+`source_type_code`
+
+* internal
+* supplier
+* hybrid
+* imported
+
+---
+
+## 3.4 `hotels`
+
+### Kolone
+
+* `id`
+* `product_id`
+* `stars`
+* `address_line_1`
+* `address_line_2`
+* `city_name`
+* `country_code`
+* `latitude`
+* `longitude`
+* `check_in_time`
+* `check_out_time`
+* `hotel_chain_name`
+* `status_code`
+
+### Unique
+
+* `uq_hotels_product_id`
+
+---
+
+## 3.5 `hotel_room_types`
+
+### Kolone
+
+* `id`
+* `hotel_id`
+* `room_code`
+* `name`
+* `max_adults`
+* `max_children`
+* `max_infants`
+* `base_occupancy_code`
+* `extra_bed_allowed`
+* `baby_cot_allowed`
+* `status_code`
+
+### Enum
+
+`base_occupancy_code`
+
+* single
+* double
+* triple
+* family
+* suite
+
+### Unique
+
+* `uq_hotel_room_types_code (hotel_id, room_code)`
+
+---
+
+## 3.6 `hotel_board_types`
+
+### Kolone
+
+* `id`
+* `hotel_id`
+* `board_code`
+* `name`
+* `is_default`
+* `status_code`
+
+### Unique
+
+* `uq_hotel_board_types (hotel_id, board_code)`
+
+---
+
+## 3.7 `product_images`
+
+### Kolone
+
+* `id`
+* `product_id`
+* `file_id`
+* `image_type_code`
+* `sort_order`
+* `is_primary`
+* `alt_text`
+
+### Enum
+
+`image_type_code`
+
+* hero
+* gallery
+* room
+* facility
+* map
+* blog
+
+---
+
+## 3.8 `product_amenities`
+
+### Kolone
+
+* `id`
+* `code`
+* `name`
+* `amenity_group_code`
+* `status_code`
+
+### Enum
+
+`amenity_group_code`
+
+* room
+* hotel
+* dining
+* family
+* business
+* beach
+* wellness
+* transport
+
+---
+
+## 3.9 `product_amenity_links`
+
+### Kolone
+
+* `id`
+* `product_id`
+* `amenity_id`
+* `source_type_code`
+* `created_at`
+
+### Unique
+
+* `uq_product_amenity_links (product_id, amenity_id)`
+
+---
+
+## 3.10 `transfers`
+
+### Kolone
+
+* `id`
+* `product_id`
+* `transfer_type_code`
+* `vehicle_type_code`
+* `max_passengers`
+* `max_bags`
+* `pickup_location_code`
+* `dropoff_location_code`
+* `status_code`
+
+### Enum
+
+`transfer_type_code`
+
+* private
+* shared
+* shuttle
+* premium
+
+---
+
+## 3.11 `activities`
+
+### Kolone
+
+* `id`
+* `product_id`
+* `activity_category_code`
+* `duration_minutes`
+* `meeting_point_text`
+* `ticketed`
+* `status_code`
+
+### Enum
+
+`activity_category_code`
+
+* city_tour
+* museum
+* theme_park
+* boat_trip
+* excursion
+* adventure
+* religious
+
+---
+
+## 3.12 `cruises`
+
+### Kolone
+
+* `id`
+* `product_id`
+* `cruise_line_name`
+* `ship_id` NULL
+* `default_departure_port_id`
+* `nights_default`
+* `status_code`
+
+---
+
+## 3.13 `tour_program_products`
+
+### Kolone
+
+* `id`
+* `product_id`
+* `program_type_code`
+* `duration_days`
+* `duration_nights`
+* `transport_type_code`
+* `guaranteed_departure_default`
+* `status_code`
+
+### Enum
+
+`program_type_code`
+
+* city_break
+* round_trip
+* escorted_tour
+* pilgrimage
+* special_interest
+
+---
+
+## 3.14 `charter_products`
+
+### Kolone
+
+* `id`
+* `product_id`
+* `charter_mode_code`
+* `default_origin_airport_code`
+* `default_nights_pattern`
+* `status_code`
+
+### Enum
+
+`charter_mode_code`
+
+* fixed
+* hybrid
+* dynamic
+
+---
+
+## 3.15 Ključne relacije domena 3
+
+* `products N:1 destinations`
+* `hotels 1:1 products`
+* `hotels 1:N hotel_room_types`
+* `hotels 1:N hotel_board_types`
+* `products N:M amenities`
+* `tour_program_products 1:1 products`
+* `charter_products 1:1 products`
+
+---
+
+## 3.16 Poslovna pravila
+
+1. Svaki hotel mora imati jedan product record.
+2. Room code mora biti jedinstven unutar hotela.
+3. Product publication status određuje da li ide na sajt.
+4. Product source type određuje da li je supplier, internal ili hybrid.
+5. Destinacija mora biti vezana za produkt.
+
+---
+
+# DOMAIN 4 — CONTRACTING & RATES
+
+Ovo je najkompleksniji domen među prvih pet.
+
+## 4.1 `contracts`
+
+### Kolone
+
+* `id`
+* `contract_code`
+* `contract_type_code`
+* `supplier_id`
+* `product_id`
+* `start_date`
+* `end_date`
+* `currency_code`
+* `status_code`
+* `brand_id` NULL
+* `market_id` NULL
+* `created_by_user_id`
+* `created_at`
+* `updated_at`
+
+### Enum
+
+`contract_type_code`
+
+* hotel
+* transfer
+* activity
+* cruise
+* series
+* charter
+* airline
+* service
+
+### Unique
+
+* `uq_contracts_code`
+
+---
+
+## 4.2 `contract_versions`
+
+### Kolone
+
+* `id`
+* `contract_id`
+* `version_number`
+* `effective_from`
+* `effective_to` NULL
+* `is_current`
+* `approval_status_code`
+* `approved_by_user_id` NULL
+* `approved_at` NULL
+* `created_at`
+
+### Enum
+
+`approval_status_code`
+
+* draft
+* pending_review
+* approved
+* rejected
+* archived
+
+### Unique
+
+* `uq_contract_versions (contract_id, version_number)`
+
+---
+
+## 4.3 `contract_products`
+
+Za slučaj da jedan ugovor pokriva više proizvoda ili hotelskih jedinica.
+
+### Kolone
+
+* `id`
+* `contract_version_id`
+* `product_id`
+* `scope_type_code`
+* `created_at`
+
+### Enum
+
+`scope_type_code`
+
+* main
+* addon
+* bundled
+* derived
+
+---
+
+## 4.4 `contract_seasons`
+
+### Kolone
+
+* `id`
+* `contract_version_id`
+* `season_code`
+* `name`
+* `start_date`
+* `end_date`
+* `priority`
+* `status_code`
+
+### Unique
+
+* `uq_contract_seasons (contract_version_id, season_code)`
+
+### Business constraint
+
+* ne sme biti nedozvoljenog overlap-a unutar istog contract_version-a osim ako poslovno dozvolite priority override
+
+---
+
+## 4.5 `rate_plans`
+
+### Kolone
+
+* `id`
+* `contract_version_id`
+* `rate_plan_code`
+* `name`
+* `pricing_basis_code`
+* `cancellation_policy_code`
+* `is_package_eligible`
+* `status_code`
+
+### Enum
+
+`pricing_basis_code`
+
+* per_room
+* per_person
+* per_adult
+* occupancy_based
+* package
+
+`cancellation_policy_code`
+
+* refundable
+* non_refundable
+* partial
+* on_request
+
+### Unique
+
+* `uq_rate_plans (contract_version_id, rate_plan_code)`
+
+---
+
+## 4.6 `rate_plan_prices`
+
+### Kolone
+
+* `id`
+* `rate_plan_id`
+* `season_id`
+* `room_type_id`
+* `board_type_id`
+* `occupancy_code`
+* `price_amount`
+* `currency_code`
+* `price_unit_code`
+* `status_code`
+
+### Enum
+
+`occupancy_code`
+
+* 1/1
+* 1/2
+* 2/2
+* 2+1
+* 2+2
+* 3/3
+* 4/4
+* custom
+
+`price_unit_code`
+
+* per_room
+* per_person
+* per_night
+* package_total
+
+### Unique
+
+* `uq_rate_plan_prices (rate_plan_id, season_id, room_type_id, board_type_id, occupancy_code)`
+
+---
+
+## 4.7 `rate_plan_child_policies`
+
+### Kolone
+
+* `id`
+* `rate_plan_id`
+* `season_id` NULL
+* `age_from`
+* `age_to`
+* `pricing_mode_code`
+* `value_amount`
+* `value_percent`
+* `status_code`
+
+### Enum
+
+`pricing_mode_code`
+
+* free
+* percent_discount
+* fixed_amount
+* adult_rate
+* extra_bed_rate
+
+---
+
+## 4.8 `rate_plan_single_supplements`
+
+### Kolone
+
+* `id`
+* `rate_plan_id`
+* `season_id`
+* `room_type_id`
+* `supplement_mode_code`
+* `value_amount`
+* `value_percent`
+
+### Enum
+
+`supplement_mode_code`
+
+* fixed
+* percent
+
+---
+
+## 4.9 `rate_plan_early_booking_rules`
+
+### Kolone
+
+* `id`
+* `rate_plan_id`
+* `season_id` NULL
+* `booking_date_from`
+* `booking_date_to`
+* `discount_mode_code`
+* `discount_value`
+* `status_code`
+
+### Enum
+
+`discount_mode_code`
+
+* percent
+* fixed
+* free_night
+
+---
+
+## 4.10 `rate_plan_free_night_rules`
+
+### Kolone
+
+* `id`
+* `rate_plan_id`
+* `season_id`
+* `stay_nights_required`
+* `free_nights`
+* `applicability_code`
+* `status_code`
+
+### Enum
+
+`applicability_code`
+
+* consecutive
+* cumulative
+* cheapest_night_free
+
+---
+
+## 4.11 `rate_plan_mandatory_supplements`
+
+### Kolone
+
+* `id`
+* `rate_plan_id`
+* `season_id` NULL
+* `supplement_code`
+* `charge_basis_code`
+* `amount`
+* `currency_code`
+* `travel_date_from`
+* `travel_date_to`
+* `status_code`
+
+### Enum
+
+`charge_basis_code`
+
+* per_person
+* per_room
+* per_stay
+* per_night
+
+---
+
+## 4.12 `minimum_stay_rules`
+
+### Kolone
+
+* `id`
+* `contract_version_id`
+* `season_id` NULL
+* `room_type_id` NULL
+* `board_type_id` NULL
+* `min_nights`
+* `travel_date_from`
+* `travel_date_to`
+* `status_code`
+
+---
+
+## 4.13 `cta_rules`
+
+### Kolone
+
+* `id`
+* `contract_version_id`
+* `season_id` NULL
+* `effective_date_from`
+* `effective_date_to`
+* `status_code`
+
+## 4.14 `ctd_rules`
+
+isto kao `cta_rules`
+
+---
+
+## 4.15 `stop_sale_rules`
+
+### Kolone
+
+* `id`
+* `contract_version_id`
+* `season_id` NULL
+* `room_type_id` NULL
+* `board_type_id` NULL
+* `travel_date_from`
+* `travel_date_to`
+* `channel_id` NULL
+* `market_id` NULL
+* `status_code`
+
+---
+
+## 4.16 `allotments`
+
+### Kolone
+
+* `id`
+* `contract_version_id`
+* `hotel_id`
+* `room_type_id`
+* `board_type_id`
+* `start_date`
+* `end_date`
+* `release_days`
+* `total_committed_qty`
+* `status_code`
+
+### Unique
+
+* preporučeno business unique po
+  `(contract_version_id, hotel_id, room_type_id, board_type_id, start_date, end_date)`
+
+---
+
+## 4.17 `allotment_daily_inventory`
+
+### Kolone
+
+* `id`
+* `allotment_id`
+* `inventory_date`
+* `committed_qty`
+* `sold_qty`
+* `option_qty`
+* `blocked_qty`
+* `free_qty`
+* `overbook_limit_qty`
+* `status_code`
+* `updated_at`
+
+### Unique
+
+* `uq_allotment_daily_inventory (allotment_id, inventory_date)`
+
+---
+
+## 4.18 `pricing_rules`
+
+Ovo je generalni pricing engine sloj, odvojen od supplier contract rate-a.
+
+### Kolone
+
+* `id`
+* `rule_set_id` NULL
+* `rule_type_code`
+* `channel_id` NULL
+* `agency_id` NULL
+* `market_id` NULL
+* `product_type_code` NULL
+* `supplier_id` NULL
+* `destination_id` NULL
+* `brand_id` NULL
+* `priority`
+* `valid_from`
+* `valid_to`
+* `status_code`
+
+### Enum
+
+`rule_type_code`
+
+* markup
+* commission
+* promo
+* package_discount
+* fee
+* override
+
+---
+
+## 4.19 `markup_rules`
+
+### Kolone
+
+* `id`
+* `pricing_rule_id`
+* `markup_mode_code`
+* `markup_value`
+* `min_markup_amount` NULL
+* `max_markup_amount` NULL
+
+### Enum
+
+`markup_mode_code`
+
+* fixed
+* percent
+* stepped
+
+---
+
+## 4.20 `commission_rules`
+
+### Kolone
+
+* `id`
+* `pricing_rule_id`
+* `commission_mode_code`
+* `commission_value`
+* `calculation_basis_code`
+
+### Enum
+
+`commission_mode_code`
+
+* fixed
+* percent
+* tiered
+
+`calculation_basis_code`
+
+* sell
+* net
+* margin
+
+---
+
+## 4.21 Ključne relacije domena 4
+
+* `contracts 1:N contract_versions`
+* `contract_versions 1:N contract_seasons`
+* `contract_versions 1:N rate_plans`
+* `rate_plans 1:N rate_plan_prices`
+* `rate_plans 1:N child/supplement/discount rules`
+* `contract_versions 1:N restriction rules`
+* `contract_versions 1:N allotments`
+* `allotments 1:N allotment_daily_inventory`
+* `pricing_rules 1:1 markup_rules / commission_rules`
+
+---
+
+## 4.22 Poslovna pravila
+
+1. Samo jedna current version po ugovoru.
+2. Rate plan price mora imati validan room + board + season kontekst.
+3. Allotment dnevna količina ne sme pasti ispod dozvoljenog overbook limita.
+4. Pricing rules se primenjuju po prioritetu od najspecifičnijeg ka najopštijem.
+5. Stop sale ima prioritet nad rate availability.
+
+---
+
+# DOMAIN 5 — SEARCH & OFFERS
+
+Ovaj domen je most između inventory-ja i booking-a.
+
+## 5.1 `search_requests`
+
+### Kolone
+
+* `id`
+* `user_id` NULL
+* `contact_id` NULL
+* `agency_id` NULL
+* `channel_id`
+* `search_type_code`
+* `origin_code` NULL
+* `destination_code`
+* `start_date`
+* `end_date`
+* `currency_code`
+* `budget_amount` NULL
+* `status_code`
+* `created_at`
+
+### Enum
+
+`search_type_code`
+
+* hotel
+* flight
+* package
+* tour_program
+* charter
+* activity
+* transfer
+
+---
+
+## 5.2 `search_request_passengers`
+
+### Kolone
+
+* `id`
+* `search_request_id`
+* `passenger_type_code`
+* `age` NULL
+* `count_qty`
+
+### Enum
+
+`passenger_type_code`
+
+* adult
+* child
+* infant
+
+---
+
+## 5.3 `search_request_rooms`
+
+### Kolone
+
+* `id`
+* `search_request_id`
+* `room_no`
+* `adults_count`
+* `children_count`
+* `infants_count`
+
+---
+
+## 5.4 `search_request_filters`
+
+### Kolone
+
+* `id`
+* `search_request_id`
+* `filter_code`
+* `filter_value_text` NULL
+* `filter_value_number` NULL
+* `filter_value_json` NULL
+
+### Primeri
+
+* stars
+* board_types
+* direct_flights_only
+* max_budget
+* hotel_category
+* duration
+* room_type
+
+---
+
+## 5.5 `search_cache_entries`
+
+### Kolone
+
+* `id`
+* `cache_key`
+* `search_request_id`
+* `payload_json`
+* `expires_at`
+* `created_at`
+
+### Unique
+
+* `uq_search_cache_entries_cache_key`
+
+---
+
+## 5.6 `offer_groups`
+
+### Kolone
+
+* `id`
+* `search_request_id`
+* `group_type_code`
+* `created_at`
+
+### Enum
+
+`group_type_code`
+
+* hotel_results
+* flight_results
+* package_results
+* tour_departure_results
+* charter_results
+
+---
+
+## 5.7 `offers`
+
+### Kolone
+
+* `id`
+* `offer_group_id`
+* `offer_type_code`
+* `status_code`
+* `source_mix_code`
+* `total_sell_amount`
+* `total_net_amount`
+* `currency_code`
+* `expires_at`
+* `score_amount`
+* `rank_position`
+* `created_at`
+
+### Enum
+
+`offer_type_code`
+
+* hotel_only
+* flight_only
+* package
+* tour_program_departure
+* charter_package
+* transfer_only
+* activity_only
+
+`source_mix_code`
+
+* fixed
+* api
+* hybrid
+
+---
+
+## 5.8 `offer_items`
+
+### Kolone
+
+* `id`
+* `offer_id`
+* `item_type_code`
+* `source_type_code`
+* `source_ref_table`
+* `source_ref_id`
+* `supplier_id` NULL
+* `component_order`
+* `net_amount`
+* `sell_amount`
+* `currency_code`
+
+### Enum
+
+`item_type_code`
+
+* hotel
+* flight
+* transfer
+* activity
+* cruise
+* insurance
+* fee
+* tax
+* guide_service
+* tour_component
+* charter_seat
+
+`source_type_code`
+
+* contracted
+* api_dynamic
+* api_cached
+* manual_override
+* hybrid_locked
+* derived
+
+---
+
+## 5.9 `offer_price_breakdowns`
+
+### Kolone
+
+* `id`
+* `offer_id`
+* `component_type_code`
+* `component_ref_id` NULL
+* `net_amount`
+* `tax_amount`
+* `fee_amount`
+* `markup_amount`
+* `discount_amount`
+* `sell_amount`
+* `currency_code`
+
+### Enum
+
+`component_type_code`
+
+* offer_total
+* item
+* tax
+* fee
+* promo
+* package_discount
+* supplement
+
+---
+
+## 5.10 `offer_component_snapshots`
+
+### Kolone
+
+* `id`
+* `offer_item_id`
+* `snapshot_json`
+* `snapshot_hash`
+* `created_at`
+
+### Business role
+
+čuva sve što je potrebno za reprice i audit
+
+---
+
+## 5.11 `offer_ranking_features`
+
+### Kolone
+
+* `id`
+* `offer_id`
+* `price_score`
+* `margin_score`
+* `quality_score`
+* `convenience_score`
+* `flexibility_score`
+* `reliability_score`
+* `conversion_score`
+* `final_score`
+
+---
+
+## 5.12 `offer_reprice_requests`
+
+### Kolone
+
+* `id`
+* `offer_id`
+* `requested_by_user_id` NULL
+* `requested_at`
+* `status_code`
+
+### Enum
+
+`status_code`
+
+* pending
+* completed
+* failed
+* expired
+
+---
+
+## 5.13 `offer_reprice_results`
+
+### Kolone
+
+* `id`
+* `reprice_request_id`
+* `price_changed`
+* `availability_changed`
+* `old_total_amount`
+* `new_total_amount`
+* `currency_code`
+* `reprice_result_json`
+* `completed_at`
+
+---
+
+## 5.14 `package_build_candidates`
+
+### Kolone
+
+* `id`
+* `search_request_id`
+* `candidate_hash`
+* `component_mix_json`
+* `is_valid`
+* `validation_errors_json`
+* `computed_score`
+* `created_at`
+
+---
+
+## 5.15 `search_click_events`
+
+### Kolone
+
+* `id`
+* `search_request_id`
+* `offer_id`
+* `clicked_at`
+* `rank_position`
+* `channel_id`
+
+---
+
+## 5.16 Ključne relacije domena 5
+
+* `search_requests 1:N passengers`
+* `search_requests 1:N rooms`
+* `search_requests 1:N filters`
+* `search_requests 1:N offer_groups`
+* `offer_groups 1:N offers`
+* `offers 1:N offer_items`
+* `offers 1:N price_breakdowns`
+* `offers 1:1 ranking_features`
+* `offers 1:N reprice_requests`
+* `reprice_requests 1:1 reprice_results`
+
+---
+
+## 5.17 Poslovna pravila
+
+1. Offer ne sme ići u booking ako je istekao.
+2. Reprice rezultat mora biti vezan za konkretan offer.
+3. Offer item mora imati source reference.
+4. Package offer mora imati najmanje 2 item-a osim ako je specijalizovan tour/charter offer.
+5. Search cache je vremenski ograničen i ne zamenjuje reprice.
+
+---
+
+# Šta smo sada završili
+
+Sada smo razradili **Domains 1–5** do detaljnog relacijskog nivoa:
+
+* Identity & Access
+* CRM & Accounts
+* Product Master
+* Contracting & Rates
+* Search & Offers
+
+To je već ozbiljna baza i pravi početak enterprise modela.
+
+# Sledeći korak
+
+Sledeće idem istim nivoom detalja za:
+
+## Domains 6–10
+
+* Booking Core
+* Reservation Operations
+* Finance & Settlement
+* Rooming & Capacity
+* Tour Operator Programs
+
+Posle toga:
+
+## Domains 11–17
+
+a zatim:
+
+* API struktura po domenu
+* event schema
+* queue / worker logika
+* deployment data strategija
+
+Nastavljam tim redom.

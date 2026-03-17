@@ -1,0 +1,1214 @@
+Odlično. Nastavljam sa sledećim velikim slojem:
+
+# DB DEPLOYMENT STRATEGIJA
+
+## Data layer, schemas, partitioning, indexing, read/write, reporting, archive, backup
+
+Ovo je deo koji određuje da li će sistem:
+
+* ostati brz kad poraste broj rezervacija
+* moći da podnese search load
+* izdržati veliki broj mailova, kampanja i AI logova
+* imati čiste reporting i operativne upite
+* biti održiv 3–5 godina bez haosa
+
+Ovde definišemo:
+
+* organizaciju baze po šemama
+* strategiju read/write razdvajanja
+* particionisanje
+* indeksiranje
+* materialized views
+* reporting sloj
+* arhiviranje
+* backup / recovery
+* data retention
+
+---
+
+# 1. OSNOVNI PRINCIP
+
+Za ovakav sistem preporučujem:
+
+## 1.1 Primarni OLTP sloj
+
+**PostgreSQL** kao glavna transakciona baza.
+
+Razlog:
+
+* odličan za booking/finance/CRM
+* jak ACID model
+* odličan za JSONB gde treba
+* podržava particionisanje
+* odličan za audit i relacione podatke
+
+## 1.2 Pomoćni slojevi
+
+Pored primarne baze:
+
+* **Redis** za cache/session/temporary locks
+* **Elasticsearch / OpenSearch** za full-text i search index
+* **Object Storage** za dokumenta i attachment-e
+* **Data Warehouse** za tešku analitiku
+* **Queue/Event storage** kroz DB + broker kombinaciju
+
+Dakle:
+
+```text
+PostgreSQL = system of record
+Redis = speed layer
+Search index = retrieval layer
+Object storage = files
+Warehouse = analytics layer
+```
+
+---
+
+# 2. SCHEMA ORGANIZACIJA
+
+Ne preporučujem jednu ogromnu `public` šemu.
+
+Predlažem organizaciju po domenima.
+
+## 2.1 Predlog schema strukture
+
+```text
+iam
+crm
+product
+contracting
+search
+booking
+ops
+finance
+rooming
+tour
+charter
+b2b
+communication
+marketing
+ai
+cms
+control
+reporting
+integration
+```
+
+Ovo znači:
+
+* logički jasnije održavanje
+* lakše dozvole
+* lakše migration strategije
+* manje haosa u velikom sistemu
+
+---
+
+# 3. ŠTA IDE U KOJU ŠEMU
+
+## `iam`
+
+* users
+* roles
+* permissions
+* sessions
+* api_clients
+
+## `crm`
+
+* contacts
+* agencies
+* suppliers
+* notes
+* preferences
+* consents
+
+## `product`
+
+* destinations
+* products
+* hotels
+* room_types
+* board_types
+* amenities
+
+## `contracting`
+
+* contracts
+* versions
+* seasons
+* rate_plans
+* restrictions
+* allotments
+* pricing rules
+
+## `search`
+
+* search_requests
+* offer_groups
+* offers
+* offer_items
+* reprice results
+* cache refs
+
+## `booking`
+
+* bookings
+* booking_items
+* passengers
+* supplier reservations
+* booking docs
+* cancellations
+
+## `ops`
+
+* workspaces
+* flags
+* alerts
+* dispatches
+* operational lists
+* incidents
+
+## `finance`
+
+* payments
+* receivables
+* payables
+* refunds
+* finance docs
+* statements
+* bank movements
+
+## `rooming`
+
+* rooming_sets
+* rooming_rooms
+* rooming_passengers
+* occupancy rules
+* capacity snapshots
+* manifests
+
+## `tour`
+
+* programs
+* versions
+* departures
+* itinerary
+* tour manifests
+* guides
+
+## `charter`
+
+* seasons
+* series
+* flights
+* seat inventory
+* hotel links
+* charter pricing
+* load factor
+
+## `b2b`
+
+* agency users
+* restrictions
+* branch access
+* agency support
+* API access
+
+## `communication`
+
+* mailboxes
+* threads
+* messages
+* attachments
+* quality review
+* templates
+* communication tasks
+
+## `marketing`
+
+* campaigns
+* audiences
+* content blocks
+* delivery events
+* automations
+
+## `ai`
+
+* usage logs
+* budgets
+* sessions
+* prompt templates
+* approvals
+* cache
+
+## `cms`
+
+* pages
+* blocks
+* seo metadata
+* redirects
+* slugs
+* publications
+
+## `control`
+
+* audit logs
+* feature flags
+* queue jobs
+* incidents
+* health checks
+* api logs
+
+## `reporting`
+
+* denormalized views
+* materialized views
+* aggregated facts
+
+## `integration`
+
+* raw supplier payloads
+* webhook logs
+* import/export jobs
+* connector mappings
+
+---
+
+# 4. OLTP VS ANALYTICS RAZDVAJANJE
+
+Veoma važno: ne raditi teške BI upite nad glavnom booking bazom.
+
+## 4.1 OLTP baza
+
+Koristi se za:
+
+* CRUD
+* booking flow
+* payments
+* operativu
+* mail threadove
+* dispatching
+
+## 4.2 Reporting / analytics
+
+Koristi se za:
+
+* sales trends
+* campaign attribution
+* AI usage analytics
+* charter performance
+* long historical analysis
+* cross-domain KPI
+
+To ide u:
+
+* materialized views
+* reporting schema
+* ili data warehouse
+
+---
+
+# 5. READ / WRITE STRATEGIJA
+
+Preporučujem:
+
+## 5.1 Primary DB
+
+svi write-ovi i critical reads
+
+## 5.2 Read replicas
+
+za:
+
+* dashboards
+* non-critical listing
+* operational exports
+* heavy search read-side
+* CMS reads gde je prihvatljivo minimalno kašnjenje
+
+## 5.3 Pravilo
+
+Critical tokovi ostaju na primary:
+
+* booking create
+* payment state
+* refund
+* supplier reservation
+* rooming send confirmation
+
+---
+
+# 6. PARTICIONISANJE — GDE JE OBAVEZNO
+
+Ne treba sve particionisati.
+Treba particionisati velike i vremenski rastuće tabele.
+
+## 6.1 Obavezni kandidati
+
+### `search.search_requests`
+
+po mesecu ili nedelji
+
+### `search.offers`
+
+po created_at ili expiration periodu
+
+### `booking.booking_status_history`
+
+po mesecu
+
+### `finance.payments`
+
+po mesecu ili kvartalu
+
+### `finance.settlement_logs`
+
+po mesecu
+
+### `communication.mail_messages`
+
+po mesecu
+
+### `marketing.email_campaign_recipients`
+
+po kampanji ili mesecu
+
+### `ai.ai_usage_logs`
+
+po mesecu
+
+### `control.api_request_logs`
+
+po danu ili mesecu
+
+### `control.audit_logs`
+
+po mesecu
+
+### `control.queue_jobs`
+
+po created_at ako retention raste
+
+---
+
+# 7. PARTICIONISANJE — PREPORUKA PO TABELI
+
+## Time-based monthly partitions
+
+Najzdravije za:
+
+* payments
+* logs
+* mail messages
+* AI usage
+* campaign deliveries
+* audit
+
+## Daily partitions
+
+Samo ako je ogroman promet:
+
+* api_request_logs
+* web tracking events
+* chatbot messages
+
+## By business entity
+
+Moguće za neke specijalne slučajeve:
+
+* campaign recipient tables po campaign batch-u
+* offer snapshots po publication cycle-u
+
+Ali generalno:
+**time-based partitioning** je najpraktičnije.
+
+---
+
+# 8. INDEXING STRATEGIJA
+
+Indeksi moraju biti veoma pažljivo planirani.
+
+## 8.1 Obavezni tipovi indeksa
+
+* PK index
+* unique business key index
+* foreign key supporting index
+* status/date composite index
+* search listing index
+* partial indexes za active records
+
+---
+
+# 9. INDEX RULES
+
+## 9.1 Svaki FK koji se često join-uje mora imati index
+
+Primer:
+
+* booking_id
+* agency_id
+* contact_id
+* supplier_id
+* thread_id
+* campaign_id
+
+## 9.2 Listing tabele moraju imati composite indexe
+
+Primer:
+
+* `bookings(status_code, travel_start_date)`
+* `receivables(status_code, due_date)`
+* `mail_threads(status_code, assigned_user_id, last_activity_at)`
+* `charter_flights(flight_date, status_code)`
+
+## 9.3 Partial indexes za active podatke
+
+Primer:
+
+* aktivni booking-ovi
+* otvoreni receivables
+* unresolved incidents
+* active mail threads
+
+---
+
+# 10. PRIMERI KONKRETNIH INDEKSA
+
+## `booking.bookings`
+
+* `(booking_reference)` unique
+* `(agency_id, created_at desc)`
+* `(contact_id, created_at desc)`
+* `(status_code, travel_start_date)`
+* `(travel_start_date, status_code)`
+
+## `finance.receivables`
+
+* `(payer_agency_id, status_code, due_date)`
+* `(booking_id)`
+* partial: `status_code in ('open','partially_paid','overdue')`
+
+## `communication.mail_threads`
+
+* `(mailbox_id, status_code, last_activity_at desc)`
+* `(assigned_user_id, status_code, priority_code)`
+* `(related_booking_id)`
+* `(related_agency_id)`
+
+## `charter.charter_flights`
+
+* `(charter_flight_series_id, flight_date, direction_code)` unique
+* `(flight_date, status_code)`
+* `(status_code, seat_capacity_free)`
+
+---
+
+# 11. FULL-TEXT SEARCH STRATEGIJA
+
+Za ovakav sistem obični SQL nije dovoljan za sve.
+
+## 11.1 PostgreSQL full-text
+
+može pomoći za:
+
+* simple internal notes
+* article content
+* mail subjects
+
+## 11.2 Search engine
+
+Za ozbiljniju pretragu preporučujem:
+
+* Elasticsearch / OpenSearch
+
+Koristiti za:
+
+* destinacije
+* hoteli
+* sajt sadržaj
+* mail search
+* knowledge / FAQ / CMS
+* možda contact/company search ako treba fuzzy
+
+## 11.3 System of record i dalje ostaje PostgreSQL
+
+Search index je read-model, ne master izvor.
+
+---
+
+# 12. JSONB STRATEGIJA
+
+JSONB je koristan, ali ne sme zameniti relacijski model.
+
+## 12.1 Gde koristiti JSONB
+
+* supplier raw payload
+* snapshot fields
+* flexible filters
+* AI result payloads
+* condition/action payloads u automation engine-u
+* layout/content blocks
+* audit deltas
+
+## 12.2 Gde NE koristiti JSONB
+
+* core booking columns
+* finance amounts/status
+* rooming occupancy relations
+* receivables/payables
+* contact core data
+
+---
+
+# 13. MATERIALIZED VIEWS
+
+Za performanse operativnih i management ekrana preporučujem materialized views.
+
+## 13.1 Kandidati
+
+### `reporting.mv_booking_finance_summary`
+
+po booking-u:
+
+* sell
+* net
+* paid
+* due
+* margin
+* finance status
+
+### `reporting.mv_departures_operational`
+
+za sledećih X dana:
+
+* booking
+* pax
+* hotel
+* rooming status
+* transfer status
+* finance flags
+
+### `reporting.mv_charter_load_factor`
+
+po flight-u:
+
+* total
+* sold
+* free
+* load factor
+* breakeven
+
+### `reporting.mv_campaign_performance`
+
+* sent
+* delivered
+* open
+* click
+* conversion
+* revenue
+
+### `reporting.mv_mail_quality_user_scores`
+
+* avg score
+* risk counts
+* review counts
+
+### `reporting.mv_ai_budget_usage`
+
+* by module
+* by team
+* by user
+* by day/month
+
+---
+
+# 14. REFRESH STRATEGIJA ZA MATERIALIZED VIEWS
+
+Ne treba sve osvežavati isto.
+
+## Near-real-time refresh
+
+* departures operational
+* booking finance summary
+* charter load factor
+
+## Hourly
+
+* mail quality summaries
+* support metrics
+* rooming readiness
+
+## Daily
+
+* campaign performance
+* SEO analytics
+* AI usage summaries
+
+---
+
+# 15. REPORTING VIEWS
+
+Pored materialized views, preporučujem obične SQL view-ove za česte poslovne upite.
+
+## Primeri
+
+* active_bookings_view
+* open_receivables_view
+* overdue_payables_view
+* unresolved_incidents_view
+* published_charters_view
+* agency_open_balance_view
+
+---
+
+# 16. DENORMALIZED READ MODELS
+
+Za neke ekrane je bolje imati posebne summary tabele.
+
+## Kandidati
+
+* reservation dossier header summary
+* finance summary by booking
+* agency account snapshot
+* public offer snapshot
+* departure readiness snapshot
+* communication thread summary
+* homepage content snapshot
+
+To su write-optimized domain models + read-optimized projections.
+
+---
+
+# 17. CACHE STRATEGIJA
+
+## 17.1 Redis za:
+
+* session cache
+* auth/session states
+* search result cache
+* public offer cache
+* CMS page cache
+* chatbot short-term memory
+* AI response cache
+* rate limit counters
+* idempotency keys
+
+## 17.2 TTL primeri
+
+* public content: 10–60 min
+* search offers: 2–10 min
+* charter listings: 5–15 min
+* booking read cache: vrlo kratko ili oprezno
+* AI summaries: duže, dok se thread ne promeni
+
+---
+
+# 18. FILE STORAGE STRATEGIJA
+
+Dokumenta i attachment-i ne treba da budu u DB kao blob.
+
+## Koristiti object storage za:
+
+* vouchers
+* invoices
+* rooming exports
+* manifests
+* attachments
+* hotel images
+* campaign media
+* CMS assets
+
+## U DB čuvati:
+
+* file_id
+* path/key
+* mime
+* size
+* checksum
+* access scope
+
+---
+
+# 19. ARCHIVE STRATEGIJA
+
+Ovakav sistem mora imati arhivu.
+
+## 19.1 Šta ostaje dugo u primary OLTP
+
+* aktivni booking-i
+* finansijski aktivni zapisi
+* current contracts
+* current CRM
+* current rooming/workspaces
+
+## 19.2 Šta ide u archive sloj
+
+* stari search requests
+* expired offers
+* stari mail raw bodies
+* stari campaign recipient events
+* stari AI logs
+* stari API request logs
+* closed incidents posle retention perioda
+
+---
+
+# 20. ARCHIVE POLICY — PREPORUKA
+
+## 20.1 Search / offers
+
+* full detail 3–6 meseci
+* agregati duže
+* raw cleanup posle toga
+
+## 20.2 Mail raw bodies
+
+* u zavisnosti od pravne potrebe
+* thread summary ostaje
+* raw attachment retention po politici
+
+## 20.3 AI logs
+
+* detaljni token logs 6–12 meseci
+* agregati duže
+
+## 20.4 API request logs
+
+* 30–90 dana detaljno
+* agregati duže
+
+## 20.5 Audit logs
+
+* znatno duže, često 2–7 godina po politici
+
+---
+
+# 21. SOFT DELETE VS HARD DELETE
+
+## Soft delete koristiti za:
+
+* contacts
+* agencies
+* products
+* pages
+* templates
+* bookings samo izuzetno oprezno
+
+## Hard delete koristiti za:
+
+* cache entries
+* transient queue jobs
+* old temporary snapshots
+* test data
+* some imports after retention
+
+Za većinu core business entiteta:
+**soft delete + audit** je bolji.
+
+---
+
+# 22. BACKUP STRATEGIJA
+
+Ovo mora biti ozbiljno definisano.
+
+## 22.1 OLTP baza
+
+* daily full backup
+* frequent WAL/incremental backup
+* point-in-time recovery
+
+## 22.2 Object storage
+
+* versioning enabled
+* lifecycle policy
+* cross-region replication za kritične fajlove
+
+## 22.3 Search index
+
+* rebuild moguć iz primary source
+* snapshot po potrebi
+
+## 22.4 Data warehouse
+
+* odvojena backup strategija
+
+---
+
+# 23. RPO / RTO CILJEVI
+
+Preporuka:
+
+## OLTP / booking / finance
+
+* **RPO < 15 min**
+* **RTO < 1 h**
+
+## Mail / communication
+
+* RPO nizak, ali može nešto viši od payment layer-a ako postoji replay
+
+## Marketing / analytics
+
+* viši tolerisani RPO/RTO
+
+---
+
+# 24. DISASTER RECOVERY
+
+Mora postojati plan za:
+
+* primary DB failure
+* region outage
+* broker/queue outage
+* mail provider outage
+* search cluster outage
+
+## Minimalno:
+
+* replica / failover
+* restore tested
+* runbook dokumentovan
+* queue replay podržan
+* degraded mode za website/public search
+
+---
+
+# 25. DATA CONSISTENCY PRAVILA
+
+## Strong consistency potrebna za:
+
+* booking state
+* payment state
+* receivable/payable state
+* supplier reservation state
+* rooming confirmation state
+
+## Eventual consistency prihvatljiva za:
+
+* dashboards
+* campaign analytics
+* mail quality summaries
+* website publication sync
+* SEO suggestions
+* AI aggregations
+
+---
+
+# 26. TRANSACTION BOUNDARIES
+
+Ne treba praviti ogromne transakcije preko više domena.
+
+## Jedna transakcija:
+
+* booking core write + outbox
+* payment write + outbox
+* rooming set update + validation result + outbox
+
+## Van transakcije / async:
+
+* docs generation
+* mail send
+* analytics updates
+* publishing refresh
+* AI scoring
+
+---
+
+# 27. MULTI-REGION / MULTI-MARKET PRIPREMA
+
+Ako planirate više tržišta ili brandova, baza treba da bude spremna za:
+
+* `brand_id`
+* `market_id`
+* `channel_id`
+* `language_code`
+* `currency_code`
+
+na ključnim tabelama i read modelima.
+
+Ne svuda, ali gde je relevantno.
+
+---
+
+# 28. MIGRATION STRATEGIJA
+
+Za ovakav sistem migrations moraju biti strogo kontrolisane.
+
+## Pravila:
+
+* backward compatible migrations kad god je moguće
+* add column pre remove column
+* data backfill kroz batch jobs
+* index creation online/controlled
+* no blocking large table migrations usred radnog dana
+
+## Potrebno:
+
+* migration registry
+* rollout plan
+* rollback plan
+
+---
+
+# 29. SEED / REFERENCE DATA STRATEGIJA
+
+Posebno voditi:
+
+* countries
+* airports
+* ports
+* currencies
+* status cataloge
+* enum-like reference tables
+* permission catalog
+* channel catalog
+* destination base taxonomy
+
+Ne sve kao hardcoded enum u aplikaciji.
+
+---
+
+# 30. DB SECURITY
+
+## Obavezno:
+
+* least privilege roles
+* odvojeni DB korisnici po servisu
+* read-only user za reporting gde treba
+* encrypted connections
+* secrets manager
+* audit pristupa kritičnim tabelama
+
+## Posebno osetljive tabele:
+
+* payments
+* documents
+* contact documents
+* ai_usage/cost logs
+* mail raw content
+* credentials/API keys
+
+---
+
+# 31. PII STRATEGIJA
+
+Pošto imate:
+
+* pasoše
+* datume rođenja
+* kontakte
+* komunikaciju
+
+mora postojati data classification.
+
+## Kategorije
+
+* public
+* internal
+* confidential
+* restricted/PII
+* financial_sensitive
+
+## Mere
+
+* masking u admin listama gde treba
+* ograničen pristup pasošima i dokumentima
+* export audit
+* field-level permission gde je potrebno
+
+---
+
+# 32. RETENTION POLICIES
+
+Treba formalno definisati retention po tipu podataka.
+
+## Primer
+
+* booking core: dugo čuvanje
+* finance docs: po zakonskom roku
+* marketing events: kraće detaljno, agregati duže
+* AI session content: po policy i business potrebi
+* mail raw data: po pravnoj/operativnoj potrebi
+* audit logs: duže
+
+Ovo treba kasnije potvrditi sa pravnim i compliance timom.
+
+---
+
+# 33. DATA WAREHOUSE MODEL
+
+Za ozbiljnu analitiku preporučujem izdvojeni warehouse.
+
+## Fakt tabele
+
+* fact_bookings
+* fact_booking_items
+* fact_payments
+* fact_receivables
+* fact_payables
+* fact_campaign_events
+* fact_mail_quality
+* fact_ai_usage
+* fact_charter_load
+* fact_tour_departures
+
+## Dimenzije
+
+* dim_date
+* dim_contact
+* dim_agency
+* dim_destination
+* dim_product
+* dim_supplier
+* dim_channel
+* dim_brand
+* dim_market
+
+To omogućava ozbiljan BI.
+
+---
+
+# 34. PUBLIC WEBSITE DATA STRATEGIJA
+
+B2C sajt ne treba da čita direktno “živu” OLTP strukturu za sve.
+
+## Preporuka:
+
+* publication snapshot layer
+* public offer snapshots
+* published page snapshots
+* precomputed SEO-friendly payloads
+
+To daje:
+
+* brzinu
+* stabilnost
+* manje opterećenje
+* lakši cache invalidation
+
+---
+
+# 35. DB DEPLOYMENT PO FAZAMA
+
+## Faza 1
+
+Core OLTP:
+
+* iam
+* crm
+* product
+* contracting
+* search
+* booking
+* finance
+
+## Faza 2
+
+Operations:
+
+* ops
+* rooming
+* b2b
+* communication
+
+## Faza 3
+
+Tour/Charter:
+
+* tour
+* charter
+* capacity advanced
+* manifest/reporting read models
+
+## Faza 4
+
+Growth/AI/CMS:
+
+* marketing
+* ai
+* cms
+* reporting
+* advanced warehouse sync
+
+---
+
+# 36. PREPORUKA ZA PHYSICAL DEPLOYMENT
+
+## Primarno:
+
+* 1 PostgreSQL cluster
+* logical schemas po domenu
+* 1–2 read replike
+* Redis cluster
+* OpenSearch/Elastic cluster
+* object storage
+* broker/queue infra
+* warehouse kasnije ili paralelno
+
+Za MVP ne mora fizički 10 baza.
+Logičke granice su važnije od rane fizičke fragmentacije.
+
+---
+
+# 37. KADA PREĆI NA VIŠE FIZIČKIH BAZA
+
+Tek kada stvarno dođe potreba.
+
+Kandidati za kasnije izdvajanje:
+
+* mail/communication
+* marketing events
+* AI usage/session logs
+* analytics warehouse
+* search/offer ephemeral layer
+
+Core booking/finance neka ostane vrlo pažljivo pod kontrolom.
+
+---
+
+# 38. Šta smo sada završili
+
+Sada smo definisali:
+
+* schema organizaciju
+* OLTP vs analytics
+* read/write strategiju
+* particionisanje
+* indeksiranje
+* materialized/reporting views
+* cache
+* archive
+* backup/recovery
+* security/PII
+* warehouse smer
+
+Time je zatvoren **DB deployment/data architecture sloj**.
+
+---
+
+# 39. Šta sledi dalje
+
+Sada smo praktično završili:
+
+* domain data model
+* API boundary
+* event/queue model
+* DB deployment strategiju
+
+Sledeći pravi korak je nešto što CTO i product arhitekte rade odmah posle ovoga:
+
+# IMPLEMENTACIONI BLUEPRINT
+
+odnosno:
+
+* kako podeliti razvoj po fazama
+* koje module raditi prve
+* zavisnosti između timova
+* minimalni tim
+* realan roadmap
+* šta je MVP
+* šta je phase 2 / 3 / 4
+* šta ide paralelno
+* rizici projekta
+
+To je sledeći sloj koji pretvara dokumentaciju u **izvodljiv plan razvoja**.

@@ -1,0 +1,602 @@
+Krećem od **1. tehničkog dokumenta spremnog za development tim**.
+
+Napravio sam ispod **Deo 1: Scope, ciljevi, moduli, korisničke uloge, osnovni tokovi i funkcionalni zahtevi**.
+Posle ovoga idemo na **Deo 2: ER dijagram + SQL schema**.
+
+---
+
+# TEHNIČKI DOKUMENT ZA RAZVOJNI TIM
+
+## Unified Travel Booking Platform
+
+### Deo 1 — Scope, moduli, uloge, tokovi, funkcionalni zahtevi
+
+## 1. Svrha sistema
+
+Cilj je izrada jedinstvene travel platforme koja omogućava online i agentsku prodaju sledećih proizvoda:
+
+* samo hotel
+* samo let
+* hotel + let
+* hotel + let + transfer
+* hotel + let + transfer + izlet / ulaznica
+* krstarenje
+* krstarenje + let
+* krstarenje + transfer
+* krstarenje + hotel pre/post stay
+
+Sistem mora podržati:
+
+* B2C prodaju
+* B2B prodaju
+* interni agentski rad
+* online i offline komponente
+* dinamičko paketiranje
+* integracije sa više dobavljača
+* jedinstveno upravljanje rezervacijama i dokumentima
+
+---
+
+## 2. Poslovni ciljevi
+
+Platforma treba da omogući:
+
+1. povećanje online prodaje
+2. automatizaciju kreiranja paketa
+3. objedinjavanje više tipova proizvoda u jedan booking flow
+4. B2B distribuciju za subagente
+5. veću kontrolu marže, provizije i pricing pravila
+6. centralizovano upravljanje rezervacijama, dokumentima i naplatom
+7. kasniju AI optimizaciju preporuka i rangiranja paketa
+
+---
+
+## 3. Scope sistema
+
+## 3.1 In-scope
+
+Sistem obuhvata:
+
+* registraciju i prijavu korisnika
+* pretragu proizvoda
+* filtriranje i prikaz rezultata
+* prikaz detalja proizvoda
+* paketiranje više proizvoda
+* rezervaciju
+* unos putnika
+* plaćanje
+* izdavanje potvrda i vouchera
+* B2B rad sa agentima
+* admin upravljanje dobavljačima, pravilima i rezervacijama
+* post-booking akcije
+* osnovni reporting
+
+## 3.2 Out-of-scope za prvu verziju
+
+Ovo može biti u kasnijim fazama:
+
+* loyalty program
+* napredni AI prediction modeli
+* automatska dinamička repricing optimizacija u realnom vremenu
+* full CRM i marketing automation
+* refund automation za sve dobavljače
+* full mobile native app
+
+---
+
+## 4. Glavni tipovi korisnika
+
+## 4.1 B2C korisnik
+
+Može da:
+
+* pretražuje proizvode
+* rezerviše
+* plati online
+* vidi svoje rezervacije
+* preuzme dokumenta
+* otkaže ili izmeni rezervaciju gde je dozvoljeno
+
+## 4.2 B2B agent
+
+Može da:
+
+* pristupi agent portalu
+* vidi agent-specifične cene
+* pravi rezervacije za klijente
+* koristi kreditni limit ili odloženo plaćanje
+* generiše predračun i dokumenta
+* prati istoriju rezervacija
+
+## 4.3 Interni agent / call centar
+
+Može da:
+
+* kreira rezervacije ručno
+* kombinuje online i offline komponente
+* menja cenu uz dozvoljene privilegije
+* ubaci ručni trošak ili doplatu
+* pomogne klijentu kod promena i otkaza
+
+## 4.4 Administrator
+
+Može da:
+
+* upravlja korisnicima i agentima
+* upravlja dobavljačima
+* upravlja pravilima marže i provizije
+* prati rezervacije i plaćanja
+* podešava promotions i package rules
+* vidi izveštaje i audit logove
+
+---
+
+## 5. Glavni moduli sistema
+
+## 5.1 User & Auth modul
+
+Funkcije:
+
+* registracija
+* login/logout
+* reset lozinke
+* role management
+* profili korisnika
+* čuvanje putnika i podataka za rezervaciju
+
+## 5.2 Search modul
+
+Funkcije:
+
+* unified search
+* pretraga po proizvodu
+* autocomplete destinacija
+* filtriranje
+* sortiranje
+* search logs
+
+## 5.3 Hotel modul
+
+Funkcije:
+
+* hotel search
+* detalji hotela
+* room/rate selection
+* hotel booking
+* hotel voucher
+
+## 5.4 Flight modul
+
+Funkcije:
+
+* flight search
+* itinerary selection
+* fare selection
+* passenger data
+* flight booking
+* PNR / ticket info
+
+## 5.5 Transfer modul
+
+Funkcije:
+
+* transfer search
+* vehicle selection
+* pickup/dropoff logic
+* booking transfera
+* transfer voucher
+
+## 5.6 Activity / Ticket modul
+
+Funkcije:
+
+* search aktivnosti
+* termin / datum
+* broj putnika
+* voucher / ticket generation
+
+## 5.7 Cruise modul
+
+Funkcije:
+
+* pretraga krstarenja
+* izbor polaska
+* izbor kabine
+* cruise booking
+* embarkation dokumenta
+
+## 5.8 Package Engine
+
+Funkcije:
+
+* spajanje više proizvoda
+* compatibility provere
+* paketni pricing
+* bundle discount
+* ranking paketa
+
+## 5.9 Booking modul
+
+Funkcije:
+
+* kreiranje master rezervacije
+* kreiranje booking items
+* supplier confirmations
+* unified itinerary
+
+## 5.10 Payment modul
+
+Funkcije:
+
+* payment authorization
+* capture
+* failed payment handling
+* agent kredit
+* refund evidencija
+
+## 5.11 Documents modul
+
+Funkcije:
+
+* voucher generation
+* itinerary PDF
+* invoice / proforma
+* storage i download
+
+## 5.12 Admin modul
+
+Funkcije:
+
+* supplier management
+* pricing rules
+* markups
+* commissions
+* promotions
+* manual overrides
+* booking management
+
+## 5.13 Reporting modul
+
+Funkcije:
+
+* sales reports
+* margin reports
+* agent reports
+* booking status reports
+* conversion reports
+
+---
+
+## 6. Supported booking tipovi
+
+Sistem mora podržati sledeće booking type vrednosti:
+
+* `hotel_only`
+* `flight_only`
+* `hotel_flight_package`
+* `hotel_flight_transfer_package`
+* `hotel_flight_transfer_activity_package`
+* `cruise_only`
+* `cruise_flight_package`
+* `cruise_flight_transfer_package`
+* `custom_multi_product`
+
+---
+
+## 7. Ključni poslovni tokovi
+
+## 7.1 Samo hotel
+
+Tok:
+
+```text
+Search hotel
+→ Results
+→ Hotel details
+→ Room/rate selection
+→ Guest details
+→ Payment / credit flow
+→ Confirm reservation
+→ Generate voucher
+```
+
+## 7.2 Samo let
+
+Tok:
+
+```text
+Search flight
+→ Results
+→ Select itinerary
+→ Select fare
+→ Passenger details
+→ Payment
+→ Confirm flight
+→ Generate itinerary / ticket data
+```
+
+## 7.3 Hotel + let
+
+Tok:
+
+```text
+Search package
+→ Package results
+→ Select package
+→ Revalidate
+→ Traveler details
+→ Payment
+→ Book flight + hotel
+→ Generate unified itinerary
+```
+
+## 7.4 Hotel + let + transfer + izlet
+
+Tok:
+
+```text
+Search package
+→ Build compatible combinations
+→ Show ranked packages
+→ Add/replace extras
+→ Revalidate all items
+→ Payment
+→ Multi-item booking
+→ Generate unified documents
+```
+
+## 7.5 Krstarenje
+
+Tok:
+
+```text
+Search cruise
+→ Select sailing
+→ Select cabin
+→ Passenger details
+→ Payment
+→ Confirm cruise
+→ Generate cruise documents
+```
+
+## 7.6 Krstarenje + let + transfer
+
+Tok:
+
+```text
+Search cruise package
+→ Match flight
+→ Match transfer
+→ Optional pre/post hotel
+→ Revalidate
+→ Payment
+→ Book all items
+→ Generate master itinerary
+```
+
+---
+
+## 8. Glavni funkcionalni zahtevi
+
+## 8.1 Search zahtevi
+
+Sistem mora da:
+
+* podrži pretragu po destinaciji, datumu, broju putnika i tipu proizvoda
+* vrati rezultate iz više dobavljača
+* podrži filtere i sortiranje
+* radi normalizaciju rezultata iz različitih API izvora
+* podrži partial results ako neki supplier ne odgovori
+
+## 8.2 Booking zahtevi
+
+Sistem mora da:
+
+* kreira master booking zapis
+* podrži više stavki unutar jedne rezervacije
+* čuva supplier reference za svaku stavku
+* podrži rollback logiku kod neuspešne multi-item rezervacije
+* podrži statusni tok rezervacije
+
+Predloženi booking statusi:
+
+* `pending`
+* `awaiting_payment`
+* `processing`
+* `confirmed`
+* `partially_confirmed`
+* `failed`
+* `cancelled`
+* `refunded`
+
+## 8.3 Pricing zahtevi
+
+Sistem mora da:
+
+* podrži net cene od dobavljača
+* doda markup
+* podrži commission model
+* podrži bundle discount
+* podrži promo code
+* podrži B2B i B2C cenovne razlike
+* čuva pricing snapshot u trenutku bookinga
+
+## 8.4 Payment zahtevi
+
+Sistem mora da:
+
+* podrži kartično plaćanje
+* podrži bank transfer
+* podrži agent kredit
+* čuva payment status
+* povezuje payment sa booking-om
+* podrži refund evidenciju
+
+## 8.5 Document zahtevi
+
+Sistem mora da generiše:
+
+* hotel voucher
+* flight itinerary
+* transfer voucher
+* activity voucher
+* cruise confirmation
+* unified itinerary
+* invoice / proforma
+
+## 8.6 B2B zahtevi
+
+Sistem mora da:
+
+* podrži agent naloge
+* podrži kreditni limit
+* podrži provizije i markupe po agentu
+* podrži neto i bruto prikaz cena
+* omogući izvoz dokumenata za agenta
+
+## 8.7 Admin zahtevi
+
+Sistem mora da:
+
+* omogući unos i izmenu supplier konfiguracije
+* omogući upravljanje pricing pravilima
+* omogući ručne izmene određenih rezervacija
+* vodi audit log
+* prikaže sve rezervacije i njihove stavke
+
+---
+
+## 9. Ne-funkcionalni zahtevi
+
+## 9.1 Performanse
+
+* search response za standardne upite treba da bude brz i stabilan
+* sistem mora podržati paralelne supplier pozive
+* partial results su prihvatljivi ako spor supplier kasni
+* revalidation mora biti odvojena od search faze
+
+## 9.2 Skalabilnost
+
+Sistem mora biti projektovan modularno tako da kasnije može podržati:
+
+* više kanala prodaje
+* više jezika i valuta
+* više tržišta
+* više supplier integracija
+* veći broj dnevnih pretraga i rezervacija
+
+## 9.3 Bezbednost
+
+* role-based access control
+* zaštita korisničkih i payment podataka
+* audit trail za administrativne promene
+* sigurno čuvanje kredencijala za supplier API-je
+
+## 9.4 Pouzdanost
+
+* retry mehanizmi za supplier API-je
+* timeout kontrola
+* fallback logika
+* failure logging
+* statusna transparentnost za svaku rezervaciju
+
+---
+
+## 10. Predloženi statusni tok za booking item
+
+Svaka stavka rezervacije treba da ima svoj status:
+
+* `new`
+* `revalidated`
+* `reserved`
+* `ticketed`
+* `confirmed`
+* `cancel_requested`
+* `cancelled`
+* `failed`
+
+To je važno jer master booking može biti:
+
+* confirmed
+* partially_confirmed
+* failed
+
+dok pojedinačne stavke imaju svoje nezavisne statuse.
+
+---
+
+## 11. Osnovne integracije
+
+Sistem treba da podrži integraciju sa sledećim tipovima dobavljača:
+
+* hotel suppliers
+* flight suppliers
+* transfer suppliers
+* activity/ticket suppliers
+* cruise suppliers
+* payment provider
+* email / notification provider
+* document storage provider
+
+---
+
+## 12. Predlog fazne implementacije
+
+## Faza 1
+
+* auth
+* hotel only
+* flight only
+* booking core
+* payment
+* documents
+
+## Faza 2
+
+* transfer
+* activity
+* package engine
+* unified itinerary
+
+## Faza 3
+
+* B2B portal
+* admin pricing rules
+* reporting
+
+## Faza 4
+
+* cruise module
+* advanced package logic
+* AI ranking
+* price intelligence
+
+---
+
+## 13. Glavne tehničke odluke koje tim mora potvrditi
+
+Pre početka razvoja treba zaključati:
+
+1. da li je booking model potpuno product-agnostic
+2. da li se koristi jedan master booking sa više booking items
+3. da li package engine vraća snapshot ponude pre bookinga
+4. da li su B2B i B2C u istoj platformi ili odvojeni portali nad istim backendom
+5. da li offline proizvodi ulaze u isti booking model
+6. kako se rešava rollback kod parcijalnog neuspeha
+
+---
+
+## 14. Zaključak ovog dela
+
+Ovaj sistem treba da bude projektovan kao:
+
+* **jedan unified booking core**
+* **više product modula**
+* **jedan pricing engine**
+* **jedan package engine**
+* **jedan admin sloj**
+* **B2C + B2B + interni agent rad nad istim centralnim modelom**
+
+---
+
+Sledeći korak je **Deo 2: ER dijagram + detaljna SQL schema sa tabelama i relacijama**.

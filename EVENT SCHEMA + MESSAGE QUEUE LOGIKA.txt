@@ -1,0 +1,1320 @@
+Odlično. Nastavljam sa sledećim ključnim slojem:
+
+# EVENT SCHEMA + MESSAGE QUEUE LOGIKA
+
+## Detailed asynchronous architecture
+
+Ovo je deo koji pravi razliku između:
+
+* “velike baze i puno ekrana”
+  i
+* **stvarno skalabilne enterprise platforme**
+
+Bez ovog sloja, sistem brzo postaje:
+
+* spor
+* nepouzdan
+* težak za integracije
+* rizičan za booking i finansije
+
+Ovde definišemo:
+
+* event model
+* naming standard
+* payload strukturu
+* event ownership
+* ko emituje event
+* ko ga sluša
+* worker tipove
+* retry pravila
+* dead letter queue
+* idempotency
+* sync vs async granice
+
+---
+
+# 1. Osnovni princip
+
+Ne treba sve raditi event-driven.
+Treba razdvojiti:
+
+## 1.1 Sync-critical tokove
+
+moraju dati odgovor odmah
+
+Primer:
+
+* login
+* search response
+* offer reprice
+* booking create request accepted
+* payment intent create
+
+## 1.2 Async-operational tokove
+
+mogu i treba da idu preko queue/event sistema
+
+Primer:
+
+* dokument generacija
+* slanje email-a
+* rooming export
+* manifest export
+* campaign delivery
+* AI scoring
+* publishing refresh
+* analytics attribution
+
+---
+
+# 2. Event arhitektura — osnovni model
+
+Predlažem sledeću arhitekturu:
+
+```text
+Domain Service
+   ↓
+Outbox Table
+   ↓
+Event Publisher
+   ↓
+Event Bus / Queue
+   ↓
+Subscribers / Workers
+   ↓
+Read models / Side effects / Notifications
+```
+
+To znači:
+
+* domen upiše svoju promenu u bazu
+* zajedno sa outbox zapisom
+* publisher šalje event
+* worker-i rade dalje
+
+To je najzdraviji pristup.
+
+---
+
+# 3. Zašto outbox pattern
+
+Za booking i finansije je veoma važno da ne dođe do situacije:
+
+* booking je upisan
+* ali event nije poslat
+
+ili obrnuto:
+
+* event poslat
+* booking nije upisan
+
+Zato preporučujem:
+
+## Transactional Outbox Pattern
+
+Svaki domen koji emituje važne evente upisuje u istoj DB transakciji:
+
+* business record
+* outbox record
+
+---
+
+# 4. Event naming standard
+
+Event imena moraju biti strogo standardizovana.
+
+Predlažem format:
+
+```text
+<domain>.<entity>.<action>
+```
+
+Primeri:
+
+* booking.booking.created
+* booking.item.confirmed
+* finance.payment.received
+* rooming.set.sent
+* mail.thread.assigned
+* marketing.campaign.sent
+* website.page.published
+
+Ako je potrebno:
+
+```text
+<domain>.<entity>.<subentity>.<action>
+```
+
+Primer:
+
+* charter.flight.load_factor.updated
+
+---
+
+# 5. Event envelope standard
+
+Svaki event mora imati standardizovan envelope.
+
+## 5.1 Predlog strukture
+
+```json
+{
+  "event_id": "evt_01H...",
+  "event_name": "booking.booking.created",
+  "event_version": 1,
+  "occurred_at": "2026-03-16T09:10:00Z",
+  "producer_service": "booking-service",
+  "aggregate_type": "booking",
+  "aggregate_id": "1288821",
+  "correlation_id": "corr_...",
+  "causation_id": "cmd_...",
+  "tenant_context": {
+    "brand_id": 1,
+    "market_id": 2,
+    "channel_id": 3
+  },
+  "payload": {}
+}
+```
+
+---
+
+# 6. Obavezna polja event envelope-a
+
+* `event_id`
+* `event_name`
+* `event_version`
+* `occurred_at`
+* `producer_service`
+* `aggregate_type`
+* `aggregate_id`
+* `correlation_id`
+* `payload`
+
+## Preporučena dodatna polja
+
+* `causation_id`
+* `tenant_context`
+* `triggered_by_user_id`
+* `triggered_by_system_code`
+
+---
+
+# 7. Correlation i causation
+
+Ovo je veoma važno za debugging.
+
+## Correlation ID
+
+vezuje ceo tok.
+
+Primer:
+search → offer → booking → payment → documents
+
+sve može imati isti `correlation_id`.
+
+## Causation ID
+
+koji prethodni event/komanda je direktno izazvao sledeći.
+
+To je ključno za observability.
+
+---
+
+# 8. Event versioning
+
+Nikad ne menjati payload “tiho”.
+
+Svaki event mora imati:
+
+* `event_version`
+
+Ako se payload menja nekompatibilno:
+
+* podići verziju eventa
+
+Primer:
+
+* booking.booking.created v1
+* booking.booking.created v2
+
+---
+
+# 9. Event categories
+
+Predlažem sledeće glavne kategorije:
+
+1. Booking events
+2. Offer/Search events
+3. Finance events
+4. Rooming & Capacity events
+5. Tour/Charter events
+6. Communication/Mail events
+7. Marketing events
+8. AI events
+9. Website/CMS events
+10. Control/Monitoring events
+
+---
+
+# 10. BOOKING EVENTS
+
+Ovo su najvažniji poslovni eventi.
+
+## 10.1 Glavni eventi
+
+* `booking.booking.created`
+
+* `booking.booking.updated`
+
+* `booking.booking.confirmed`
+
+* `booking.booking.cancel_requested`
+
+* `booking.booking.cancelled`
+
+* `booking.booking.completed`
+
+* `booking.booking.failed`
+
+* `booking.item.created`
+
+* `booking.item.updated`
+
+* `booking.item.revalidated`
+
+* `booking.item.reserved`
+
+* `booking.item.confirmed`
+
+* `booking.item.ticketed`
+
+* `booking.item.cancelled`
+
+* `booking.item.failed`
+
+* `booking.passenger.added`
+
+* `booking.passenger.updated`
+
+* `booking.passenger.removed`
+
+* `booking.document.generated`
+
+* `booking.document.sent`
+
+* `booking.checkpoint.completed`
+
+## 10.2 Primer payload-a
+
+```json
+{
+  "booking_id": 1288821,
+  "booking_reference": "OT-2026-00482",
+  "booking_type_code": "charter_package",
+  "status_code": "confirmed",
+  "channel_id": 2,
+  "agency_id": 145,
+  "contact_id": 8821,
+  "travel_start_date": "2026-07-15",
+  "travel_end_date": "2026-07-22",
+  "currency_code": "EUR",
+  "total_sell_amount": 1440.00
+}
+```
+
+---
+
+# 11. OFFER / SEARCH EVENTS
+
+Ovi eventi su važni za analytics, publishing i AI.
+
+## Glavni eventi
+
+* `search.request.created`
+* `search.request.completed`
+* `offer.offer.created`
+* `offer.offer.repriced`
+* `offer.offer.expired`
+* `offer.offer.selected`
+* `offer.package.built`
+* `offer.package.rejected`
+
+## Upotreba
+
+* analytics
+* AI ranking training
+* abandoned search automation
+* website offer refresh
+
+---
+
+# 12. FINANCE EVENTS
+
+Ovo su mission-critical eventi.
+
+## Glavni eventi
+
+* `finance.payment_intent.created`
+
+* `finance.payment.authorized`
+
+* `finance.payment.captured`
+
+* `finance.payment.failed`
+
+* `finance.payment.received`
+
+* `finance.payment.reversed`
+
+* `finance.receivable.created`
+
+* `finance.receivable.overdue`
+
+* `finance.receivable.closed`
+
+* `finance.payable.created`
+
+* `finance.payable.paid`
+
+* `finance.payable.overdue`
+
+* `finance.refund.requested`
+
+* `finance.refund.approved`
+
+* `finance.refund.processed`
+
+* `finance.statement.issued`
+
+* `finance.credit.exposure_changed`
+
+## Primer payload-a
+
+```json
+{
+  "payment_id": 554210,
+  "booking_id": 1288821,
+  "amount": 500.00,
+  "currency_code": "EUR",
+  "status_code": "received",
+  "method_code": "card",
+  "provider_code": "stripe",
+  "payer_type_code": "contact"
+}
+```
+
+---
+
+# 13. ROOMING & CAPACITY EVENTS
+
+## Glavni eventi
+
+* `rooming.set.created`
+
+* `rooming.set.updated`
+
+* `rooming.set.validated`
+
+* `rooming.set.sent`
+
+* `rooming.set.confirmed`
+
+* `rooming.set.mismatch_detected`
+
+* `capacity.snapshot.updated`
+
+* `capacity.inventory.changed`
+
+* `capacity.release.triggered`
+
+* `capacity.waitlist.created`
+
+* `manifest.generated`
+
+## Upotreba
+
+* operativa
+* alerting
+* dashboard refresh
+* dispatches
+* supplier communication
+
+---
+
+# 14. TOUR PROGRAM EVENTS
+
+## Glavni eventi
+
+* `tour.program.created`
+* `tour.program.version.approved`
+* `tour.departure.created`
+* `tour.departure.updated`
+* `tour.departure.guaranteed`
+* `tour.departure.cancelled`
+* `tour.departure.published`
+* `tour.manifest.generated`
+* `tour.dispatch.sent`
+
+---
+
+# 15. CHARTER EVENTS
+
+## Glavni eventi
+
+* `charter.season.created`
+* `charter.flight.created`
+* `charter.flight.updated`
+* `charter.flight.closed`
+* `charter.seat_inventory.changed`
+* `charter.load_factor.updated`
+* `charter.release.triggered`
+* `charter.package.published`
+* `charter.alert.created`
+
+---
+
+# 16. MAIL & COMMUNICATION EVENTS
+
+## Glavni eventi
+
+* `mail.thread.created`
+
+* `mail.thread.assigned`
+
+* `mail.thread.status_changed`
+
+* `mail.message.received`
+
+* `mail.message.sent`
+
+* `mail.message.failed`
+
+* `mail.message.linked`
+
+* `communication.task.created`
+
+* `communication.task.completed`
+
+* `quality.review.created`
+
+* `quality.score.calculated`
+
+* `quality.review.escalated`
+
+## Primer payload-a
+
+```json
+{
+  "thread_id": 88912,
+  "mailbox_id": 12,
+  "related_booking_id": 1288821,
+  "assigned_user_id": 77,
+  "status_code": "assigned",
+  "priority_code": "high"
+}
+```
+
+---
+
+# 17. MARKETING EVENTS
+
+## Glavni eventi
+
+* `marketing.campaign.created`
+
+* `marketing.campaign.scheduled`
+
+* `marketing.campaign.sent`
+
+* `marketing.campaign.failed`
+
+* `marketing.campaign.completed`
+
+* `marketing.recipient.delivered`
+
+* `marketing.recipient.opened`
+
+* `marketing.recipient.clicked`
+
+* `marketing.recipient.converted`
+
+* `marketing.audience.refreshed`
+
+* `marketing.automation.triggered`
+
+* `marketing.automation.action_executed`
+
+---
+
+# 18. AI EVENTS
+
+## Glavni eventi
+
+* `ai.session.started`
+* `ai.request.received`
+* `ai.request.completed`
+* `ai.execution.requested`
+* `ai.execution.approved`
+* `ai.execution.executed`
+* `ai.execution.failed`
+* `ai.budget.threshold_reached`
+* `ai.budget.hard_stop_triggered`
+* `ai.score.created`
+
+## Važno
+
+AI eventi ne smeju direktno menjati business state bez approval/command sloja.
+
+---
+
+# 19. WEBSITE / CMS EVENTS
+
+## Glavni eventi
+
+* `website.page.created`
+* `website.page.updated`
+* `website.page.published`
+* `website.page.unpublished`
+* `website.offer.published`
+* `website.offer.refreshed`
+* `website.sitemap.rebuilt`
+* `seo.metadata.updated`
+* `seo.suggestion.generated`
+
+---
+
+# 20. CONTROL / MONITORING EVENTS
+
+## Glavni eventi
+
+* `monitoring.alert.created`
+* `monitoring.alert.resolved`
+* `queue.job.failed`
+* `queue.job.dead_lettered`
+* `integration.health.degraded`
+* `integration.health.down`
+* `api.rate_limit.exceeded`
+
+---
+
+# 21. EVENT OWNERSHIP
+
+Svaki event mora imati jednog “owner” producenta.
+
+## Primer ownership-a
+
+* booking eventi → booking-service
+* finance eventi → finance-service
+* rooming eventi → operations-service ili rooming-service
+* marketing eventi → marketing-service
+* mail eventi → communication-service
+* AI eventi → ai-service
+* website eventi → cms/publishing-service
+
+To sprečava haos i dupliranje.
+
+---
+
+# 22. KOJI EVENTI TREBA DA BUDU EXTERNALIZOVANI
+
+Nisu svi eventi za spolja.
+
+## Internal only
+
+* quality.review.created
+* ai.score.created
+* reservation.workspace.updated
+
+## Potential external
+
+* booking.booking.confirmed
+* finance.payment.received
+* website.page.published
+* marketing.campaign.sent
+* supplier webhook-related events
+
+---
+
+# 23. OUTBOX TABELA
+
+Preporučujem zasebnu tabelu:
+
+## `event_outbox`
+
+### Kolone
+
+* `id`
+* `event_name`
+* `event_version`
+* `aggregate_type`
+* `aggregate_id`
+* `correlation_id`
+* `payload_json`
+* `status_code`
+* `available_at`
+* `published_at` NULL
+* `attempt_count`
+* `last_error_text` NULL
+* `created_at`
+
+### Enum
+
+`status_code`
+
+* pending
+* publishing
+* published
+* failed
+* dead_letter
+
+---
+
+# 24. INBOX / CONSUMER TRACKING
+
+Za robustan sistem treba i consumer tracking.
+
+## `event_inbox`
+
+ili
+
+## `event_delivery_tracking`
+
+### Kolone
+
+* `id`
+* `event_id`
+* `subscriber_code`
+* `status_code`
+* `attempt_count`
+* `processed_at` NULL
+* `last_error_text` NULL
+
+To omogućava:
+
+* idempotent processing
+* replay
+* retry po subscriber-u
+
+---
+
+# 25. MESSAGE QUEUE ARHITEKTURA
+
+Predlažem logički odvojene queue-eve.
+
+## 25.1 Queue kategorije
+
+### `critical.booking`
+
+Za:
+
+* supplier reserve
+* booking confirm
+* booking cancel
+* payment-booking link
+
+### `ops.dispatch`
+
+Za:
+
+* documents
+* manifests
+* rooming exports
+* dispatch sends
+
+### `finance.async`
+
+Za:
+
+* invoice generation
+* statement generation
+* reconciliation suggestions
+
+### `mail.async`
+
+Za:
+
+* send email
+* sync mailbox
+* thread linking
+* quality scoring
+
+### `marketing.async`
+
+Za:
+
+* campaign send
+* audience refresh
+* attribution processing
+
+### `ai.async`
+
+Za:
+
+* summaries
+* quality analysis
+* SEO generation
+* chatbot async follow-ups
+
+### `website.publish`
+
+Za:
+
+* page publish
+* offer refresh
+* sitemap build
+* search index refresh
+
+### `monitoring.system`
+
+Za:
+
+* health checks
+* alert notifications
+* periodic snapshots
+
+---
+
+# 26. WORKER TIPOVI
+
+Svaki queue treba da ima specijalizovane worker-e.
+
+## 26.1 Booking workers
+
+* supplier booking worker
+* booking cancel worker
+* booking revalidation worker
+
+## 26.2 Operations workers
+
+* document generation worker
+* rooming export worker
+* manifest generation worker
+* dispatch send worker
+
+## 26.3 Finance workers
+
+* receivable overdue checker
+* payable overdue checker
+* statement generation worker
+* reconciliation matcher
+
+## 26.4 Mail workers
+
+* mail sync worker
+* mail send worker
+* mail thread linker
+* outbound quality scorer
+
+## 26.5 Marketing workers
+
+* audience refresh worker
+* campaign recipient expansion worker
+* campaign delivery worker
+* attribution worker
+
+## 26.6 AI workers
+
+* summarization worker
+* chatbot processing worker
+* seo suggestion worker
+* AI governance usage tracker
+
+## 26.7 Website workers
+
+* publication worker
+* cache invalidation worker
+* sitemap rebuild worker
+
+---
+
+# 27. RETRY PRAVILA
+
+Retry ne sme biti isti za sve.
+
+## 27.1 Retry policy tipovi
+
+### A. Network / transient retry
+
+Za:
+
+* supplier API timeout
+* mail provider timeout
+* temporary DB lock
+* external webhook down
+
+Predlog:
+
+* 3 do 5 pokušaja
+* exponential backoff
+
+### B. Business error — no retry
+
+Za:
+
+* invalid request
+* stop sale
+* insufficient credit
+* invalid passenger data
+
+### C. Conditional retry
+
+Za:
+
+* supplier pending state
+* async ticketing
+* delayed confirmation
+
+---
+
+# 28. Exponential backoff predlog
+
+Na primer:
+
+* attempt 1 → odmah
+* attempt 2 → 30 sec
+* attempt 3 → 2 min
+* attempt 4 → 10 min
+* attempt 5 → 30 min
+
+Za neke marketing i AI taskove može i sporije.
+
+---
+
+# 29. DEAD LETTER QUEUE
+
+Kada worker ne može da obradi poruku posle max retry:
+
+* ide u DLQ
+
+## DLQ svrha
+
+* ništa se ne gubi
+* support/ops/tech može ručno reagovati
+* postoji forenzika
+
+## `dead_letter_jobs`
+
+ili `queue_dead_letters`
+već smo definisali u modelu.
+
+### Polja koja su obavezna
+
+* original job id
+* payload
+* error history
+* final failure reason
+* dead_lettered_at
+
+---
+
+# 30. REPLAY / REPROCESS MODEL
+
+Za ozbiljan sistem morate imati replay.
+
+## Potrebne akcije
+
+* retry single dead letter job
+* retry batch
+* replay event for subscriber X
+* re-run publication job
+* re-run AI summary
+
+To mora biti admin-controlled.
+
+---
+
+# 31. IDEMPOTENCY
+
+Vrlo važno.
+
+Worker ne sme duplo napraviti:
+
+* booking
+* payment
+* invoice
+* supplier reservation
+* mail send
+
+## Strategija
+
+Svaki critical job mora imati:
+
+* idempotency key
+* processed marker
+* unique business constraint gde je moguće
+
+Primer:
+
+* payment captured event sa provider reference
+* supplier booking request sa unique external reservation correlation key
+
+---
+
+# 32. COMMAND VS EVENT
+
+Važno je razdvojiti:
+
+## Command
+
+traži da se nešto uradi
+
+Primer:
+
+* `CreateBooking`
+* `SendVoucher`
+* `ApproveRefund`
+
+## Event
+
+govori da se nešto već desilo
+
+Primer:
+
+* `booking.booking.created`
+* `booking.document.sent`
+* `finance.refund.approved`
+
+Ovo je veoma važno za arhitekturu.
+
+---
+
+# 33. KOJE OPERACIJE MORAJU OSTATI SINKRONE
+
+Ne treba sve gurati u async.
+
+## Sync obavezno
+
+* auth/login
+* search response generation
+* offer read
+* booking create acceptance
+* payment intent create
+* permission check
+* rooming validation request response
+* pricing simulation
+
+## Async preporučeno
+
+* supplier call posle accepted booking workflow gde poslovno dozvoljeno
+* dokument generacija
+* slanje mailova
+* analytics
+* AI scoring
+* publishing refresh
+
+---
+
+# 34. PRIORITETI REDOVA
+
+Ne treba da marketing queue uspori booking queue.
+
+Predlažem prioritete:
+
+## Tier 1 — highest
+
+* payment
+* booking supplier actions
+* cancellations
+* revalidation
+
+## Tier 2 — operational
+
+* rooming
+* manifests
+* documents
+* urgent mail
+
+## Tier 3 — business support
+
+* finance reports
+* statements
+* inbox linking
+* support tasks
+
+## Tier 4 — growth
+
+* campaigns
+* audience refresh
+* SEO generation
+
+## Tier 5 — low urgency
+
+* bulk AI summaries
+* analytics aggregation
+* trend reports
+
+---
+
+# 35. SCHEDULER / CRON LOGIKA
+
+Neki job-ovi nisu event-driven nego schedule-driven.
+
+## Primeri
+
+* nightly capacity snapshots
+* daily finance overdue scan
+* morning departure manifest build
+* campaign send at scheduled time
+* sitemap rebuild nightly
+* AI usage budget reset monthly
+
+Za to trebaju:
+
+* scheduler service
+* scheduled_jobs
+* scheduled_job_runs
+
+---
+
+# 36. EVENT SUBSCRIPTIONS — PRIMERI
+
+## Kada nastane `booking.booking.confirmed`
+
+Mogu ga slušati:
+
+* finance-service → create receivable/payable
+* operations-service → create workspace/checklist
+* communication-service → queue confirmation email
+* document-service → generate voucher
+* marketing-service → attribution check
+* analytics-service → revenue event
+
+## Kada nastane `finance.payment.received`
+
+Mogu ga slušati:
+
+* booking-service → update booking finance status
+* communication-service → send payment confirmation
+* operations-service → unblock dispatch if needed
+* analytics-service → update revenue dashboard
+
+## Kada nastane `mail.message.sent`
+
+Mogu ga slušati:
+
+* communication-service → update thread status
+* quality-service → score outbound response
+* CRM timeline service → append event
+
+---
+
+# 37. EVENT SCHEMA REPOSITORY
+
+Preporučujem centralni registry.
+
+## `event_schema_registry`
+
+ili versioned code repo
+
+Za svaki event:
+
+* name
+* version
+* producer
+* payload schema
+* subscribers
+* deprecation status
+
+To je veoma korisno za velike timove.
+
+---
+
+# 38. EVENT PAYLOAD PRAVILA
+
+Payload ne treba da bude:
+
+* ni previše siromašan
+* ni previše ogroman
+
+## Pravilo
+
+Event mora nositi:
+
+* business minimum
+* reference identifikatore
+* eventualno ključne summary vrednosti
+
+Ali ne treba uvek nositi ceo objekat.
+
+Primer:
+dobro:
+
+* booking_id
+* booking_reference
+* status_code
+* total_amount
+
+loše:
+
+* ceo booking sa svim passengers i svim notes i svim messages
+
+---
+
+# 39. CHATBOT / AI QUEUE LOGIKA
+
+Pošto ste tražili optimizaciju tokena, ovde je veoma važno:
+
+## B2C chatbot
+
+* prvo deterministic FAQ/rules lookup
+* ako nema odgovora → AI route
+* za složenije zahteve → async enrichment
+
+## B2B chatbot
+
+* prvo structured data query
+* AI samo za explanation/summarization
+
+## Internal AI
+
+* ask mode može biti sync do određene granice
+* suggest/execute ide kroz approval + async job ako je teže
+
+---
+
+# 40. TOKEN BUDGET EVENTI
+
+Preporučujem i ove evente:
+
+* `ai.usage.logged`
+* `ai.budget.warning_reached`
+* `ai.budget.hard_stop_reached`
+* `ai.route.fallback_used`
+
+To pomaže cost control-u.
+
+---
+
+# 41. FAILURE HANDLING PO DOMENIMA
+
+## Booking
+
+* fail fast
+* alert ops
+* create incident
+* preserve partial state
+
+## Finance
+
+* never lose payment signal
+* queue replay mandatory
+* manual review queue
+
+## Mail
+
+* retry provider send
+* never duplicate send
+* if fail → visible send failure state
+
+## Marketing
+
+* partial batch retry allowed
+* recipient-level tracking
+
+## AI
+
+* fallback model or no-ai response
+* never block mission-critical booking flow
+
+---
+
+# 42. OBSERVABILITY
+
+Za svaki queue/job/event sistem mora pratiti:
+
+* queue depth
+* oldest queued age
+* processing duration
+* success rate
+* retry rate
+* dead letter rate
+* per-subscriber lag
+
+To mora biti na dashboard-u.
+
+---
+
+# 43. PREPORUČENA LOGIČKA PODELA SERVISA
+
+Event/queue sloj se lepo uklapa uz servise:
+
+* booking-service
+* finance-service
+* operations-service
+* rooming-service
+* charter-service
+* tour-service
+* communication-service
+* marketing-service
+* ai-service
+* website-publishing-service
+* monitoring-service
+
+Ne mora sve biti fizički poseban mikroservis od prvog dana, ali granice moraju postojati.
+
+---
+
+# 44. MINIMALNI EVENTI ZA MVP
+
+Ako idete fazno, MVP ne mora imati svih 200 eventa.
+
+Minimalno obavezni:
+
+* booking.booking.created
+* booking.booking.confirmed
+* booking.booking.cancelled
+* finance.payment.received
+* finance.receivable.created
+* finance.payable.created
+* mail.message.received
+* mail.message.sent
+* rooming.set.updated
+* website.page.published
+* marketing.campaign.sent
+* ai.usage.logged
+
+---
+
+# 45. Šta smo sada završili
+
+Sada smo definisali:
+
+* event architecture
+* event naming
+* event envelope
+* glavne event kategorije
+* outbox/inbox pattern
+* queue model
+* worker tipove
+* retry/dlq/idempotency pravila
+* observability i scheduling
+
+To je sledeći veliki sloj ka razvojno spremnoj arhitekturi.
+
+---
+
+# 46. Sledeći korak
+
+Sada je sledeći prirodan korak:
+
+# DB DEPLOYMENT STRATEGIJA
+
+odnosno:
+
+* schema organizacija
+* particionisanje
+* indeksna strategija
+* read/write pattern
+* materialized views
+* reporting views
+* archive strategy
+* backup/recovery data layer
+
+To je poslednji veliki data/arhitektura sloj pre nego što dokumentacija pređe u:
+
+* implementacioni roadmap
+* team split
+* delivery plan
+
+Ako idemo redom, sledeće nastavljam upravo time.

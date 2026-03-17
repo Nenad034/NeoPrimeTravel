@@ -1,0 +1,44 @@
+# 17. DODATNI MODUL — FIELD OPERATIONS I OFFLINE RAD (GUIDE APP)
+
+Za tour operatore, operativa na terenu (vodiči, transfer agenti) je često najkritičnija tačka. Ovaj modul proširuje backoffice na mobilno okruženje.
+
+---
+
+## 1. Guide Mobile App (Web PWA ili Native)
+
+Aplikacija koju vodiči koriste na destinaciji.
+
+### Ključne funkcije:
+*   **Digitalni Manifest:** Spisak svih putnika na određenom letu ili izletu.
+*   **QR Check-in:** Skeniranje vaučera putnika telefonom prilikom ulaska u autobus/hotel.
+*   **Real-time Rooming:** Vodič vidi spisak soba i odmah unosi promene (npr. soba 102 umesto 105) što se trenutno sinkuje sa centralnim sistemom.
+*   **Incident Reporting:** Slikanje oštećenja sobe ili problema na destinaciji i slanje u backend kao "Issue ticket".
+
+---
+
+## 2. Offline Mode — "Manifest Always Available"
+
+Pošto je internet na aerodromima ili u prevozu često nepouzdan:
+
+### Sync Logika:
+1.  **WiFi Sync:** Pre polaska na aerodrom/u izlet, aplikacija povlači kompletne podatke za taj dan.
+2.  **Offline Work:** Vodič radi check-in putnika bez interneta.
+3.  **Background Sync:** Čim telefon dobije 4G mrežu, svi podaci se u pozadini (async) šalju u "Operations" modul preko Message Queue-a.
+
+---
+
+## 3. Komunikacija sa putnicima na terenu
+
+*   **Broadcast Alert:** Vodič piše poruku "Autobus kasni 15 min zbog gužve" → Sistem šalje Viber/Push/SMS svim putnicima na tom transferu.
+*   **Emergency Contact:** Dugme "Pronađi mog vodiča" u klijentskom vaučeru (prikazuje lokaciju vodiča na mapi).
+
+---
+
+## 4. Tabela: `ops_field_activities`
+*   `id` (PK)
+*   `guide_id` (FK to user)
+*   `manifest_id` (FK)
+*   `activity_type` (check_in, room_change, alert)
+*   `sync_status` (pending, synced)
+*   `offline_timestamp`
+*   `location_point` (GPS kordinate akcije)

@@ -1,0 +1,547 @@
+Odlično. Sada dolazimo do jednog od **najvažnijih operativnih modula u turizmu** — **Rooming & Capacity / Allotment modul**.
+
+Ovaj modul povezuje:
+
+* rezervacije
+* putnike
+* sobe
+* kapacitete
+* allotment ugovore
+* hotele
+* operativne liste
+
+Ako je dobro dizajniran, operativa radi **brzo i bez grešaka**. Ako nije — nastaje haos sa sobama, hotelima i rooming listama.
+
+---
+
+# 1. Šta je Rooming modul
+
+Rooming modul upravlja:
+
+* raspodelom putnika po sobama
+* tipovima soba
+* kapacitetom
+* occupancy pravilima
+* slanjem rooming lista hotelu
+
+On mora raditi za:
+
+* pojedinačne rezervacije
+* višesobne rezervacije
+* grupe
+* allotment kapacitete
+* serije polazaka
+
+---
+
+# 2. Osnovni koncept rooming modula
+
+Rooming ima **tri nivoa**:
+
+### 1️⃣ Passenger level
+
+putnik
+
+### 2️⃣ Room level
+
+soba
+
+### 3️⃣ Reservation / Group level
+
+rezervacija ili grupa
+
+---
+
+# 3. Vizuelni rooming editor
+
+Predlažem **vizuelni rooming editor**.
+
+Layout:
+
+```text
+---------------------------------------------------------
+PASSENGERS LIST         | ROOMS
+---------------------------------------------------------
+
+Marko Petrović          | Room 101 – Deluxe Double
+Ana Petrović            |   - Marko Petrović
+Luka Petrović           |   - Ana Petrović
+
+Sara Petrović           | Room 102 – Family Room
+                        |   - Luka Petrović
+                        |   - Sara Petrović
+```
+
+Operater može:
+
+* drag & drop putnika u sobe
+* menjati tip sobe
+* dodati novu sobu
+* ukloniti putnika
+* promeniti occupancy
+
+---
+
+# 4. Room objekat
+
+Svaka soba mora imati sledeće podatke:
+
+* room id
+* room type
+* board type
+* occupancy type
+* max capacity
+* adults
+* children
+* infant
+* notes
+* supplier room code
+* hotel confirmation code
+
+Primer:
+
+```text
+Room 101
+Type: Deluxe Double
+Board: BB
+Adults: 2
+Children: 0
+Infant: 0
+Status: assigned
+```
+
+---
+
+# 5. Occupancy pravila
+
+Sistem mora podržati tipične kombinacije:
+
+* 1/1
+* 1/2
+* 2/2
+* 2+1
+* 2+2
+* 3 adults
+* 4 adults
+* family room
+* extra bed
+* baby cot
+
+---
+
+# 6. Validacija occupancy
+
+Rooming modul mora automatski proveravati:
+
+* maksimalni broj osoba
+* maksimalan broj odraslih
+* maksimalan broj dece
+* starosne limite
+* allowed occupancy kombinacije
+
+Primer upozorenja:
+
+```text
+Warning:
+Room type Deluxe Double
+max occupancy: 2+1
+current assignment: 2 adults + 2 children
+```
+
+---
+
+# 7. Rooming statusi
+
+Svaka rezervacija mora imati rooming status.
+
+Predlažem sledeće:
+
+* not_started
+* draft
+* partially_assigned
+* fully_assigned
+* sent_to_hotel
+* confirmed_by_hotel
+* changed_after_send
+
+---
+
+# 8. Rooming workflow
+
+Tipičan workflow izgleda ovako:
+
+```text
+reservation created
+↓
+passengers added
+↓
+rooms assigned
+↓
+rooming verified
+↓
+rooming sent to hotel
+↓
+hotel confirms
+↓
+room numbers assigned
+```
+
+---
+
+# 9. Rooming lista
+
+Hotelima se šalje **rooming list**.
+
+Sistem mora generisati:
+
+* PDF
+* Excel
+* supplier template
+
+Kolone:
+
+* arrival date
+* departure date
+* guest name
+* room type
+* board
+* nationality
+* passport number
+* special requests
+
+---
+
+# 10. Primer rooming liste
+
+```text
+Hotel: Sea Star Hotel
+Arrival: 10.07.2026
+Departure: 17.07.2026
+
+Room 101
+Marko Petrović
+Ana Petrović
+Nationality: Serbia
+Board: BB
+
+Room 102
+Luka Petrović
+Sara Petrović
+Board: BB
+```
+
+---
+
+# 11. Rooming export funkcije
+
+Operater mora moći da:
+
+* export Excel
+* export PDF
+* send email hotelu
+* upload supplier confirmation
+* mark sent
+* mark confirmed
+
+---
+
+# 12. Hotel confirmation
+
+Hotel može vratiti:
+
+* potvrđen room type
+* promenjen room type
+* room numbers
+* napomene
+
+Sistem mora omogućiti unos:
+
+```text
+Room 101 → confirmed
+Room number: 325
+```
+
+---
+
+# 13. Group rooming
+
+Kod grupnih rezervacija rooming mora biti mnogo napredniji.
+
+Primer:
+
+Grupa:
+
+```text
+Group: Montenegro Tour
+Passengers: 38
+Rooms: 19
+```
+
+Rooming editor mora:
+
+* prikazati sve putnike
+* raspodeliti po sobama
+* podržati twin/double preference
+* export grupne rooming liste
+
+---
+
+# 14. Twin / Double preference
+
+Putnici često imaju preference.
+
+Rooming mora imati polje:
+
+```text
+Bed preference:
+Twin
+Double
+No preference
+```
+
+Sistem može pokušati automatsko slaganje.
+
+---
+
+# 15. Auto-rooming
+
+Napredni sistemi imaju **auto-rooming algoritam**.
+
+Algoritam može:
+
+* grupisati parove
+* raspodeliti decu
+* optimizovati sobe
+* minimizirati single supplement
+
+---
+
+# 16. Rooming alerti
+
+Rooming modul treba automatski generisati upozorenja.
+
+Primeri:
+
+* passenger without room
+* room empty
+* occupancy exceeded
+* unmatched twin request
+* rooming not sent
+* hotel confirmation missing
+
+---
+
+# 17. Kapacitet i allotment modul
+
+Ovo je drugi deo sistema koji ide uz rooming.
+
+On upravlja:
+
+* kapacitetom soba
+* allotment ugovorima
+* prodajom soba
+* release rokovima
+
+---
+
+# 18. Allotment koncept
+
+Allotment znači:
+
+Agencija ima rezervisan broj soba.
+
+Primer:
+
+```text
+Hotel Sea Star
+10 rooms per day
+01.06–31.08
+Release: 7 days
+```
+
+---
+
+# 19. Pregled kapaciteta
+
+Kapacitet modul treba prikazati:
+
+```text
+Date | Hotel | Room Type | Allotment | Sold | Free
+--------------------------------------------------
+10.07 | Sea Star | Deluxe | 10 | 7 | 3
+11.07 | Sea Star | Deluxe | 10 | 10 | 0
+```
+
+---
+
+# 20. Release logika
+
+Release znači kada hotel može vratiti sobe.
+
+Primer:
+
+```text
+Arrival: 10.07
+Release: 7 days
+Release date: 03.07
+```
+
+Ako rezervacija nije potvrđena do tada:
+
+* hotel može uzeti sobe nazad.
+
+---
+
+# 21. Allotment warning
+
+Sistem mora upozoriti:
+
+* capacity exceeded
+* close to release
+* negative availability
+* overbooking risk
+
+---
+
+# 22. Capacity dashboard
+
+Predlažem poseban ekran:
+
+```text
+------------------------------------------------
+HOTEL CAPACITY DASHBOARD
+------------------------------------------------
+
+Hotel | Date | Allotment | Sold | Free | Warning
+```
+
+Može se filtrirati po:
+
+* hotel
+* destinacija
+* datum
+* room type
+
+---
+
+# 23. Overbooking logika
+
+Sistem mora podržati:
+
+* soft overbooking
+* hard limit
+* operator override
+
+---
+
+# 24. Allotment vs API inventory
+
+Sistem mora znati razliku između:
+
+### API inventory
+
+hotel dostupan preko wholesaler API
+
+### Contract allotment
+
+hotel ugovoreni kapacitet
+
+Sistem može kombinovati oba izvora.
+
+---
+
+# 25. Allotment kontrola po kanalu
+
+Allotment može biti:
+
+* B2C
+* B2B
+* internal
+* specific agent
+
+Primer:
+
+```text
+Total allotment: 10 rooms
+B2C: 5
+B2B: 5
+```
+
+---
+
+# 26. Rooming + allotment povezanost
+
+Kad rezervacija dobije sobu:
+
+* capacity se smanjuje
+
+Ako se rezervacija otkaže:
+
+* capacity se vraća
+
+---
+
+# 27. Grupni kapaciteti
+
+Za grupe može postojati poseban allotment.
+
+Primer:
+
+```text
+Group: Italy Tour
+Reserved rooms: 25
+```
+
+---
+
+# 28. Operativni status rooming + kapaciteta
+
+Važno je da operativa vidi:
+
+* sold vs available
+* pending reservations
+* option reservations
+* confirmed reservations
+
+---
+
+# 29. Rooming audit log
+
+Svaka promena roominga mora biti zabeležena.
+
+Primer:
+
+```text
+15.03 – Marko Petrović moved Room 101 → 102
+16.03 – Sara Petrović added to Room 102
+```
+
+---
+
+# 30. Sledeći korak
+
+Sada smo definisali:
+
+* rezervacionu formu
+* finansijski modul
+* operativne liste
+* rooming modul
+* kapacitete i allotment
+
+Sledeći veliki deo koji možemo razraditi je:
+
+## **Product & Contracting modul**
+
+gde se upravlja:
+
+* hotelima
+* ugovorima
+* cenovnicima
+* sezonama
+* board planovima
+* doplatama
+* popustima
+* stop sale
+* minimum stay pravilima
+
+To je modul koji kontroliše **ceo inventory i pricing sistem**.

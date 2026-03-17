@@ -1,0 +1,2932 @@
+Odlično. Nastavljam dalje istim nivoom detalja.
+
+Sada obrađujem:
+
+11. Charter & Series
+12. B2B Distribution
+13. Mail & Communication
+14. Marketing Automation
+15. AI Governance & Usage
+16. Website / CMS / SEO
+17. Audit / Monitoring / Control Plane
+
+Posle ovog bloka imamo praktično kompletnu **detailed relational map** cele platforme.
+
+---
+
+# DOMAIN 11 — CHARTER & SERIES
+
+Ovo je poseban domen za:
+
+* čarter sezone
+* serije letova
+* fiksne smene
+* 7/10/14 noći
+* seat inventory
+* hotel allotments po seriji
+* charter package builder
+* load factor i profitabilnost
+
+## 11.1 `charter_seasons`
+
+### Kolone
+
+* `id` BIGINT PK
+* `season_code` VARCHAR(80) NOT NULL
+* `name` VARCHAR(255) NOT NULL
+* `destination_id` BIGINT NOT NULL FK -> destinations.id
+* `origin_airport_code` VARCHAR(20) NOT NULL
+* `market_id` BIGINT NULL
+* `brand_id` BIGINT NULL
+* `status_code` VARCHAR(30) NOT NULL
+* `season_start_date` DATE NOT NULL
+* `season_end_date` DATE NOT NULL
+* `default_currency_code` VARCHAR(10) NOT NULL
+* `created_at`
+* `updated_at`
+
+### Unique
+
+* `uq_charter_seasons_season_code`
+
+### Enum
+
+`status_code`
+
+* draft
+* planning
+* on_sale
+* active
+* closed
+* archived
+
+---
+
+## 11.2 `charter_season_versions`
+
+### Kolone
+
+* `id`
+* `charter_season_id`
+* `version_no`
+* `effective_from`
+* `effective_to` NULL
+* `status_code`
+* `created_by_user_id`
+* `created_at`
+
+### Enum
+
+`status_code`
+
+* draft
+* approved
+* archived
+
+### Unique
+
+* `uq_charter_season_versions (charter_season_id, version_no)`
+
+---
+
+## 11.3 `charter_routes`
+
+### Kolone
+
+* `id`
+* `charter_season_id`
+* `route_code`
+* `origin_airport_code`
+* `destination_airport_code`
+* `carrier_supplier_id` NULL
+* `operating_days_json`
+* `status_code`
+* `created_at`
+
+### Unique
+
+* `uq_charter_routes (charter_season_id, route_code)`
+
+---
+
+## 11.4 `charter_flight_series`
+
+### Kolone
+
+* `id`
+* `charter_route_id`
+* `series_code`
+* `start_date`
+* `end_date`
+* `default_nights_pattern`
+* `seat_capacity_total`
+* `status_code`
+* `created_at`
+
+### Enum
+
+`status_code`
+
+* draft
+* on_sale
+* active
+* completed
+* cancelled
+
+---
+
+## 11.5 `charter_flights`
+
+### Kolone
+
+* `id`
+* `charter_flight_series_id`
+* `flight_date`
+* `flight_no`
+* `direction_code`
+* `origin_airport_code`
+* `destination_airport_code`
+* `departure_time_local` NULL
+* `arrival_time_local` NULL
+* `aircraft_type_code` NULL
+* `seat_capacity_total`
+* `seat_capacity_sold`
+* `seat_capacity_blocked`
+* `seat_capacity_free`
+* `status_code`
+* `created_at`
+
+### Enum
+
+`direction_code`
+
+* outbound
+* inbound
+
+`status_code`
+
+* scheduled
+* on_sale
+* closed
+* flown
+* cancelled
+
+### Unique
+
+* `uq_charter_flights (charter_flight_series_id, flight_date, direction_code)`
+
+---
+
+## 11.6 `charter_flight_status_history`
+
+Status audit.
+
+---
+
+## 11.7 `charter_duration_templates`
+
+### Kolone
+
+* `id`
+* `charter_season_id`
+* `duration_nights`
+* `duration_days`
+* `status_code`
+* `sort_order`
+
+### Primeri
+
+* 7 / 8
+* 10 / 11
+* 14 / 15
+
+### Unique
+
+* `uq_charter_duration_templates (charter_season_id, duration_nights)`
+
+---
+
+## 11.8 `charter_hotel_links`
+
+### Kolone
+
+* `id`
+* `charter_season_id`
+* `hotel_id`
+* `contract_id` NULL
+* `supplier_id` NULL
+* `source_type_code`
+* `status_code`
+* `publication_priority`
+* `created_at`
+
+### Enum
+
+`source_type_code`
+
+* contracted
+* api_dynamic
+* hybrid
+* manual
+
+### Unique
+
+* `uq_charter_hotel_links (charter_season_id, hotel_id, source_type_code)`
+
+---
+
+## 11.9 `charter_hotel_duration_rules`
+
+### Kolone
+
+* `id`
+* `charter_hotel_link_id`
+* `duration_template_id`
+* `is_allowed`
+* `status_code`
+
+### Unique
+
+* `uq_charter_hotel_duration_rules (charter_hotel_link_id, duration_template_id)`
+
+---
+
+## 11.10 `charter_package_templates`
+
+### Kolone
+
+* `id`
+* `charter_season_id`
+* `template_code`
+* `name`
+* `pricing_mode_code`
+* `status_code`
+* `created_at`
+
+### Enum
+
+`pricing_mode_code`
+
+* fixed
+* contracted
+* hybrid
+* dynamic
+
+---
+
+## 11.11 `charter_package_template_items`
+
+### Kolone
+
+* `id`
+* `charter_package_template_id`
+* `item_type_code`
+* `source_type_code`
+* `source_ref_table` NULL
+* `source_ref_id` NULL
+* `is_included`
+* `sort_order`
+
+### Unique
+
+* `uq_charter_package_template_items (charter_package_template_id, sort_order)`
+
+---
+
+## 11.12 `charter_pricing_models`
+
+### Kolone
+
+* `id`
+* `charter_season_id`
+* `pricing_mode_code`
+* `currency_code`
+* `status_code`
+
+### Enum
+
+`pricing_mode_code`
+
+* fixed
+* fixed_plus_supplements
+* seat_plus_hotel
+* hybrid
+* dynamic
+
+---
+
+## 11.13 `charter_pricing_lines`
+
+### Kolone
+
+* `id`
+* `charter_season_id`
+* `charter_hotel_link_id` NULL
+* `duration_template_id`
+* `room_type_id` NULL
+* `occupancy_code`
+* `price_type_code`
+* `amount`
+* `currency_code`
+* `valid_from`
+* `valid_to`
+* `status_code`
+
+### Enum
+
+`price_type_code`
+
+* package_base
+* single_supplement
+* child_price
+* promo_price
+* fuel_surcharge
+* airport_tax
+
+---
+
+## 11.14 `charter_fare_components`
+
+### Kolone
+
+* `id`
+* `charter_flight_id`
+* `component_type_code`
+* `amount`
+* `currency_code`
+* `status_code`
+
+### Enum
+
+`component_type_code`
+
+* seat_cost
+* airport_tax
+* fuel
+* baggage
+* airport_service
+* markup
+
+---
+
+## 11.15 `charter_seat_inventory`
+
+### Kolone
+
+* `id`
+* `charter_flight_id`
+* `seat_class_code`
+* `total_qty`
+* `sold_qty`
+* `blocked_qty`
+* `option_qty`
+* `free_qty`
+* `overbook_limit_qty`
+* `updated_at`
+
+### Unique
+
+* `uq_charter_seat_inventory (charter_flight_id, seat_class_code)`
+
+---
+
+## 11.16 `charter_seat_blocks`
+
+### Kolone
+
+* `id`
+* `charter_flight_id`
+* `block_type_code`
+* `agency_id` NULL
+* `qty`
+* `release_at` NULL
+* `status_code`
+* `created_at`
+
+### Enum
+
+`block_type_code`
+
+* agency_block
+* internal_block
+* ops_block
+* vip_block
+
+---
+
+## 11.17 `charter_waitlists`
+
+### Kolone
+
+* `id`
+* `charter_flight_id`
+* `status_code`
+* `created_at`
+
+## 11.18 `charter_waitlist_entries`
+
+* `id`
+* `charter_waitlist_id`
+* `booking_id` NULL
+* `contact_id` NULL
+* `requested_qty`
+* `status_code`
+* `created_at`
+
+---
+
+## 11.19 `charter_load_factor_snapshots`
+
+### Kolone
+
+* `id`
+* `charter_flight_id`
+* `snapshot_date`
+* `seat_capacity_total`
+* `seat_capacity_sold`
+* `load_factor_percent`
+* `breakeven_load_factor_percent` NULL
+* `projected_margin_amount` NULL
+
+---
+
+## 11.20 `charter_allotments`
+
+### Kolone
+
+* `id`
+* `charter_hotel_link_id`
+* `duration_template_id`
+* `room_type_id` NULL
+* `board_type_id` NULL
+* `start_date`
+* `end_date`
+* `release_days`
+* `committed_qty`
+* `sold_qty`
+* `free_qty`
+* `status_code`
+
+---
+
+## 11.21 `charter_release_events`
+
+### Kolone
+
+* `id`
+* `charter_allotment_id` NULL
+* `charter_flight_id` NULL
+* `release_type_code`
+* `released_qty`
+* `released_at`
+* `triggered_by_code`
+
+### Enum
+
+`release_type_code`
+
+* seat_release
+* room_release
+* option_expiry
+
+---
+
+## 11.22 `charter_rooming_sets`
+
+Povezuje charter booking operativu sa rooming modulom.
+
+### Kolone
+
+* `id`
+* `charter_season_id`
+* `booking_id`
+* `rooming_set_id`
+* `created_at`
+
+---
+
+## 11.23 `charter_departure_operations`
+
+### Kolone
+
+* `id`
+* `charter_flight_id`
+* `ops_status_code`
+* `owner_user_id` NULL
+* `notes_text` NULL
+* `updated_at`
+
+---
+
+## 11.24 `charter_manifest_exports`
+
+### Kolone
+
+* `id`
+* `charter_flight_id`
+* `manifest_type_code`
+* `file_id`
+* `generated_at`
+
+---
+
+## 11.25 `charter_publications`
+
+### Kolone
+
+* `id`
+* `charter_season_id`
+* `publication_status_code`
+* `published_at` NULL
+* `last_refresh_at` NULL
+* `website_section_code` NULL
+
+### Enum
+
+`publication_status_code`
+
+* hidden
+* published
+* sold_out
+* archived
+
+---
+
+## 11.26 `charter_offer_snapshots`
+
+### Kolone
+
+* `id`
+* `charter_season_id`
+* `charter_flight_id`
+* `duration_template_id`
+* `hotel_id` NULL
+* `offer_snapshot_json`
+* `snapshot_date`
+* `currency_code`
+
+---
+
+## 11.27 `charter_promo_rules`
+
+### Kolone
+
+* `id`
+* `charter_season_id`
+* `promo_type_code`
+* `value_amount`
+* `value_percent`
+* `valid_from`
+* `valid_to`
+* `status_code`
+
+---
+
+## 11.28 `charter_sales_targets`
+
+### Kolone
+
+* `id`
+* `charter_season_id`
+* `target_type_code`
+* `target_qty`
+* `target_amount`
+* `status_code`
+
+### Enum
+
+`target_type_code`
+
+* seats
+* revenue
+* load_factor
+
+---
+
+## 11.29 `charter_alerts`
+
+### Kolone
+
+* `id`
+* `charter_flight_id` NULL
+* `charter_season_id` NULL
+* `alert_type_code`
+* `severity_code`
+* `message_text`
+* `created_at`
+
+### Primeri
+
+* low_load_factor
+* overbooking_risk
+* release_due
+* hotel_sold_out
+
+---
+
+## 11.30 Poslovna pravila domena 11
+
+1. Charter flight mora pripadati jednoj series.
+2. Duration template mora pripadati sezoni.
+3. Hotel može biti fixed, api ili hybrid source.
+4. Load factor snapshot se računa periodično, ne ad hoc.
+5. Release event mora ostaviti trag nad allotmentom ili seat pool-om.
+
+---
+
+# DOMAIN 12 — B2B DISTRIBUTION
+
+Ovaj domen pokriva:
+
+* subagente
+* agency users
+* restrictions
+* statements
+* support
+* agent API access
+
+## 12.1 `agency_users`
+
+### Kolone
+
+* `id`
+* `agency_id`
+* `user_id`
+* `status_code`
+* `is_primary`
+* `created_at`
+
+### Unique
+
+* `uq_agency_users (agency_id, user_id)`
+
+---
+
+## 12.2 `agency_user_roles`
+
+### Kolone
+
+* `id`
+* `agency_user_id`
+* `role_code`
+* `created_at`
+
+### Enum
+
+`role_code`
+
+* agency_manager
+* booking_agent
+* finance_user
+* document_viewer
+* api_user
+
+---
+
+## 12.3 `agency_permissions`
+
+### Kolone
+
+* `id`
+* `agency_id`
+* `permission_code`
+* `is_allowed`
+* `created_at`
+
+### Primeri
+
+* b2b.search
+* b2b.book
+* b2b.credit_use
+* b2b.statement_view
+* b2b.api_access
+
+---
+
+## 12.4 `agency_branches`
+
+### Kolone
+
+* `id`
+* `agency_id`
+* `branch_code`
+* `name`
+* `city`
+* `status_code`
+
+---
+
+## 12.5 `agency_branch_users`
+
+### Kolone
+
+* `id`
+* `agency_branch_id`
+* `agency_user_id`
+* `created_at`
+
+---
+
+## 12.6 `agency_pricing_profiles`
+
+### Kolone
+
+* `id`
+* `agency_id`
+* `pricing_model_code`
+* `default_markup_percent` NULL
+* `default_commission_percent` NULL
+* `special_rule_set_id` NULL
+* `status_code`
+
+---
+
+## 12.7 `agency_restrictions`
+
+### Kolone
+
+* `id`
+* `agency_id`
+* `restriction_type_code`
+* `restriction_value_json`
+* `status_code`
+
+### Primeri
+
+* no_cruise
+* no_credit
+* destination_whitelist
+* supplier_blacklist
+
+---
+
+## 12.8 `agency_destination_access`
+
+### Kolone
+
+* `id`
+* `agency_id`
+* `destination_id`
+* `access_code`
+* `created_at`
+
+### Enum
+
+`access_code`
+
+* allowed
+* blocked
+* promo_only
+
+---
+
+## 12.9 `agency_product_access`
+
+### Kolone
+
+* `id`
+* `agency_id`
+* `product_type_code`
+* `access_code`
+* `created_at`
+
+---
+
+## 12.10 `agency_statement_cycles`
+
+### Kolone
+
+* `id`
+* `agency_id`
+* `cycle_code`
+* `day_of_month` NULL
+* `day_of_week` NULL
+* `status_code`
+
+---
+
+## 12.11 `agency_statements`
+
+### Kolone
+
+* `id`
+* `agency_id`
+* `period_from`
+* `period_to`
+* `currency_code`
+* `total_open_amount`
+* `total_paid_amount`
+* `status_code`
+* `file_id` NULL
+* `generated_at`
+
+### Enum
+
+`status_code`
+
+* draft
+* issued
+* acknowledged
+* closed
+
+---
+
+## 12.12 `agency_statement_rows`
+
+### Kolone
+
+* `id`
+* `agency_statement_id`
+* `booking_id` NULL
+* `receivable_id` NULL
+* `amount`
+* `currency_code`
+* `row_type_code`
+* `description_text`
+
+### Enum
+
+`row_type_code`
+
+* invoice
+* payment
+* credit_note
+* adjustment
+
+---
+
+## 12.13 `agency_documents`
+
+### Kolone
+
+* `id`
+* `agency_id`
+* `document_type_code`
+* `reference_table` NULL
+* `reference_id` NULL
+* `file_id`
+* `created_at`
+
+---
+
+## 12.14 `agency_support_cases`
+
+### Kolone
+
+* `id`
+* `agency_id`
+* `booking_id` NULL
+* `case_type_code`
+* `priority_code`
+* `status_code`
+* `subject`
+* `created_by_agency_user_id` NULL
+* `owner_user_id` NULL
+* `created_at`
+* `updated_at`
+
+### Enum
+
+`case_type_code`
+
+* booking_issue
+* payment_issue
+* cancellation
+* document_request
+* technical_issue
+
+---
+
+## 12.15 `agency_support_case_messages`
+
+### Kolone
+
+* `id`
+* `agency_support_case_id`
+* `direction_code`
+* `message_text`
+* `sender_user_id` NULL
+* `sender_agency_user_id` NULL
+* `created_at`
+
+---
+
+## 12.16 `agency_credit_requests`
+
+### Kolone
+
+* `id`
+* `agency_id`
+* `requested_limit_amount`
+* `currency_code`
+* `reason_text`
+* `status_code`
+* `requested_at`
+* `requested_by_agency_user_id`
+
+### Enum
+
+`status_code`
+
+* requested
+* under_review
+* approved
+* rejected
+
+---
+
+## 12.17 `agency_api_access_profiles`
+
+### Kolone
+
+* `id`
+* `agency_id`
+* `api_client_id`
+* `status_code`
+* `rate_limit_per_minute`
+* `allowed_modules_json`
+* `created_at`
+
+---
+
+## 12.18 `agency_api_usage_logs`
+
+### Kolone
+
+* `id`
+* `agency_api_access_profile_id`
+* `request_path`
+* `request_count`
+* `period_start`
+* `period_end`
+
+---
+
+## 12.19 `agency_quality_scores`
+
+Ako želite account-quality tracking.
+
+### Kolone
+
+* `id`
+* `agency_id`
+* `score_type_code`
+* `score_value`
+* `snapshot_date`
+
+### Primeri
+
+* payment_reliability
+* booking_volume
+* communication_quality
+
+---
+
+## 12.20 Poslovna pravila domena 12
+
+1. Agency user mora biti povezan sa agency i system user zapisom.
+2. Agency statement ne sme menjati istorijske row-e posle issue.
+3. Restriction rules moraju biti proverene pri search i booking-u.
+4. Agency API access mora imati zaseban rate limit.
+5. Support case može biti vezan za booking.
+
+---
+
+# DOMAIN 13 — MAIL & COMMUNICATION
+
+Ovo je jedan od najvažnijih operativnih domena.
+
+## 13.1 `mailboxes`
+
+### Kolone
+
+* `id`
+* `mailbox_code`
+* `name`
+* `mailbox_type_code`
+* `email_address`
+* `provider_code`
+* `status_code`
+* `owner_user_id` NULL
+* `owner_team_id` NULL
+* `created_at`
+
+### Enum
+
+`mailbox_type_code`
+
+* personal
+* shared
+* functional
+* system
+* monitoring
+
+### Unique
+
+* `uq_mailboxes_email_address`
+
+---
+
+## 13.2 `mailbox_permissions`
+
+### Kolone
+
+* `id`
+* `mailbox_id`
+* `user_id`
+* `permission_code`
+* `created_at`
+
+### Enum
+
+`permission_code`
+
+* read
+* send
+* assign
+* manage
+* review_quality
+
+---
+
+## 13.3 `mail_threads`
+
+### Kolone
+
+* `id`
+* `mailbox_id`
+* `thread_key`
+* `subject_normalized`
+* `status_code`
+* `priority_code`
+* `assigned_user_id` NULL
+* `assigned_team_id` NULL
+* `related_contact_id` NULL
+* `related_agency_id` NULL
+* `related_booking_id` NULL
+* `sla_due_at` NULL
+* `opened_at` NULL
+* `last_activity_at`
+* `resolved_at` NULL
+* `created_at`
+
+### Enum
+
+`status_code`
+
+* new
+* open
+* assigned
+* waiting_customer
+* waiting_supplier
+* waiting_internal
+* resolved
+* archived
+
+`priority_code`
+
+* low
+* normal
+* high
+* urgent
+
+### Unique
+
+* `uq_mail_threads_thread_key` if provider thread mapping exists
+
+---
+
+## 13.4 `mail_thread_status_history`
+
+Status audit.
+
+---
+
+## 13.5 `mail_messages`
+
+### Kolone
+
+* `id`
+* `thread_id`
+* `direction_code`
+* `sender_user_id` NULL
+* `sender_contact_id` NULL
+* `sender_email`
+* `subject`
+* `body_text`
+* `body_html`
+* `sent_at` NULL
+* `received_at` NULL
+* `provider_message_id` NULL
+* `status_code`
+* `created_at`
+
+### Enum
+
+`direction_code`
+
+* inbound
+* outbound
+* internal_note
+* system_event
+
+`status_code`
+
+* draft
+* queued
+* sent
+* delivered
+* received
+* failed
+* bounced
+
+---
+
+## 13.6 `mail_message_headers`
+
+Raw email metadata.
+
+### Kolone
+
+* `id`
+* `mail_message_id`
+* `header_name`
+* `header_value`
+
+---
+
+## 13.7 `mail_participants`
+
+### Kolone
+
+* `id`
+* `mail_message_id`
+* `participant_type_code`
+* `email`
+* `contact_id` NULL
+* `agency_id` NULL
+* `display_name` NULL
+
+### Enum
+
+`participant_type_code`
+
+* from
+* to
+* cc
+* bcc
+* reply_to
+
+---
+
+## 13.8 `mail_attachments`
+
+### Kolone
+
+* `id`
+* `mail_message_id`
+* `file_id`
+* `filename`
+* `mime_type`
+* `size_bytes`
+
+---
+
+## 13.9 `mail_thread_links`
+
+Za više veza.
+
+### Kolone
+
+* `id`
+* `thread_id`
+* `linked_entity_type`
+* `linked_entity_id`
+* `link_source_code`
+* `created_at`
+
+### Enum
+
+`linked_entity_type`
+
+* booking
+* contact
+* agency
+* supplier
+* campaign
+* support_case
+* finance_case
+
+---
+
+## 13.10 `mail_routing_rules`
+
+### Kolone
+
+* `id`
+* `rule_name`
+* `mailbox_id` NULL
+* `condition_json`
+* `action_json`
+* `priority`
+* `status_code`
+
+---
+
+## 13.11 `mail_routing_results`
+
+### Kolone
+
+* `id`
+* `mail_message_id`
+* `routing_rule_id`
+* `result_code`
+* `details_json`
+* `created_at`
+
+---
+
+## 13.12 `mail_unassigned_queue`
+
+### Kolone
+
+* `id`
+* `mail_thread_id`
+* `reason_code`
+* `status_code`
+* `created_at`
+* `resolved_at` NULL
+
+### Enum
+
+`reason_code`
+
+* unknown_sender
+* no_booking_match
+* low_confidence_match
+* ambiguous_contact
+* manual_triage_needed
+
+---
+
+## 13.13 `mail_templates`
+
+### Kolone
+
+* `id`
+* `template_code`
+* `template_type_code`
+* `language_code`
+* `name`
+* `subject_template`
+* `body_html_template`
+* `body_text_template`
+* `status_code`
+* `created_at`
+
+### Enum
+
+`template_type_code`
+
+* booking_confirmation
+* payment_reminder
+* supplier_request
+* rooming_send
+* cancellation_reply
+* marketing
+* support
+
+---
+
+## 13.14 `mail_drafts`
+
+### Kolone
+
+* `id`
+* `thread_id` NULL
+* `mailbox_id`
+* `created_by_user_id`
+* `subject`
+* `body_html`
+* `body_text`
+* `status_code`
+* `created_at`
+* `updated_at`
+
+---
+
+## 13.15 `mail_send_queue`
+
+### Kolone
+
+* `id`
+* `mail_draft_id` NULL
+* `mail_message_id` NULL
+* `send_after` NULL
+* `status_code`
+* `attempt_count`
+* `last_attempt_at` NULL
+* `created_at`
+
+### Enum
+
+`status_code`
+
+* queued
+* processing
+* sent
+* failed
+* cancelled
+
+---
+
+## 13.16 `communication_tasks`
+
+### Kolone
+
+* `id`
+* `thread_id` NULL
+* `booking_id` NULL
+* `contact_id` NULL
+* `agency_id` NULL
+* `title`
+* `description_text`
+* `assigned_to_user_id` NULL
+* `assigned_to_team_id` NULL
+* `due_at` NULL
+* `status_code`
+* `priority_code`
+* `created_at`
+
+---
+
+## 13.17 `inbox_user_reviews`
+
+### Kolone
+
+* `id`
+* `mail_message_id`
+* `review_status_code`
+* `reviewed_by_user_id` NULL
+* `reviewed_at` NULL
+* `manager_note` NULL
+
+### Enum
+
+`review_status_code`
+
+* pending
+* accepted
+* coaching_needed
+* escalated
+* closed
+
+---
+
+## 13.18 `outbound_quality_scores`
+
+### Kolone
+
+* `id`
+* `mail_message_id`
+* `overall_score`
+* `tone_score`
+* `clarity_score`
+* `completeness_score`
+* `actionability_score`
+* `brand_alignment_score`
+* `risk_score`
+* `scored_at`
+
+---
+
+## 13.19 `outbound_quality_flags`
+
+### Kolone
+
+* `id`
+* `outbound_quality_score_id`
+* `flag_code`
+* `severity_code`
+* `details_text`
+
+### Primeri
+
+* tone_warning
+* incomplete_reply
+* finance_risk
+* policy_risk
+* excellent_response
+
+---
+
+## 13.20 `quality_review_cases`
+
+### Kolone
+
+* `id`
+* `mail_message_id`
+* `owner_user_id` NULL
+* `status_code`
+* `reason_code`
+* `created_at`
+* `closed_at` NULL
+
+### Enum
+
+`status_code`
+
+* open
+* under_review
+* coaching
+* escalated
+* closed
+
+---
+
+## 13.21 `best_practice_replies`
+
+### Kolone
+
+* `id`
+* `mail_message_id`
+* `category_code`
+* `approved_by_user_id`
+* `approved_at`
+
+---
+
+## 13.22 `thread_ai_summaries`
+
+### Kolone
+
+* `id`
+* `thread_id`
+* `summary_type_code`
+* `summary_text`
+* `model_code`
+* `created_at`
+
+### Enum
+
+`summary_type_code`
+
+* short
+* long
+* handoff
+* risk
+
+---
+
+## 13.23 `communication_sla_profiles`
+
+### Kolone
+
+* `id`
+* `mailbox_id` NULL
+* `team_id` NULL
+* `priority_code`
+* `first_response_minutes`
+* `resolution_minutes`
+* `status_code`
+
+---
+
+## 13.24 Poslovna pravila domena 13
+
+1. Thread može biti povezan sa više entiteta, ali jedan booking je primarni.
+2. Internal note nije vidljiv spolja.
+3. Outbound quality score se računa samo za outbound poruke zaposlenih.
+4. Quality review case nastaje ako score ili flag pređe prag.
+5. Unassigned queue mora biti ručno ili automatski razrešena.
+
+---
+
+# DOMAIN 14 — MARKETING AUTOMATION
+
+Ovaj domen pokriva kampanje, segmente, automations i atribuciju.
+
+## 14.1 `campaigns`
+
+### Kolone
+
+* `id`
+* `campaign_code`
+* `campaign_type_code`
+* `name`
+* `owner_user_id`
+* `status_code`
+* `starts_at` NULL
+* `ends_at` NULL
+* `created_at`
+
+### Enum
+
+`campaign_type_code`
+
+* b2c_newsletter
+* b2b_newsletter
+* social
+* messaging
+* promotion
+* automation
+
+### Unique
+
+* `uq_campaigns_campaign_code`
+
+---
+
+## 14.2 `campaign_versions`
+
+Versioning kampanja.
+
+---
+
+## 14.3 `campaign_channels`
+
+### Kolone
+
+* `id`
+* `campaign_id`
+* `channel_code`
+* `status_code`
+* `created_at`
+
+### Enum
+
+`channel_code`
+
+* email
+* viber
+* whatsapp
+* telegram
+* social
+* sms
+
+---
+
+## 14.4 `audiences`
+
+### Kolone
+
+* `id`
+* `audience_code`
+* `name`
+* `audience_type_code`
+* `refresh_mode_code`
+* `status_code`
+* `created_at`
+
+### Enum
+
+`audience_type_code`
+
+* b2c
+* b2b
+* mixed
+* supplier
+
+`refresh_mode_code`
+
+* static
+* dynamic
+* snapshot
+
+---
+
+## 14.5 `audience_filters`
+
+### Kolone
+
+* `id`
+* `audience_id`
+* `filter_no`
+* `field_code`
+* `operator_code`
+* `value_text` NULL
+* `value_number` NULL
+* `value_json` NULL
+
+### Primeri field_code
+
+* destination_interest
+* last_booking_date
+* market
+* agency_sales
+* open_balance
+* consent_email
+
+---
+
+## 14.6 `audience_members`
+
+### Kolone
+
+* `id`
+* `audience_id`
+* `member_type_code`
+* `contact_id` NULL
+* `agency_id` NULL
+* `snapshot_date` NULL
+* `created_at`
+
+### Enum
+
+`member_type_code`
+
+* contact
+* agency
+
+### Unique
+
+* partial unique po active membership
+
+---
+
+## 14.7 `content_blocks`
+
+### Kolone
+
+* `id`
+* `block_code`
+* `block_type_code`
+* `name`
+* `content_json`
+* `status_code`
+* `created_at`
+
+### Enum
+
+`block_type_code`
+
+* hero
+* offer_grid
+* text
+* faq
+* cta
+* destination_highlight
+* hotel_card
+* social_caption
+
+---
+
+## 14.8 `content_templates`
+
+### Kolone
+
+* `id`
+* `template_code`
+* `channel_code`
+* `name`
+* `structure_json`
+* `status_code`
+
+---
+
+## 14.9 `email_campaigns`
+
+### Kolone
+
+* `id`
+* `campaign_id`
+* `subject_template`
+* `from_mailbox_id` NULL
+* `reply_to_email` NULL
+* `status_code`
+* `scheduled_at` NULL
+* `sent_at` NULL
+
+---
+
+## 14.10 `email_campaign_recipients`
+
+### Kolone
+
+* `id`
+* `email_campaign_id`
+* `contact_id` NULL
+* `agency_id` NULL
+* `email`
+* `delivery_status_code`
+* `opened_at` NULL
+* `clicked_at` NULL
+* `converted_at` NULL
+
+### Enum
+
+`delivery_status_code`
+
+* queued
+* sent
+* delivered
+* bounced
+* opened
+* clicked
+* unsubscribed
+
+---
+
+## 14.11 `social_campaigns`
+
+### Kolone
+
+* `id`
+* `campaign_id`
+* `calendar_date`
+* `status_code`
+
+---
+
+## 14.12 `social_posts`
+
+### Kolone
+
+* `id`
+* `social_campaign_id`
+* `channel_code`
+* `caption_text`
+* `media_file_id` NULL
+* `publish_at` NULL
+* `published_at` NULL
+* `status_code`
+
+---
+
+## 14.13 `messaging_campaigns`
+
+### Kolone
+
+* `id`
+* `campaign_id`
+* `message_template`
+* `channel_code`
+* `status_code`
+* `scheduled_at` NULL
+
+---
+
+## 14.14 `messaging_campaign_recipients`
+
+### Kolone
+
+* `id`
+* `messaging_campaign_id`
+* `contact_id` NULL
+* `agency_id` NULL
+* `phone`
+* `delivery_status_code`
+* `delivered_at` NULL
+* `clicked_at` NULL
+
+---
+
+## 14.15 `automation_flows`
+
+### Kolone
+
+* `id`
+* `flow_code`
+* `name`
+* `trigger_type_code`
+* `status_code`
+* `created_at`
+
+### Enum
+
+`trigger_type_code`
+
+* booking_created
+* travel_soon
+* abandoned_search
+* abandoned_booking
+* unpaid_balance
+* inactive_agent
+* manual
+
+---
+
+## 14.16 `automation_conditions`
+
+### Kolone
+
+* `id`
+* `automation_flow_id`
+* `condition_no`
+* `field_code`
+* `operator_code`
+* `value_json`
+
+---
+
+## 14.17 `automation_actions`
+
+### Kolone
+
+* `id`
+* `automation_flow_id`
+* `action_no`
+* `action_type_code`
+* `action_payload_json`
+* `approval_required`
+* `created_at`
+
+### Enum
+
+`action_type_code`
+
+* send_email
+* send_message
+* create_task
+* notify_team
+* publish_offer
+* assign_case
+
+---
+
+## 14.18 `automation_run_logs`
+
+### Kolone
+
+* `id`
+* `automation_flow_id`
+* `trigger_entity_type`
+* `trigger_entity_id`
+* `status_code`
+* `started_at`
+* `completed_at` NULL
+* `result_json`
+
+---
+
+## 14.19 `campaign_revenue_attribution`
+
+### Kolone
+
+* `id`
+* `campaign_id`
+* `booking_id`
+* `attribution_model_code`
+* `revenue_amount`
+* `currency_code`
+* `attributed_at`
+
+### Enum
+
+`attribution_model_code`
+
+* first_touch
+* last_touch
+* assisted
+* multi_touch
+
+---
+
+## 14.20 Poslovna pravila domena 14
+
+1. Audience može biti dynamic ili snapshot.
+2. Campaign recipient ne sme biti targetiran bez validnog consent-a za dati kanal.
+3. Automation action sa approval_required ne izvršava se direktno.
+4. Revenue attribution je model-based i ne sme menjati originalni booking revenue.
+5. Social post može biti draft i scheduled nezavisno od email kampanje.
+
+---
+
+# DOMAIN 15 — AI GOVERNANCE & USAGE
+
+Ovde je fokus na kontroli trošenja tokena i sigurnoj AI upotrebi.
+
+## 15.1 `ai_models`
+
+### Kolone
+
+* `id`
+* `model_code`
+* `provider_code`
+* `model_family_code`
+* `cost_tier_code`
+* `status_code`
+* `created_at`
+
+### Enum
+
+`cost_tier_code`
+
+* low
+* medium
+* high
+
+---
+
+## 15.2 `ai_model_routes`
+
+### Kolone
+
+* `id`
+* `task_type_code`
+* `preferred_model_id`
+* `fallback_model_id` NULL
+* `route_mode_code`
+* `max_tokens_per_call`
+* `status_code`
+
+### Enum
+
+`route_mode_code`
+
+* deterministic_first
+* small_model_first
+* full_llm
+* no_ai
+
+---
+
+## 15.3 `ai_prompt_templates`
+
+### Kolone
+
+* `id`
+* `prompt_code`
+* `task_type_code`
+* `template_text`
+* `status_code`
+* `created_at`
+
+---
+
+## 15.4 `ai_usage_logs`
+
+### Kolone
+
+* `id`
+* `model_id`
+* `task_type_code`
+* `scope_type_code`
+* `scope_ref_id`
+* `user_id` NULL
+* `tokens_input`
+* `tokens_output`
+* `cost_amount`
+* `currency_code`
+* `success`
+* `created_at`
+
+### Enum
+
+`scope_type_code`
+
+* user
+* team
+* module
+* channel
+* campaign
+* chatbot_session
+
+---
+
+## 15.5 `ai_usage_budgets`
+
+### Kolone
+
+* `id`
+* `scope_type_code`
+* `scope_ref_id`
+* `budget_period_code`
+* `token_limit`
+* `hard_stop_enabled`
+* `warning_threshold_percent`
+* `created_at`
+
+---
+
+## 15.6 `ai_budget_consumption`
+
+### Kolone
+
+* `id`
+* `ai_usage_budget_id`
+* `period_start`
+* `period_end`
+* `tokens_used`
+* `cost_used_amount`
+* `updated_at`
+
+---
+
+## 15.7 `ai_action_policies`
+
+### Kolone
+
+* `id`
+* `action_code`
+* `allow_execute`
+* `approval_required`
+* `required_permission_code`
+* `max_scope_json`
+* `status_code`
+
+### Primeri action_code
+
+* pricing.change
+* campaign.send
+* rooming.assign
+* task.create
+* content.generate
+* summary.create
+
+---
+
+## 15.8 `ai_action_approvals`
+
+### Kolone
+
+* `id`
+* `requested_by_user_id`
+* `action_code`
+* `request_payload_json`
+* `approval_status_code`
+* `approved_by_user_id` NULL
+* `approved_at` NULL
+* `created_at`
+
+---
+
+## 15.9 `ai_sessions`
+
+### Kolone
+
+* `id`
+* `session_type_code`
+* `user_id` NULL
+* `contact_id` NULL
+* `agency_id` NULL
+* `status_code`
+* `started_at`
+* `ended_at` NULL
+
+### Enum
+
+`session_type_code`
+
+* internal_chat_ops
+* b2c_chatbot
+* b2b_chatbot
+* marketing_assistant
+
+---
+
+## 15.10 `ai_messages`
+
+### Kolone
+
+* `id`
+* `ai_session_id`
+* `direction_code`
+* `message_text`
+* `message_role_code`
+* `created_at`
+
+### Enum
+
+`direction_code`
+
+* input
+* output
+* system
+
+`message_role_code`
+
+* user
+* assistant
+* tool
+* system
+
+---
+
+## 15.11 `ai_tool_calls`
+
+### Kolone
+
+* `id`
+* `ai_message_id`
+* `tool_name`
+* `tool_payload_json`
+* `result_status_code`
+* `created_at`
+
+---
+
+## 15.12 `ai_execution_requests`
+
+### Kolone
+
+* `id`
+* `ai_session_id`
+* `action_code`
+* `request_payload_json`
+* `execution_status_code`
+* `created_at`
+* `completed_at` NULL
+
+### Enum
+
+`execution_status_code`
+
+* pending
+* approved
+* executed
+* rejected
+* failed
+
+---
+
+## 15.13 `ai_execution_results`
+
+### Kolone
+
+* `id`
+* `ai_execution_request_id`
+* `result_json`
+* `success`
+* `created_at`
+
+---
+
+## 15.14 `ai_cache_entries`
+
+### Kolone
+
+* `id`
+* `cache_key`
+* `task_type_code`
+* `content_hash`
+* `response_text`
+* `expires_at`
+* `created_at`
+
+---
+
+## 15.15 `ai_token_alerts`
+
+### Kolone
+
+* `id`
+* `scope_type_code`
+* `scope_ref_id`
+* `alert_type_code`
+* `threshold_percent`
+* `created_at`
+
+### Enum
+
+`alert_type_code`
+
+* threshold_reached
+* hard_stop
+* unusual_spike
+
+---
+
+## 15.16 Poslovna pravila domena 15
+
+1. Sve što može deterministički ne ide na LLM.
+2. AI route može biti `no_ai`.
+3. Hard stop budget blokira poziv.
+4. Execute mode zahteva policy + permission + eventual approval.
+5. Chatbot sessions imaju posebne budžete.
+
+---
+
+# DOMAIN 16 — WEBSITE / CMS / SEO
+
+Ovaj domen služi da platforma “hrani” B2C sajt.
+
+## 16.1 `pages`
+
+### Kolone
+
+* `id`
+* `page_type_code`
+* `entity_type_code` NULL
+* `entity_id` NULL
+* `title`
+* `slug`
+* `status_code`
+* `publication_status_code`
+* `created_at`
+* `updated_at`
+
+### Enum
+
+`page_type_code`
+
+* homepage
+* destination
+* hotel
+* tour
+* charter
+* landing
+* article
+* search_landing
+
+### Unique
+
+* `uq_pages_slug`
+
+---
+
+## 16.2 `page_versions`
+
+Versioning sadržaja.
+
+---
+
+## 16.3 `page_templates`
+
+### Kolone
+
+* `id`
+* `template_code`
+* `name`
+* `layout_json`
+* `status_code`
+
+---
+
+## 16.4 `page_blocks`
+
+### Kolone
+
+* `id`
+* `page_id`
+* `block_type_code`
+* `content_json`
+* `sort_order`
+* `status_code`
+
+### Primeri
+
+* hero
+* intro_text
+* faq
+* offer_grid
+* program_dates
+* hotel_highlights
+* seo_text
+
+---
+
+## 16.5 `slugs`
+
+Ako želite odvojeno upravljanje slug istorijom.
+
+### Kolone
+
+* `id`
+* `entity_type_code`
+* `entity_id`
+* `slug`
+* `is_current`
+* `created_at`
+
+---
+
+## 16.6 `redirects`
+
+### Kolone
+
+* `id`
+* `source_path`
+* `target_path`
+* `redirect_type_code`
+* `status_code`
+
+### Enum
+
+`redirect_type_code`
+
+* 301
+* 302
+
+---
+
+## 16.7 `seo_metadata`
+
+### Kolone
+
+* `id`
+* `entity_type_code`
+* `entity_id`
+* `meta_title`
+* `meta_description`
+* `canonical_url` NULL
+* `robots_index`
+* `robots_follow`
+* `focus_keyword` NULL
+* `schema_markup_id` NULL
+* `updated_at`
+
+---
+
+## 16.8 `seo_keywords`
+
+### Kolone
+
+* `id`
+* `keyword`
+* `language_code`
+* `intent_code`
+* `status_code`
+
+### Enum
+
+`intent_code`
+
+* informational
+* commercial
+* transactional
+* navigational
+
+---
+
+## 16.9 `seo_page_targets`
+
+### Kolone
+
+* `id`
+* `page_id`
+* `seo_keyword_id`
+* `priority`
+* `created_at`
+
+---
+
+## 16.10 `seo_internal_links`
+
+### Kolone
+
+* `id`
+* `from_page_id`
+* `to_page_id`
+* `anchor_text`
+* `status_code`
+
+---
+
+## 16.11 `schema_markups`
+
+### Kolone
+
+* `id`
+* `schema_type_code`
+* `schema_json`
+* `created_at`
+
+### Enum
+
+`schema_type_code`
+
+* article
+* faq
+* product
+* offer
+* breadcrumb
+* organization
+* event
+
+---
+
+## 16.12 `faq_entries`
+
+### Kolone
+
+* `id`
+* `entity_type_code`
+* `entity_id`
+* `question_text`
+* `answer_text`
+* `sort_order`
+* `status_code`
+
+---
+
+## 16.13 `landing_pages`
+
+### Kolone
+
+* `id`
+* `page_id`
+* `landing_type_code`
+* `destination_id` NULL
+* `campaign_id` NULL
+* `status_code`
+
+### Enum
+
+`landing_type_code`
+
+* destination
+* charter
+* promo
+* thematic
+* seo
+
+---
+
+## 16.14 `landing_page_offer_links`
+
+### Kolone
+
+* `id`
+* `landing_page_id`
+* `offer_source_type_code`
+* `offer_ref_id`
+* `sort_order`
+
+---
+
+## 16.15 `destination_content`
+
+### Kolone
+
+* `id`
+* `destination_id`
+* `hero_text`
+* `body_text`
+* `highlights_json`
+* `best_time_to_visit_text`
+* `travel_tips_text`
+* `status_code`
+
+---
+
+## 16.16 `hotel_content`
+
+### Kolone
+
+* `id`
+* `hotel_id`
+* `short_description`
+* `long_description`
+* `amenity_highlights_json`
+* `status_code`
+
+---
+
+## 16.17 `tour_content`
+
+### Kolone
+
+* `id`
+* `tour_program_id`
+* `seo_intro`
+* `program_highlights_json`
+* `faq_block_json`
+* `status_code`
+
+---
+
+## 16.18 `charter_content`
+
+### Kolone
+
+* `id`
+* `charter_season_id`
+* `intro_text`
+* `promo_highlights_json`
+* `faq_block_json`
+* `status_code`
+
+---
+
+## 16.19 `blog_articles`
+
+### Kolone
+
+* `id`
+* `article_code`
+* `title`
+* `slug`
+* `status_code`
+* `published_at` NULL
+* `author_user_id` NULL
+* `created_at`
+
+---
+
+## 16.20 `ai_seo_suggestions`
+
+### Kolone
+
+* `id`
+* `entity_type_code`
+* `entity_id`
+* `suggestion_type_code`
+* `suggestion_text`
+* `status_code`
+* `created_at`
+
+### Enum
+
+`suggestion_type_code`
+
+* meta_title
+* meta_description
+* faq
+* keyword_gap
+* internal_links
+* ai_search_question
+
+---
+
+## 16.21 `website_publications`
+
+### Kolone
+
+* `id`
+* `entity_type_code`
+* `entity_id`
+* `publication_status_code`
+* `published_at` NULL
+* `last_refresh_at` NULL
+* `published_payload_hash` NULL
+
+---
+
+## 16.22 Poslovna pravila domena 16
+
+1. Page slug mora biti jedinstven aktivno.
+2. SEO metadata je po entitetu.
+3. Website publication može biti refresh-ovana bez menjanja master entiteta.
+4. Landing pages mogu koristiti dynamic offer izvore.
+5. AI SEO suggestions su predlog, ne automatska objava.
+
+---
+
+# DOMAIN 17 — AUDIT / MONITORING / CONTROL PLANE
+
+Ovo je sistemski domen.
+
+## 17.1 `audit_logs`
+
+### Kolone
+
+* `id`
+* `entity_type_code`
+* `entity_id`
+* `action_code`
+* `old_value_json` NULL
+* `new_value_json` NULL
+* `performed_by_user_id` NULL
+* `created_at`
+
+---
+
+## 17.2 `entity_change_logs`
+
+Detaljniji field-level log ako želite.
+
+### Kolone
+
+* `id`
+* `entity_type_code`
+* `entity_id`
+* `field_name`
+* `old_value_text` NULL
+* `new_value_text` NULL
+* `changed_by_user_id`
+* `changed_at`
+
+---
+
+## 17.3 `feature_flags`
+
+### Kolone
+
+* `id`
+* `flag_code`
+* `scope_type_code`
+* `scope_ref_id` NULL
+* `enabled`
+* `rollout_percent` NULL
+* `created_at`
+
+---
+
+## 17.4 `system_settings`
+
+### Kolone
+
+* `id`
+* `setting_code`
+* `setting_value_json`
+* `updated_by_user_id`
+* `updated_at`
+
+---
+
+## 17.5 `integration_health_checks`
+
+### Kolone
+
+* `id`
+* `supplier_id` NULL
+* `service_code`
+* `status_code`
+* `response_time_ms` NULL
+* `checked_at`
+
+### Enum
+
+`status_code`
+
+* ok
+* degraded
+* down
+
+---
+
+## 17.6 `integration_error_logs`
+
+### Kolone
+
+* `id`
+* `supplier_id` NULL
+* `service_code`
+* `error_code`
+* `error_message`
+* `payload_json` NULL
+* `created_at`
+
+---
+
+## 17.7 `queue_jobs`
+
+### Kolone
+
+* `id`
+* `queue_name`
+* `job_type_code`
+* `payload_json`
+* `status_code`
+* `attempt_count`
+* `available_at`
+* `started_at` NULL
+* `finished_at` NULL
+* `created_at`
+
+### Enum
+
+`status_code`
+
+* queued
+* processing
+* done
+* failed
+* dead_letter
+
+---
+
+## 17.8 `queue_job_attempts`
+
+### Kolone
+
+* `id`
+* `queue_job_id`
+* `attempt_no`
+* `status_code`
+* `error_text` NULL
+* `started_at`
+* `finished_at` NULL
+
+---
+
+## 17.9 `queue_dead_letters`
+
+### Kolone
+
+* `id`
+* `queue_job_id`
+* `reason_text`
+* `created_at`
+
+---
+
+## 17.10 `event_bus_events`
+
+### Kolone
+
+* `id`
+* `event_code`
+* `aggregate_type_code`
+* `aggregate_id`
+* `payload_json`
+* `published_at`
+
+---
+
+## 17.11 `event_subscriptions`
+
+### Kolone
+
+* `id`
+* `subscriber_code`
+* `event_code`
+* `status_code`
+* `created_at`
+
+---
+
+## 17.12 `event_delivery_attempts`
+
+### Kolone
+
+* `id`
+* `event_bus_event_id`
+* `event_subscription_id`
+* `status_code`
+* `attempt_no`
+* `created_at`
+
+---
+
+## 17.13 `api_request_logs`
+
+### Kolone
+
+* `id`
+* `request_path`
+* `request_method`
+* `status_code_http`
+* `user_id` NULL
+* `api_client_id` NULL
+* `duration_ms`
+* `created_at`
+
+---
+
+## 17.14 `api_rate_limit_events`
+
+### Kolone
+
+* `id`
+* `api_client_id` NULL
+* `user_id` NULL
+* `scope_code`
+* `limit_value`
+* `created_at`
+
+---
+
+## 17.15 `monitoring_alerts`
+
+### Kolone
+
+* `id`
+* `alert_type_code`
+* `severity_code`
+* `title`
+* `message_text`
+* `status_code`
+* `created_at`
+* `resolved_at` NULL
+
+---
+
+## 17.16 `monitoring_incidents`
+
+### Kolone
+
+* `id`
+* `incident_code`
+* `incident_type_code`
+* `severity_code`
+* `title`
+* `description_text`
+* `status_code`
+* `owner_user_id` NULL
+* `created_at`
+* `resolved_at` NULL
+
+---
+
+## 17.17 `scheduled_jobs`
+
+### Kolone
+
+* `id`
+* `job_code`
+* `cron_expression`
+* `job_type_code`
+* `status_code`
+* `created_at`
+
+---
+
+## 17.18 `scheduled_job_runs`
+
+### Kolone
+
+* `id`
+* `scheduled_job_id`
+* `started_at`
+* `finished_at` NULL
+* `status_code`
+* `result_json` NULL
+
+---
+
+## 17.19 `import_jobs` / `import_job_rows`
+
+Za price import, rooming import, bank import itd.
+
+---
+
+## 17.20 `export_jobs` / `export_job_rows`
+
+Za manifest, reports, accounting export.
+
+---
+
+## 17.21 `sandbox_test_runs`
+
+### Kolone
+
+* `id`
+* `test_type_code`
+* `service_code`
+* `status_code`
+* `result_json`
+* `executed_by_user_id`
+* `executed_at`
+
+---
+
+## 17.22 Poslovna pravila domena 17
+
+1. Sve kritične promene moraju u audit.
+2. Queue job posle max retry ide u dead letter.
+3. Event delivery mora imati trace.
+4. Feature flag može biti global ili scoped.
+5. Monitoring incident mora imati owner ili tim.
+
+---
+
+# Šta smo sada završili
+
+Sada smo završili **Domains 11–17**, čime je praktično kompletirana detaljna relacijska mapa svih poslovnih domena platforme:
+
+11. Charter & Series
+12. B2B Distribution
+13. Mail & Communication
+14. Marketing Automation
+15. AI Governance & Usage
+16. Website / CMS / SEO
+17. Audit / Monitoring / Control Plane
+
+Time je završen **Detailed Data Model — Domain Layer**.
+
+---
+
+# Šta sledi dalje
+
+Sada je sledeći potpuno logičan korak:
+
+## 1. API struktura po domenu
+
+* public website API
+* B2C API
+* B2B API
+* admin/internal API
+* integration API
+
+## 2. Event schema
+
+* booking events
+* finance events
+* rooming events
+* mail events
+* marketing events
+* AI events
+* website publish events
+
+## 3. Queue / worker logika
+
+* job tipovi
+* retry pravila
+* dead letter pristup
+* prioritetni redovi
+
+## 4. DB deployment strategija
+
+* schema organizacija
+* particionisanje
+* indeksna strategija
+* reporting views
+* materialized views
+
+Pošto ste rekli da idemo redom, sledeće treba da krenem sa:
+
+# **API struktura po domenu — kompletna tehnička specifikacija endpoint-a**
+
+To je sledeći prirodan korak ka sistemu spremnom za razvoj.

@@ -1,0 +1,2650 @@
+Odlično. Nastavljam istim nivoom detalja.
+
+Sada obrađujem:
+
+6. Booking Core
+7. Reservation Operations
+8. Finance & Settlement
+9. Rooming & Capacity
+10. Tour Operator Programs
+
+Cilj je isti:
+
+* tabele
+* ključne kolone
+* PK/FK logika
+* unique pravila
+* enum vrednosti
+* poslovna pravila
+* indeksna logika
+* veze sa ostalim domenima
+
+---
+
+# DOMAIN 6 — BOOKING CORE
+
+Ovo je centralni transakcioni domen cele platforme.
+On mora podržati:
+
+* OTA booking
+* tour operator booking
+* charter booking
+* ručne rezervacije
+* hybrid rezervacije
+* B2B rezervacije
+* više stavki po jednoj rezervaciji
+
+## 6.1 `bookings`
+
+**Svrha:** master zapis rezervacije.
+
+### Kolone
+
+* `id` BIGINT PK
+* `booking_reference` VARCHAR(80) NOT NULL
+* `booking_type_code` VARCHAR(40) NOT NULL
+* `channel_id` BIGINT NOT NULL
+* `brand_id` BIGINT NULL
+* `user_id` BIGINT NULL FK -> users.id
+* `contact_id` BIGINT NULL FK -> contacts.id
+* `agency_id` BIGINT NULL FK -> agencies.id
+* `offer_id` BIGINT NULL FK -> offers.id
+* `status_code` VARCHAR(30) NOT NULL
+* `source_mode_code` VARCHAR(30) NOT NULL
+* `currency_code` VARCHAR(10) NOT NULL
+* `travel_start_date` DATE NULL
+* `travel_end_date` DATE NULL
+* `total_sell_amount` NUMERIC(14,2) NOT NULL DEFAULT 0
+* `total_net_amount` NUMERIC(14,2) NOT NULL DEFAULT 0
+* `total_tax_amount` NUMERIC(14,2) NOT NULL DEFAULT 0
+* `total_fee_amount` NUMERIC(14,2) NOT NULL DEFAULT 0
+* `total_discount_amount` NUMERIC(14,2) NOT NULL DEFAULT 0
+* `created_by_user_id` BIGINT NULL
+* `confirmed_at` TIMESTAMP NULL
+* `cancelled_at` TIMESTAMP NULL
+* `created_at` TIMESTAMP NOT NULL
+* `updated_at` TIMESTAMP NOT NULL
+* `deleted_at` TIMESTAMP NULL
+
+### Unique
+
+* `uq_bookings_booking_reference`
+
+### Enum
+
+`booking_type_code`
+
+* hotel_only
+* flight_only
+* package_dynamic
+* package_static
+* group_tour
+* charter_package
+* transfer_only
+* activity_only
+* cruise_only
+* hybrid_custom
+
+`status_code`
+
+* draft
+* pending
+* on_request
+* awaiting_payment
+* confirmed
+* partially_confirmed
+* ticketed
+* cancelled
+* completed
+* failed
+
+`source_mode_code`
+
+* online
+* manual
+* hybrid
+* import
+* api_partner
+
+### Indexes
+
+* `idx_bookings_contact_id`
+* `idx_bookings_agency_id`
+* `idx_bookings_status_code`
+* `idx_bookings_travel_start_date`
+* `idx_bookings_created_at`
+
+---
+
+## 6.2 `booking_versions`
+
+**Svrha:** snapshot logika za velike izmene.
+
+### Kolone
+
+* `id`
+* `booking_id` FK
+* `version_number`
+* `version_reason_code`
+* `snapshot_json`
+* `created_by_user_id`
+* `created_at`
+
+### Enum
+
+`version_reason_code`
+
+* created
+* repriced
+* service_changed
+* passenger_changed
+* manual_override
+* cancellation
+* financial_change
+
+### Unique
+
+* `uq_booking_versions (booking_id, version_number)`
+
+---
+
+## 6.3 `booking_status_history`
+
+### Kolone
+
+* `id`
+* `booking_id`
+* `old_status_code`
+* `new_status_code`
+* `reason_code`
+* `changed_by_user_id`
+* `changed_at`
+
+### Enum
+
+`reason_code`
+
+* workflow
+* manual
+* payment
+* supplier_response
+* auto_timeout
+* cancellation
+* refund
+
+---
+
+## 6.4 `booking_items`
+
+**Svrha:** pojedinačna usluga unutar rezervacije.
+
+### Kolone
+
+* `id`
+* `booking_id` BIGINT NOT NULL FK
+* `item_no` INTEGER NOT NULL
+* `item_type_code` VARCHAR(40) NOT NULL
+* `source_type_code` VARCHAR(30) NOT NULL
+* `source_ref_table` VARCHAR(80) NULL
+* `source_ref_id` BIGINT NULL
+* `supplier_id` BIGINT NULL FK
+* `supplier_reference` VARCHAR(255) NULL
+* `status_code` VARCHAR(30) NOT NULL
+* `service_start_date` DATE NULL
+* `service_end_date` DATE NULL
+* `description_short` VARCHAR(255) NULL
+* `description_long` TEXT NULL
+* `currency_code` VARCHAR(10) NOT NULL
+* `gross_amount` NUMERIC(14,2) NOT NULL DEFAULT 0
+* `net_amount` NUMERIC(14,2) NOT NULL DEFAULT 0
+* `tax_amount` NUMERIC(14,2) NOT NULL DEFAULT 0
+* `fee_amount` NUMERIC(14,2) NOT NULL DEFAULT 0
+* `discount_amount` NUMERIC(14,2) NOT NULL DEFAULT 0
+* `is_core_item` BOOLEAN NOT NULL DEFAULT true
+* `is_optional_item` BOOLEAN NOT NULL DEFAULT false
+* `is_cancelled` BOOLEAN NOT NULL DEFAULT false
+* `created_at`
+* `updated_at`
+
+### Enum
+
+`item_type_code`
+
+* hotel
+* flight
+* transfer
+* activity
+* cruise
+* insurance
+* visa
+* service_fee
+* tour_component
+* charter_seat
+* manual_charge
+* manual_discount
+
+`source_type_code`
+
+* contracted
+* api_dynamic
+* api_cached
+* manual
+* hybrid
+* imported
+
+`status_code`
+
+* new
+* pending
+* revalidated
+* reserved
+* confirmed
+* ticketed
+* cancelled
+* failed
+* refunded
+
+### Unique
+
+* `uq_booking_items (booking_id, item_no)`
+
+### Indexes
+
+* `idx_booking_items_booking_id`
+* `idx_booking_items_supplier_id`
+* `idx_booking_items_status_code`
+* `idx_booking_items_service_start_date`
+
+---
+
+## 6.5 `booking_item_status_history`
+
+### Kolone
+
+* `id`
+* `booking_item_id`
+* `old_status_code`
+* `new_status_code`
+* `reason_code`
+* `changed_by_user_id`
+* `changed_at`
+
+---
+
+## 6.6 `booking_item_dependencies`
+
+**Svrha:** item-to-item zavisnosti.
+
+### Kolone
+
+* `id`
+* `booking_item_id`
+* `depends_on_booking_item_id`
+* `dependency_type_code`
+* `is_hard_dependency`
+* `created_at`
+
+### Enum
+
+`dependency_type_code`
+
+* operational
+* pricing
+* supplier_order
+* route_dependency
+* room_dependency
+
+### Unique
+
+* `uq_booking_item_dependencies (booking_item_id, depends_on_booking_item_id, dependency_type_code)`
+
+---
+
+## 6.7 `booking_contacts`
+
+**Svrha:** kontakti vezani za rezervaciju.
+
+### Kolone
+
+* `id`
+* `booking_id`
+* `contact_id`
+* `contact_role_code`
+* `is_primary`
+* `created_at`
+
+### Enum
+
+`contact_role_code`
+
+* lead_passenger
+* payer
+* emergency
+* agency_contact
+* corporate_contact
+
+---
+
+## 6.8 `booking_passengers`
+
+**Svrha:** putnici kao snapshot na nivou rezervacije.
+
+### Kolone
+
+* `id`
+* `booking_id`
+* `contact_id` NULL
+* `passenger_no`
+* `passenger_type_code`
+* `first_name`
+* `last_name`
+* `gender_code` NULL
+* `date_of_birth` NULL
+* `nationality_code` NULL
+* `passport_number` NULL
+* `passport_expiry_date` NULL
+* `room_preference_code` NULL
+* `special_requirements_text` NULL
+* `created_at`
+* `updated_at`
+
+### Enum
+
+`passenger_type_code`
+
+* adult
+* child
+* infant
+
+`room_preference_code`
+
+* single
+* twin
+* double
+* no_preference
+
+### Unique
+
+* `uq_booking_passengers (booking_id, passenger_no)`
+
+---
+
+## 6.9 `booking_passenger_documents`
+
+### Kolone
+
+* `id`
+* `booking_passenger_id`
+* `document_type_code`
+* `file_id`
+* `document_number`
+* `expiry_date`
+* `status_code`
+* `created_at`
+
+### Enum
+
+`document_type_code`
+
+* passport
+* visa
+* insurance
+* id_card
+* vaccination
+* other
+
+---
+
+## 6.10 `booking_item_passengers`
+
+**Svrha:** povezuje stavke i putnike.
+
+### Kolone
+
+* `id`
+* `booking_item_id`
+* `booking_passenger_id`
+* `role_code`
+* `created_at`
+
+### Enum
+
+`role_code`
+
+* traveler
+* room_occupant
+* insured_person
+* transfer_passenger
+* activity_participant
+
+### Unique
+
+* `uq_booking_item_passengers (booking_item_id, booking_passenger_id, role_code)`
+
+---
+
+## 6.11 `booking_room_requests`
+
+### Kolone
+
+* `id`
+* `booking_id`
+* `room_request_no`
+* `requested_room_type_id` NULL
+* `requested_board_type_id` NULL
+* `occupancy_code`
+* `adults_count`
+* `children_count`
+* `infants_count`
+* `special_request_text`
+* `created_at`
+
+---
+
+## 6.12 `booking_special_requests`
+
+### Kolone
+
+* `id`
+* `booking_id`
+* `booking_item_id` NULL
+* `request_type_code`
+* `request_text`
+* `status_code`
+* `supplier_confirmed`
+* `created_at`
+
+### Enum
+
+`request_type_code`
+
+* sea_view
+* late_checkout
+* twin_beds
+* baby_cot
+* wheelchair
+* dietary
+* other
+
+---
+
+## 6.13 `booking_notes`
+
+### Kolone
+
+* `id`
+* `booking_id`
+* `note_type_code`
+* `note_text`
+* `is_internal`
+* `created_by_user_id`
+* `created_at`
+
+### Enum
+
+`note_type_code`
+
+* ops
+* sales
+* finance
+* support
+* supplier
+* management
+
+---
+
+## 6.14 `booking_tags` / `booking_tag_links`
+
+Tag sistem:
+
+* vip
+* urgent
+* complaint_risk
+* group
+* charter
+* unpaid
+* docs_missing
+
+---
+
+## 6.15 `booking_manual_overrides`
+
+### Kolone
+
+* `id`
+* `booking_id`
+* `booking_item_id` NULL
+* `override_type_code`
+* `old_value_json`
+* `new_value_json`
+* `reason_text`
+* `approved_by_user_id` NULL
+* `created_by_user_id`
+* `created_at`
+
+### Enum
+
+`override_type_code`
+
+* price
+* status
+* supplier_reference
+* passenger_data
+* rooming
+* finance
+* cancellation
+
+---
+
+## 6.16 `booking_holds`
+
+### Kolone
+
+* `id`
+* `booking_id`
+* `hold_type_code`
+* `hold_until`
+* `reason_code`
+* `released_at` NULL
+* `created_at`
+
+### Enum
+
+`hold_type_code`
+
+* payment
+* supplier
+* docs
+* manual_review
+
+---
+
+## 6.17 `supplier_reservations`
+
+### Kolone
+
+* `id`
+* `booking_item_id`
+* `supplier_id`
+* `reservation_reference`
+* `supplier_status_code`
+* `request_payload_json`
+* `response_payload_json`
+* `requested_at`
+* `confirmed_at`
+* `failed_at` NULL
+* `status_code`
+
+### Enum
+
+`status_code`
+
+* requested
+* pending
+* confirmed
+* failed
+* cancelled
+
+---
+
+## 6.18 `supplier_reservation_events`
+
+### Kolone
+
+* `id`
+* `supplier_reservation_id`
+* `event_type_code`
+* `event_payload_json`
+* `created_at`
+
+### Enum
+
+`event_type_code`
+
+* requested
+* retried
+* confirmed
+* ticketed
+* failed
+* cancelled
+* modified
+
+---
+
+## 6.19 `booking_revalidation_requests`
+
+### Kolone
+
+* `id`
+* `booking_id`
+* `request_type_code`
+* `requested_by_user_id`
+* `status_code`
+* `requested_at`
+* `completed_at` NULL
+
+### Enum
+
+`request_type_code`
+
+* full
+* price_only
+* availability_only
+* manual
+
+---
+
+## 6.20 `booking_revalidation_results`
+
+### Kolone
+
+* `id`
+* `booking_revalidation_request_id`
+* `booking_item_id` NULL
+* `result_code`
+* `old_amount`
+* `new_amount`
+* `availability_changed`
+* `details_json`
+* `created_at`
+
+### Enum
+
+`result_code`
+
+* unchanged
+* price_up
+* price_down
+* unavailable
+* requires_manual_review
+
+---
+
+## 6.21 `booking_documents`
+
+### Kolone
+
+* `id`
+* `booking_id`
+* `booking_item_id` NULL
+* `document_type_code`
+* `file_id`
+* `generated_by_user_id` NULL
+* `generated_at`
+* `sent_at` NULL
+* `status_code`
+
+### Enum
+
+`document_type_code`
+
+* voucher
+* itinerary
+* invoice
+* proforma
+* rooming
+* ticket
+* manifest
+* confirmation
+* refund_notice
+
+---
+
+## 6.22 `booking_checklists` / `booking_checklist_items`
+
+Za operativni readiness.
+
+### `booking_checklist_items`
+
+* id
+* checklist_id
+* item_code
+* label
+* status_code
+* completed_by_user_id NULL
+* completed_at NULL
+* due_at NULL
+
+### Enum
+
+`status_code`
+
+* pending
+* in_progress
+* completed
+* skipped
+* blocked
+
+---
+
+## 6.23 `group_bookings`
+
+### Kolone
+
+* `id`
+* `booking_id`
+* `group_type_code`
+* `group_code`
+* `group_name`
+* `min_pax`
+* `max_pax`
+* `guaranteed_threshold`
+* `status_code`
+
+### Enum
+
+`group_type_code`
+
+* tour_group
+* corporate_group
+* charter_group
+* adhoc_group
+
+---
+
+## 6.24 `booking_service_changes`
+
+Za naknadne izmene usluga.
+
+### Kolone
+
+* `id`
+* `booking_id`
+* `booking_item_id` NULL
+* `change_type_code`
+* `old_value_json`
+* `new_value_json`
+* `change_status_code`
+* `created_by_user_id`
+* `created_at`
+
+---
+
+## 6.25 `booking_cancellations`
+
+### Kolone
+
+* `id`
+* `booking_id`
+* `booking_item_id` NULL
+* `cancellation_reason_code`
+* `requested_by_user_id`
+* `requested_at`
+* `processed_at` NULL
+* `cancellation_fee_amount` NULL
+* `status_code`
+
+### Enum
+
+`status_code`
+
+* requested
+* processing
+* processed
+* rejected
+
+---
+
+## 6.26 Ključne relacije domena 6
+
+* `bookings 1:N booking_items`
+* `bookings 1:N booking_passengers`
+* `booking_items N:M booking_passengers`
+* `booking_items 1:N supplier_reservations`
+* `bookings 1:N notes/documents/checklists`
+* `bookings 1:N revalidation_requests`
+* `revalidation_requests 1:N results`
+
+---
+
+## 6.27 Poslovna pravila
+
+1. Booking reference mora biti jedinstven globalno.
+2. Booking može imati više items, ali item_no mora biti jedinstven unutar booking-a.
+3. Passenger snapshot se ne sme menjati bez audit zapisa posle potvrde.
+4. Core item failure može oboriti ceo booking, optional item failure ne mora.
+5. Booking document može biti na nivou booking-a ili pojedinačnog item-a.
+
+---
+
+# DOMAIN 7 — RESERVATION OPERATIONS
+
+Ovaj domen je operativni “workspace” oko rezervacije.
+
+## 7.1 `reservation_workspaces`
+
+### Kolone
+
+* `id`
+* `booking_id`
+* `assigned_team_id` NULL
+* `assigned_user_id` NULL
+* `ops_status_code`
+* `priority_code`
+* `sla_due_at` NULL
+* `last_activity_at`
+* `created_at`
+* `updated_at`
+
+### Enum
+
+`ops_status_code`
+
+* new
+* assigned
+* in_progress
+* waiting_supplier
+* waiting_customer
+* blocked
+* ready
+* completed
+
+`priority_code`
+
+* low
+* normal
+* high
+* urgent
+
+### Unique
+
+* `uq_reservation_workspaces_booking_id`
+
+---
+
+## 7.2 `reservation_operation_statuses`
+
+Za dodatni statusni sloj ako treba.
+
+### Kolone
+
+* `id`
+* `workspace_id`
+* `status_code`
+* `reason_code`
+* `changed_by_user_id`
+* `changed_at`
+
+---
+
+## 7.3 `reservation_assignments`
+
+### Kolone
+
+* `id`
+* `workspace_id`
+* `assigned_to_user_id` NULL
+* `assigned_to_team_id` NULL
+* `assignment_type_code`
+* `assigned_by_user_id`
+* `assigned_at`
+
+### Enum
+
+`assignment_type_code`
+
+* owner
+* reviewer
+* finance
+* operations
+* support
+
+---
+
+## 7.4 `reservation_operational_flags`
+
+Katalog flagova.
+
+### Kolone
+
+* `id`
+* `flag_code`
+* `name`
+* `severity_code`
+* `is_system_generated`
+* `status_code`
+
+### Enum
+
+`flag_code`
+
+* rooming_missing
+* docs_missing
+* transfer_missing
+* unpaid_balance
+* supplier_unconfirmed
+* vip
+* complaint_open
+* manual_attention
+* over_limit_agent
+* manifest_pending
+
+`severity_code`
+
+* info
+* warning
+* critical
+
+---
+
+## 7.5 `reservation_flag_links`
+
+### Kolone
+
+* `id`
+* `booking_id`
+* `booking_item_id` NULL
+* `flag_id`
+* `source_code`
+* `is_active`
+* `created_at`
+* `resolved_at` NULL
+* `resolved_by_user_id` NULL
+
+### Enum
+
+`source_code`
+
+* manual
+* rule_engine
+* finance
+* docs
+* rooming
+* communication
+* ai
+
+---
+
+## 7.6 `reservation_alerts`
+
+### Kolone
+
+* `id`
+* `booking_id`
+* `alert_type_code`
+* `severity_code`
+* `title`
+* `message_text`
+* `is_read`
+* `read_by_user_id` NULL
+* `created_at`
+
+### Enum
+
+`alert_type_code`
+
+* travel_soon
+* missing_payment
+* supplier_issue
+* missing_docs
+* rooming_due
+* dispatch_due
+
+---
+
+## 7.7 `reservation_todos`
+
+### Kolone
+
+* `id`
+* `booking_id`
+* `task_code`
+* `title`
+* `description_text`
+* `assigned_to_user_id` NULL
+* `due_at` NULL
+* `status_code`
+* `created_by_user_id`
+* `created_at`
+
+### Enum
+
+`status_code`
+
+* open
+* in_progress
+* done
+* cancelled
+* blocked
+
+---
+
+## 7.8 `reservation_checkpoints`
+
+### Kolone
+
+* `id`
+* `booking_id`
+* `checkpoint_code`
+* `status_code`
+* `completed_at` NULL
+* `completed_by_user_id` NULL
+
+### Primeri
+
+* payment_checked
+* voucher_sent
+* rooming_sent
+* manifest_ready
+* supplier_confirmed
+* departure_checked
+
+---
+
+## 7.9 `reservation_document_statuses`
+
+### Kolone
+
+* `id`
+* `booking_id`
+* `document_type_code`
+* `required`
+* `generated`
+* `sent`
+* `last_generated_at` NULL
+* `last_sent_at` NULL
+* `status_code`
+
+### Enum
+
+`status_code`
+
+* missing
+* pending
+* ready
+* sent
+* outdated
+
+---
+
+## 7.10 `reservation_dispatches`
+
+Za slanje operativnih listi supplier-ima.
+
+### Kolone
+
+* `id`
+* `booking_id`
+* `dispatch_type_code`
+* `target_type_code`
+* `target_supplier_id` NULL
+* `target_email` NULL
+* `status_code`
+* `sent_at` NULL
+* `created_by_user_id`
+* `created_at`
+
+### Enum
+
+`dispatch_type_code`
+
+* hotel_arrival
+* rooming
+* transfer
+* excursion
+* guide_brief
+* manifest
+
+`target_type_code`
+
+* supplier
+* guide
+* rep
+* internal_team
+
+---
+
+## 7.11 `arrival_lists` / `arrival_list_rows`
+
+Za snapshot ili export.
+
+### `arrival_lists`
+
+* id
+* list_date
+* destination_id NULL
+* hotel_id NULL
+* generated_by_user_id
+* generated_at
+
+### `arrival_list_rows`
+
+* id
+* arrival_list_id
+* booking_id
+* booking_item_id NULL
+* arrival_date
+* passenger_name
+* hotel_name
+* board_code
+* transfer_status_code
+* voucher_status_code
+* finance_status_code
+* alert_flags_json
+
+---
+
+## 7.12 `departure_lists` / `departure_list_rows`
+
+Slično arrival.
+
+---
+
+## 7.13 `transfer_lists` / `transfer_list_rows`
+
+### `transfer_list_rows`
+
+* id
+* transfer_list_id
+* booking_id
+* booking_item_id
+* service_date
+* pickup_time
+* pickup_point
+* dropoff_point
+* passenger_count
+* supplier_id
+* status_code
+
+---
+
+## 7.14 `excursion_lists` / `excursion_list_rows`
+
+Za izlete i aktivnosti.
+
+---
+
+## 7.15 `guide_assignments`
+
+### Kolone
+
+* `id`
+* `booking_id` NULL
+* `tour_departure_id` NULL
+* `guide_contact_id`
+* `assignment_role_code`
+* `status_code`
+* `assigned_at`
+
+### Enum
+
+`assignment_role_code`
+
+* tour_leader
+* local_guide
+* airport_rep
+* destination_rep
+
+---
+
+## 7.16 `operational_incidents`
+
+### Kolone
+
+* `id`
+* `booking_id`
+* `booking_item_id` NULL
+* `incident_type_code`
+* `severity_code`
+* `title`
+* `description_text`
+* `status_code`
+* `owner_user_id` NULL
+* `created_at`
+* `resolved_at` NULL
+
+### Enum
+
+`incident_type_code`
+
+* supplier_issue
+* complaint
+* no_show
+* transfer_delay
+* hotel_overbooking
+* payment_issue
+* document_issue
+
+---
+
+## 7.17 `reservation_escalations`
+
+### Kolone
+
+* `id`
+* `booking_id`
+* `escalation_type_code`
+* `from_user_id`
+* `to_user_id` NULL
+* `to_team_id` NULL
+* `reason_text`
+* `status_code`
+* `created_at`
+* `resolved_at` NULL
+
+---
+
+## 7.18 Ključne relacije domena 7
+
+* `bookings 1:1 reservation_workspaces`
+* `bookings 1:N flags/alerts/todos/checkpoints`
+* `bookings 1:N dispatches`
+* `bookings 1:N incidents`
+* `bookings 1:N arrival/departure/transfer/excursion rows`
+
+---
+
+## 7.19 Poslovna pravila
+
+1. Svaki potvrđen booking mora imati workspace.
+2. Aktivni critical flag mora biti vidljiv u reservation dossier-u.
+3. Dispatch ne može biti marked sent bez target-a.
+4. Incidents moraju imati owner-a ili tim.
+5. Checkpoint “completed” mora imati `completed_at`.
+
+---
+
+# DOMAIN 8 — FINANCE & SETTLEMENT
+
+Ovo je jedan od najkritičnijih domena.
+
+## 8.1 `payment_providers`
+
+### Kolone
+
+* `id`
+* `provider_code`
+* `name`
+* `provider_type_code`
+* `status_code`
+* `created_at`
+
+### Enum
+
+`provider_type_code`
+
+* card_gateway
+* bank
+* wallet
+* internal_credit
+
+---
+
+## 8.2 `payment_methods`
+
+### Kolone
+
+* `id`
+* `method_code`
+* `name`
+* `provider_id` NULL
+* `channel_id` NULL
+* `status_code`
+
+### Enum
+
+`method_code`
+
+* card
+* bank_transfer
+* cash
+* agency_credit
+* manual
+* wallet
+
+---
+
+## 8.3 `payment_intents`
+
+### Kolone
+
+* `id`
+* `booking_id`
+* `payment_method_id`
+* `provider_id` NULL
+* `intent_reference`
+* `status_code`
+* `amount`
+* `currency_code`
+* `expires_at` NULL
+* `created_at`
+* `updated_at`
+
+### Enum
+
+`status_code`
+
+* created
+* pending
+* authorized
+* captured
+* failed
+* cancelled
+* expired
+
+### Unique
+
+* `uq_payment_intents_intent_reference`
+
+---
+
+## 8.4 `payments`
+
+### Kolone
+
+* `id`
+* `booking_id`
+* `payment_intent_id` NULL
+* `payment_method_id`
+* `provider_id` NULL
+* `payer_type_code`
+* `payer_contact_id` NULL
+* `payer_agency_id` NULL
+* `payment_reference`
+* `status_code`
+* `amount`
+* `currency_code`
+* `paid_at` NULL
+* `received_by_user_id` NULL
+* `created_at`
+
+### Enum
+
+`payer_type_code`
+
+* contact
+* agency
+* system
+
+`status_code`
+
+* pending
+* received
+* failed
+* refunded
+* reversed
+* reconciled
+
+---
+
+## 8.5 `payment_attempts`
+
+### Kolone
+
+* `id`
+* `payment_intent_id`
+* `attempt_no`
+* `status_code`
+* `provider_payload_json`
+* `created_at`
+
+### Unique
+
+* `uq_payment_attempts (payment_intent_id, attempt_no)`
+
+---
+
+## 8.6 `receivables`
+
+### Kolone
+
+* `id`
+* `booking_id`
+* `payer_type_code`
+* `payer_contact_id` NULL
+* `payer_agency_id` NULL
+* `receivable_type_code`
+* `amount`
+* `currency_code`
+* `due_date`
+* `status_code`
+* `created_at`
+
+### Enum
+
+`receivable_type_code`
+
+* deposit
+* balance
+* full_payment
+* manual_charge
+* adjustment
+* agency_statement
+
+`status_code`
+
+* open
+* partially_paid
+* paid
+* overdue
+* cancelled
+* disputed
+
+---
+
+## 8.7 `receivable_installments`
+
+### Kolone
+
+* `id`
+* `receivable_id`
+* `installment_no`
+* `amount`
+* `due_date`
+* `status_code`
+
+### Unique
+
+* `uq_receivable_installments (receivable_id, installment_no)`
+
+---
+
+## 8.8 `receivable_payments`
+
+### Kolone
+
+* `id`
+* `receivable_id`
+* `payment_id`
+* `applied_amount`
+* `created_at`
+
+### Unique
+
+* `uq_receivable_payments (receivable_id, payment_id)`
+
+---
+
+## 8.9 `payables`
+
+### Kolone
+
+* `id`
+* `booking_item_id`
+* `supplier_id`
+* `payable_type_code`
+* `amount`
+* `currency_code`
+* `due_date`
+* `status_code`
+* `supplier_invoice_id` NULL
+* `created_at`
+
+### Enum
+
+`payable_type_code`
+
+* service_cost
+* airline_cost
+* hotel_cost
+* transfer_cost
+* activity_cost
+* commission_payable
+* refund_offset
+
+`status_code`
+
+* open
+* partially_paid
+* paid
+* overdue
+* disputed
+* cancelled
+
+---
+
+## 8.10 `payable_payments`
+
+### Kolone
+
+* `id`
+* `payable_id`
+* `bank_movement_id` NULL
+* `payment_reference`
+* `paid_amount`
+* `paid_at`
+* `created_by_user_id`
+
+---
+
+## 8.11 `reservation_finance_summaries`
+
+### Kolone
+
+* `id`
+* `booking_id`
+* `total_sell_amount`
+* `total_net_amount`
+* `paid_in_amount`
+* `paid_out_amount`
+* `balance_due_amount`
+* `supplier_due_amount`
+* `expected_margin_amount`
+* `realized_margin_amount`
+* `finance_status_code`
+* `last_recalculated_at`
+
+### Enum
+
+`finance_status_code`
+
+* not_started
+* deposit_due
+* partially_paid
+* fully_paid
+* supplier_partially_paid
+* supplier_fully_paid
+* settled
+* refund_pending
+* disputed
+* overpaid
+
+---
+
+## 8.12 `settlement_logs`
+
+### Kolone
+
+* `id`
+* `booking_id`
+* `event_type_code`
+* `amount` NULL
+* `currency_code` NULL
+* `description_text`
+* `reference_table` NULL
+* `reference_id` NULL
+* `created_by_user_id` NULL
+* `created_at`
+
+### Enum
+
+`event_type_code`
+
+* receivable_created
+* payment_received
+* payable_created
+* supplier_paid
+* refund_created
+* adjustment_posted
+* invoice_issued
+* credit_note_issued
+
+---
+
+## 8.13 `refunds`
+
+### Kolone
+
+* `id`
+* `booking_id`
+* `booking_item_id` NULL
+* `payment_id` NULL
+* `refund_type_code`
+* `amount`
+* `currency_code`
+* `status_code`
+* `reason_code`
+* `requested_by_user_id`
+* `requested_at`
+* `processed_at` NULL
+
+### Enum
+
+`refund_type_code`
+
+* full
+* partial
+* goodwill
+* supplier_forced
+* tax_correction
+
+`status_code`
+
+* requested
+* approved
+* processed
+* rejected
+* reconciled
+
+---
+
+## 8.14 `finance_documents`
+
+### Kolone
+
+* `id`
+* `booking_id` NULL
+* `booking_item_id` NULL
+* `document_type_code`
+* `document_number`
+* `file_id`
+* `amount`
+* `currency_code`
+* `issue_date`
+* `due_date` NULL
+* `status_code`
+* `created_at`
+
+### Enum
+
+`document_type_code`
+
+* invoice
+* proforma
+* receipt
+* credit_note
+* debit_note
+* supplier_invoice
+* payment_proof
+* refund_notice
+
+---
+
+## 8.15 `customer_invoices` / `supplier_invoices`
+
+Specifične fakture, ako želite razdvojeno.
+
+---
+
+## 8.16 `commission_accruals`
+
+### Kolone
+
+* `id`
+* `booking_item_id`
+* `agency_id`
+* `commission_rule_id` NULL
+* `commission_amount`
+* `currency_code`
+* `status_code`
+* `accrued_at`
+* `settled_at` NULL
+
+### Enum
+
+`status_code`
+
+* accrued
+* payable
+* paid
+* cancelled
+
+---
+
+## 8.17 `agency_credit_movements`
+
+### Kolone
+
+* `id`
+* `agency_id`
+* `movement_type_code`
+* `amount`
+* `currency_code`
+* `booking_id` NULL
+* `description_text`
+* `created_at`
+
+### Enum
+
+`movement_type_code`
+
+* reserve
+* release
+* charge
+* payment
+* manual_adjustment
+* writeoff
+
+---
+
+## 8.18 `bank_movements`
+
+### Kolone
+
+* `id`
+* `bank_account_id`
+* `movement_date`
+* `direction_code`
+* `amount`
+* `currency_code`
+* `reference_text`
+* `status_code`
+* `raw_import_row_id` NULL
+
+### Enum
+
+`direction_code`
+
+* in
+* out
+
+`status_code`
+
+* imported
+* matched
+* partially_matched
+* unmatched
+* ignored
+
+---
+
+## 8.19 `bank_reconciliation_matches`
+
+### Kolone
+
+* `id`
+* `bank_movement_id`
+* `matched_entity_type`
+* `matched_entity_id`
+* `matched_amount`
+* `confidence_score` NULL
+* `created_by_user_id`
+* `created_at`
+
+---
+
+## 8.20 Ključne relacije domena 8
+
+* `bookings 1:N payment_intents/payments/receivables/refunds`
+* `booking_items 1:N payables`
+* `receivables N:M payments`
+* `payables 1:N payable_payments`
+* `bookings 1:1 reservation_finance_summary`
+* `bookings 1:N settlement_logs`
+* `agencies 1:N credit_movements`
+
+---
+
+## 8.21 Poslovna pravila
+
+1. Reservation finance summary mora biti recalculated posle svake finansijske promene.
+2. Receivable može biti zatvoren samo kad je potpuno pokriven applied payments.
+3. Payable ne sme biti marked paid bez payment evidence ili bank match-a.
+4. Refund mora biti vezan za booking ili item.
+5. Agency credit charge mora uticati na exposure snapshot.
+
+---
+
+# DOMAIN 9 — ROOMING & CAPACITY
+
+Ovaj domen spaja raspodelu soba, capacity i manifest logiku.
+
+## 9.1 `rooming_sets`
+
+### Kolone
+
+* `id`
+* `booking_id`
+* `rooming_type_code`
+* `status_code`
+* `version_no`
+* `created_by_user_id`
+* `created_at`
+* `updated_at`
+
+### Enum
+
+`rooming_type_code`
+
+* individual
+* group
+* charter
+* hoteling
+
+`status_code`
+
+* not_started
+* draft
+* partially_assigned
+* fully_assigned
+* sent_to_hotel
+* confirmed_by_hotel
+* changed_after_send
+
+---
+
+## 9.2 `rooming_versions`
+
+### Kolone
+
+* `id`
+* `rooming_set_id`
+* `version_no`
+* `snapshot_json`
+* `created_by_user_id`
+* `created_at`
+
+### Unique
+
+* `uq_rooming_versions (rooming_set_id, version_no)`
+
+---
+
+## 9.3 `rooming_rooms`
+
+### Kolone
+
+* `id`
+* `rooming_set_id`
+* `room_no`
+* `requested_room_type_id` NULL
+* `confirmed_room_type_id` NULL
+* `board_type_id` NULL
+* `occupancy_code`
+* `adults_count`
+* `children_count`
+* `infants_count`
+* `room_status_code`
+* `hotel_room_number` NULL
+* `notes_text` NULL
+* `created_at`
+
+### Enum
+
+`room_status_code`
+
+* draft
+* assigned
+* sent
+* confirmed
+* changed
+* mismatch
+
+### Unique
+
+* `uq_rooming_rooms (rooming_set_id, room_no)`
+
+---
+
+## 9.4 `rooming_room_passengers`
+
+### Kolone
+
+* `id`
+* `rooming_room_id`
+* `booking_passenger_id`
+* `bed_preference_code` NULL
+* `occupant_role_code`
+* `created_at`
+
+### Enum
+
+`bed_preference_code`
+
+* twin
+* double
+* no_preference
+
+`occupant_role_code`
+
+* main
+* adult
+* child
+* infant
+
+### Unique
+
+* `uq_rooming_room_passengers (rooming_room_id, booking_passenger_id)`
+
+---
+
+## 9.5 `rooming_preferences`
+
+### Kolone
+
+* `id`
+* `rooming_set_id`
+* `preference_type_code`
+* `preference_value_text`
+* `created_at`
+
+### Primeri
+
+* twin_required
+* adjacent_rooms
+* baby_cot
+* accessibility
+
+---
+
+## 9.6 `rooming_change_logs`
+
+### Kolone
+
+* `id`
+* `rooming_set_id`
+* `change_type_code`
+* `old_value_json`
+* `new_value_json`
+* `changed_by_user_id`
+* `changed_at`
+
+---
+
+## 9.7 `rooming_exports`
+
+### Kolone
+
+* `id`
+* `rooming_set_id`
+* `export_type_code`
+* `file_id`
+* `generated_by_user_id`
+* `generated_at`
+* `sent_at` NULL
+
+### Enum
+
+`export_type_code`
+
+* pdf
+* excel
+* supplier_template
+
+---
+
+## 9.8 `rooming_confirmations`
+
+### Kolone
+
+* `id`
+* `rooming_set_id`
+* `supplier_id`
+* `confirmation_status_code`
+* `confirmation_reference`
+* `confirmed_at` NULL
+* `details_json` NULL
+
+### Enum
+
+`confirmation_status_code`
+
+* pending
+* confirmed
+* partial
+* mismatch
+* rejected
+
+---
+
+## 9.9 `occupancy_rules`
+
+### Kolone
+
+* `id`
+* `room_type_id`
+* `occupancy_code`
+* `max_adults`
+* `max_children`
+* `max_infants`
+* `extra_bed_allowed`
+* `baby_cot_allowed`
+* `status_code`
+
+### Unique
+
+* `uq_occupancy_rules (room_type_id, occupancy_code)`
+
+---
+
+## 9.10 `occupancy_validation_results`
+
+### Kolone
+
+* `id`
+* `rooming_room_id`
+* `validation_code`
+* `severity_code`
+* `message_text`
+* `created_at`
+
+### Enum
+
+`validation_code`
+
+* over_capacity
+* child_age_invalid
+* extra_bed_not_allowed
+* cot_not_allowed
+* room_type_missing
+
+---
+
+## 9.11 `capacity_snapshots`
+
+### Kolone
+
+* `id`
+* `product_id` NULL
+* `hotel_id` NULL
+* `charter_flight_id` NULL
+* `tour_departure_id` NULL
+* `capacity_date`
+* `capacity_type_code`
+* `total_qty`
+* `sold_qty`
+* `blocked_qty`
+* `option_qty`
+* `free_qty`
+* `waitlist_qty`
+* `updated_at`
+
+### Enum
+
+`capacity_type_code`
+
+* room
+* seat
+* group_slot
+* activity_slot
+
+---
+
+## 9.12 `inventory_pools`
+
+### Kolone
+
+* `id`
+* `pool_type_code`
+* `name`
+* `product_id` NULL
+* `hotel_id` NULL
+* `charter_flight_id` NULL
+* `start_date`
+* `end_date`
+* `status_code`
+
+### Enum
+
+`pool_type_code`
+
+* allotment
+* free_sale
+* seat_pool
+* group_pool
+
+---
+
+## 9.13 `inventory_allocations`
+
+### Kolone
+
+* `id`
+* `inventory_pool_id`
+* `channel_id` NULL
+* `agency_id` NULL
+* `allocation_date`
+* `allocated_qty`
+* `sold_qty`
+* `free_qty`
+* `status_code`
+
+---
+
+## 9.14 `seat_inventory`
+
+### Kolone
+
+* `id`
+* `charter_flight_id`
+* `seat_class_code`
+* `total_qty`
+* `sold_qty`
+* `blocked_qty`
+* `option_qty`
+* `free_qty`
+* `overbook_limit_qty`
+* `updated_at`
+
+### Enum
+
+`seat_class_code`
+
+* economy
+* premium
+* business
+* block
+
+### Unique
+
+* `uq_seat_inventory (charter_flight_id, seat_class_code)`
+
+---
+
+## 9.15 `waitlists` / `waitlist_entries`
+
+Za capacity overflow.
+
+---
+
+## 9.16 `manifest_exports`
+
+### Kolone
+
+* `id`
+* `booking_id` NULL
+* `tour_departure_id` NULL
+* `charter_flight_id` NULL
+* `manifest_type_code`
+* `file_id`
+* `generated_at`
+* `generated_by_user_id`
+
+### Enum
+
+`manifest_type_code`
+
+* passenger
+* flight
+* hotel
+* transfer
+* guide
+* visa_docs
+
+---
+
+## 9.17 `manifest_rows`
+
+### Kolone
+
+* `id`
+* `manifest_export_id`
+* `booking_passenger_id` NULL
+* `row_payload_json`
+* `sort_order`
+
+---
+
+## 9.18 Ključne relacije domena 9
+
+* `bookings 1:N rooming_sets`
+* `rooming_sets 1:N rooms`
+* `rooms N:M passengers`
+* `room_type 1:N occupancy_rules`
+* `rooming_room 1:N validation_results`
+* `charter_flight 1:N seat_inventory`
+* `rooming_sets 1:N exports/confirmations`
+* `manifest_exports 1:N manifest_rows`
+
+---
+
+## 9.19 Poslovna pravila
+
+1. Jedan booking može imati više rooming verzija, ali samo jedan active set.
+2. Passenger ne sme biti dodeljen u dve sobe istog rooming seta.
+3. Occupancy validation mora se izvršiti pre statusa `sent_to_hotel`.
+4. Capacity free = total - sold - blocked - option.
+5. Manifest snapshot mora ostati nepromenljiv posle generisanja.
+
+---
+
+# DOMAIN 10 — TOUR OPERATOR PROGRAMS
+
+Ovo je zaseban domen za organizovana putovanja i polaske.
+
+## 10.1 `tour_programs`
+
+### Kolone
+
+* `id`
+* `product_id`
+* `program_code`
+* `program_type_code`
+* `duration_days`
+* `duration_nights`
+* `transport_type_code`
+* `status_code`
+* `publication_status_code`
+* `created_at`
+* `updated_at`
+
+### Enum
+
+`program_type_code`
+
+* city_break
+* round_trip
+* escorted_tour
+* pilgrimage
+* thematic
+* special_event
+
+`transport_type_code`
+
+* flight
+* bus
+* self_drive
+* mixed
+
+### Unique
+
+* `uq_tour_programs_program_code`
+
+---
+
+## 10.2 `tour_program_versions`
+
+### Kolone
+
+* `id`
+* `tour_program_id`
+* `version_no`
+* `effective_from`
+* `effective_to` NULL
+* `status_code`
+* `created_by_user_id`
+* `created_at`
+
+### Enum
+
+`status_code`
+
+* draft
+* approved
+* archived
+
+---
+
+## 10.3 `tour_departures`
+
+### Kolone
+
+* `id`
+* `tour_program_id`
+* `departure_code`
+* `start_date`
+* `end_date`
+* `departure_city_code` NULL
+* `status_code`
+* `guaranteed_status_code`
+* `min_pax`
+* `max_pax`
+* `sold_pax`
+* `free_pax`
+* `waitlist_pax`
+* `booking_open_from` NULL
+* `booking_close_at` NULL
+* `created_at`
+
+### Enum
+
+`status_code`
+
+* draft
+* on_sale
+* closed
+* departed
+* completed
+* cancelled
+
+`guaranteed_status_code`
+
+* tentative
+* guaranteed
+* cancelled_below_threshold
+
+### Unique
+
+* `uq_tour_departures_departure_code`
+
+---
+
+## 10.4 `tour_departure_status_history`
+
+Status tracking.
+
+---
+
+## 10.5 `tour_itinerary_days`
+
+### Kolone
+
+* `id`
+* `tour_program_version_id`
+* `day_no`
+* `title`
+* `city_name`
+* `description_text`
+* `meal_plan_code` NULL
+* `overnight_destination_id` NULL
+* `sort_order`
+
+### Enum
+
+`meal_plan_code`
+
+* none
+* breakfast
+* half_board
+* full_board
+* all_inclusive
+
+### Unique
+
+* `uq_tour_itinerary_days (tour_program_version_id, day_no)`
+
+---
+
+## 10.6 `tour_itinerary_day_services`
+
+### Kolone
+
+* `id`
+* `tour_itinerary_day_id`
+* `service_type_code`
+* `linked_product_id` NULL
+* `source_type_code`
+* `is_included`
+* `description_text`
+* `sort_order`
+
+### Enum
+
+`service_type_code`
+
+* transfer
+* sightseeing
+* hotel
+* meal
+* guide
+* ticket
+* flight
+* optional_excursion
+
+---
+
+## 10.7 `tour_included_services`
+
+### Kolone
+
+* `id`
+* `tour_program_version_id`
+* `service_code`
+* `label`
+* `description_text`
+* `sort_order`
+
+---
+
+## 10.8 `tour_optional_services`
+
+### Kolone
+
+* `id`
+* `tour_program_version_id`
+* `service_code`
+* `label`
+* `price_amount`
+* `currency_code`
+* `booking_mode_code`
+* `status_code`
+
+### Enum
+
+`booking_mode_code`
+
+* prebook
+* onsite
+* optional_during_booking
+
+---
+
+## 10.9 `tour_pricing_models`
+
+### Kolone
+
+* `id`
+* `tour_program_id`
+* `pricing_mode_code`
+* `currency_code`
+* `status_code`
+* `created_at`
+
+### Enum
+
+`pricing_mode_code`
+
+* fixed
+* contracted
+* hybrid
+* dynamic
+
+---
+
+## 10.10 `tour_pricing_lines`
+
+### Kolone
+
+* `id`
+* `tour_departure_id`
+* `room_type_code` NULL
+* `occupancy_code`
+* `price_amount`
+* `currency_code`
+* `price_type_code`
+* `status_code`
+
+### Enum
+
+`price_type_code`
+
+* package_base
+* single_supplement
+* child_price
+* promo_price
+* optional_extra
+
+---
+
+## 10.11 `tour_single_supplements`
+
+Single logic odvojeno ako treba.
+
+---
+
+## 10.12 `tour_child_rules`
+
+### Kolone
+
+* `id`
+* `tour_program_id`
+* `age_from`
+* `age_to`
+* `pricing_mode_code`
+* `value_amount`
+* `value_percent`
+* `status_code`
+
+---
+
+## 10.13 `tour_capacity_profiles`
+
+### Kolone
+
+* `id`
+* `tour_departure_id`
+* `capacity_type_code`
+* `total_qty`
+* `sold_qty`
+* `free_qty`
+* `waitlist_qty`
+* `status_code`
+
+### Enum
+
+`capacity_type_code`
+
+* pax
+* room
+* seat
+
+---
+
+## 10.14 `tour_guides`
+
+### Kolone
+
+* `id`
+* `contact_id`
+* `guide_type_code`
+* `language_code`
+* `notes_text`
+* `status_code`
+
+### Enum
+
+`guide_type_code`
+
+* tour_leader
+* local_guide
+* escort
+* rep
+
+---
+
+## 10.15 `tour_departure_guides`
+
+### Kolone
+
+* `id`
+* `tour_departure_id`
+* `tour_guide_id`
+* `assignment_role_code`
+* `assigned_at`
+
+---
+
+## 10.16 `tour_operations_workspaces`
+
+### Kolone
+
+* `id`
+* `tour_departure_id`
+* `ops_status_code`
+* `owner_user_id` NULL
+* `assigned_team_id` NULL
+* `last_activity_at`
+* `created_at`
+
+---
+
+## 10.17 `tour_manifests`
+
+### Kolone
+
+* `id`
+* `tour_departure_id`
+* `manifest_type_code`
+* `file_id`
+* `generated_at`
+* `generated_by_user_id`
+
+### Enum
+
+`manifest_type_code`
+
+* pax
+* flight
+* hotel
+* transfer
+* guide
+* visa
+
+---
+
+## 10.18 `tour_dispatches`
+
+### Kolone
+
+* `id`
+* `tour_departure_id`
+* `dispatch_type_code`
+* `target_supplier_id` NULL
+* `target_email` NULL
+* `status_code`
+* `sent_at` NULL
+* `created_at`
+
+---
+
+## 10.19 `tour_publications`
+
+### Kolone
+
+* `id`
+* `tour_departure_id`
+* `website_publication_status_code`
+* `published_price_from_amount` NULL
+* `published_currency_code` NULL
+* `published_at` NULL
+* `last_refresh_at` NULL
+
+### Enum
+
+`website_publication_status_code`
+
+* hidden
+* scheduled
+* published
+* sold_out
+* archived
+
+---
+
+## 10.20 Ključne relacije domena 10
+
+* `tour_programs 1:N versions`
+* `tour_programs 1:N departures`
+* `versions 1:N itinerary_days`
+* `days 1:N day_services`
+* `departures 1:N pricing_lines`
+* `departures 1:N capacity_profiles`
+* `departures N:M guides`
+* `departures 1:N manifests/dispatches/publications`
+
+---
+
+## 10.21 Poslovna pravila
+
+1. Departure mora pripadati jednom programu.
+2. Itinerary je vezan za program version, ne direktno za departure.
+3. Departure published price mora dolaziti iz pricing modela ili snapshot-a.
+4. Guaranteed status zavisi od min_pax threshold logike.
+5. Manifest se generiše sa snapshot-om putnika i ne menja retroaktivno.
+
+---
+
+# Šta smo sada završili
+
+Sada smo detaljno razradili:
+
+6. Booking Core
+7. Reservation Operations
+8. Finance & Settlement
+9. Rooming & Capacity
+10. Tour Operator Programs
+
+To znači da je sada pokriven veoma veliki deo sistema.
+
+# Sledeći korak
+
+Idem dalje istim nivoom detalja za:
+
+## Domains 11–17
+
+* Charter & Series
+* B2B Distribution
+* Mail & Communication
+* Marketing Automation
+* AI Governance & Usage
+* Website / CMS / SEO
+* Audit / Monitoring / Control Plane
+
+Posle toga prelazimo na:
+
+* API strukturu po domenu
+* event schema
+* queue/worker logiku
+* DB deployment strategiju
+
+Nastavljam tim redom.

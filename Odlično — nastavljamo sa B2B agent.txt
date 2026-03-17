@@ -1,0 +1,647 @@
+Odlično — nastavljamo sa **B2B agent portalom**, jer je to za vaš model poslovanja jedan od ključnih modula.
+Ovo nije samo “partner login”, već **kompletan prodajni i distributivni sloj** koji mora da podrži:
+
+* subagente
+* partnerske agencije
+* interne prodajne mreže
+* različite cenovnike
+* različite provizije
+* kreditne limite
+* dokumenta
+* operativni i finansijski pregled
+
+Drugim rečima, ovo je **B2B commerce + operations cockpit**.
+
+---
+
+# 1. Svrha B2B portala
+
+B2B portal mora da omogući agentu da:
+
+1. pretražuje i rezerviše proizvode
+2. vidi svoje cene i uslove
+3. prati svoje rezervacije
+4. preuzima dokumenta
+5. prati dugovanja i kredite
+6. dobija izvode i fakture
+7. komunicira sa centralom kroz sistem
+
+Za vas je posebno važno da B2B portal ne bude odvojen “mali sajt”, nego deo iste centralne platforme.
+
+---
+
+# 2. Glavne sekcije B2B portala
+
+Predlažem sledeću strukturu:
+
+```text
+Dashboard
+Search & Booking
+My Bookings
+Passengers / Customers
+Documents
+Payments & Finance
+Credit & Exposure
+Statements
+Support / Requests
+Profile & Agency Settings
+```
+
+---
+
+# 3. B2B Dashboard
+
+Ovo mora biti vrlo jasan početni ekran.
+
+## Agent mora odmah videti:
+
+* ukupne rezervacije u tekućem periodu
+* ukupnu prodaju
+* trenutno iskorišćen kredit
+* raspoloživ kredit
+* rezervacije koje čekaju uplatu
+* rezervacije pred putovanje
+* otvorene finansijske obaveze
+* važna obaveštenja
+
+## Predložene kartice
+
+* This Month Sales
+* Active Bookings
+* Upcoming Departures
+* Credit Used
+* Available Credit
+* Overdue Balance
+* Open Support Cases
+
+---
+
+# 4. Search & Booking
+
+Ovo je glavni radni deo agenta.
+
+Agent mora moći da traži:
+
+* hotel only
+* flight only
+* hotel + flight
+* package
+* cruise
+* transfer
+* activity
+
+ali sa **agent-specifičnim pravilima**.
+
+## To znači da agent vidi:
+
+* svoje cene
+* svoje provizije ili neto model
+* dostupne payment modele
+* eventualna ograničenja po proizvodu ili supplier-u
+
+---
+
+# 5. Agent pricing modeli
+
+B2B portal mora podržati više komercijalnih modela.
+
+## Model 1 — Gross model
+
+Agent vidi konačnu prodajnu cenu i svoju proviziju.
+
+## Model 2 — Net model
+
+Agent vidi net cenu i sam dodaje marginu van sistema ili po ugovoru.
+
+## Model 3 — Contracted sell model
+
+Agent vidi već obrađenu cenu specifičnu za njegovu agenciju.
+
+Za vas je najpraktičnije da sistem podrži najmanje:
+
+* gross + commission
+* contracted B2B sell
+
+---
+
+# 6. Agent search result prikaz
+
+Rezultati u B2B portalu treba da budu slični B2C, ali sa dodatnim kolonama/informacijama.
+
+## Na primer:
+
+* sell price
+* net price ili commission
+* cancellation condition
+* supplier confirmation type
+* remarks
+* optional internal code
+
+Ako agent radi po gross modelu:
+
+* vidi “Your Commission”
+
+Ako radi po net modelu:
+
+* vidi “Net to Agent”
+
+---
+
+# 7. Agent booking flow
+
+Tok može biti skoro isti kao B2C, ali sa dodatnim B2B koracima.
+
+```text
+Search
+→ Select offer
+→ Reprice
+→ Enter passenger data
+→ Select payment mode
+→ Confirm booking
+→ Generate B2B documents
+```
+
+## Razlika je u payment delu:
+
+agent može platiti:
+
+* karticom
+* bank transferom
+* kreditnim limitom
+* po odobrenim uslovima plaćanja
+
+---
+
+# 8. B2B rezervacije
+
+Sekcija **My Bookings** mora da bude veoma jaka.
+
+## Filteri:
+
+* booking reference
+* customer name
+* travel date
+* destination
+* booking type
+* status
+* finance status
+* document status
+
+## Kolone:
+
+* booking ref
+* booking date
+* lead passenger
+* destination
+* travel dates
+* total amount
+* payment status
+* booking status
+* documents
+* actions
+
+---
+
+# 9. Booking details za agenta
+
+Agent mora imati svoj prikaz rezervacije, ali sa ograničenim pravima.
+
+Treba da vidi:
+
+* osnovne podatke
+* putnike
+* usluge
+* dokumenta
+* finansijski status
+* uplate
+* rokove
+* napomene koje su relevantne za njega
+
+Ne mora da vidi:
+
+* interne audit logove
+* interne supplier note
+* interne net cost breakdown ako to nije deo ugovora
+
+---
+
+# 10. Passengers / Customers sekcija
+
+Agent često radi sa ponavljajućim klijentima.
+
+Zato treba da ima:
+
+* listu sačuvanih putnika
+* osnovne profile
+* pasoške podatke
+* istoriju rezervacija po klijentu
+
+Akcije:
+
+* add traveler
+* edit traveler
+* reuse passenger data on new booking
+
+Ovo značajno ubrzava rad.
+
+---
+
+# 11. Documents sekcija
+
+Agent mora lako da pristupi dokumentima.
+
+## Dokumenta:
+
+* voucher
+* itinerary
+* proforma
+* invoice
+* rooming list gde je relevantno
+* transfer voucher
+* cruise confirmation
+
+## Akcije:
+
+* download
+* resend by email
+* print
+* bulk download
+
+---
+
+# 12. Payments & Finance
+
+B2B portal mora imati veoma jasan finansijski prikaz.
+
+Agent mora znati:
+
+* koliko duguje
+* koje rezervacije su otvorene
+* koje su plaćene
+* koje fakture su dospele
+* da li ima preplate ili kreditna knjiženja
+
+---
+
+# 13. Credit & Exposure
+
+Ovo je jedna od najvažnijih B2B sekcija.
+
+## Obavezna polja:
+
+* credit limit
+* currently used
+* available
+* overdue amount
+* pending authorization amount
+* blocked amount
+
+## Primer prikaza:
+
+```text
+Credit Limit:      20,000 €
+Used:              12,450 €
+Available:          7,550 €
+Overdue:            1,200 €
+Pending Bookings:   2,100 €
+```
+
+---
+
+# 14. Credit pravila
+
+Sistem mora podržati više režima:
+
+## 1. Hard stop
+
+Ako nema dovoljno kredita, booking nije dozvoljen.
+
+## 2. Soft warning
+
+Agent može poslati booking, ali ide na odobrenje.
+
+## 3. Mixed
+
+Neki proizvodi koriste kredit, neki traže avans.
+
+---
+
+# 15. Statements sekcija
+
+Agent mora imati svoje izvode.
+
+## Vrste izveštaja:
+
+* statement by period
+* open items statement
+* paid invoices
+* overdue items
+* commission statement
+* booking summary by month
+
+## Export:
+
+* PDF
+* Excel
+* CSV
+
+---
+
+# 16. Support / Requests
+
+B2B portal treba da omogući agentu da pošalje zahtev bez mejlova van sistema.
+
+## Tipovi zahteva:
+
+* booking issue
+* cancellation request
+* payment clarification
+* document resend
+* rooming update
+* special request
+* supplier complaint
+
+## Polja:
+
+* related booking
+* category
+* priority
+* message
+* attachment
+
+---
+
+# 17. Profile & Agency settings
+
+Agent mora imati svoj profil i podatke agencije.
+
+## Polja:
+
+* agency name
+* PIB / company data
+* billing address
+* contact persons
+* email for documents
+* phone
+* payment terms
+* preferred language
+* notification preferences
+
+---
+
+# 18. Multi-user agency model
+
+Jedna agencija često ima više korisnika.
+
+Zato B2B portal mora podržati:
+
+* parent agency account
+* više user naloga
+* role-per-user unutar agencije
+
+## Primer rola unutar agencije:
+
+* booking agent
+* finance contact
+* manager
+* document-only viewer
+
+---
+
+# 19. B2B role model
+
+## Agency Manager
+
+* vidi sve rezervacije agencije
+* vidi finansije
+* vidi kredite
+* upravlja korisnicima
+
+## Booking Agent
+
+* pravi rezervacije
+* vidi svoje i/ili agencijske rezervacije
+* preuzima dokumenta
+
+## Finance User
+
+* vidi invoices
+* vidi statements
+* prati dugovanja
+
+---
+
+# 20. Agent-specific pricing rules
+
+Sistem mora podržati pricing pravila po agentu ili grupi agenata.
+
+## Pravila mogu biti po:
+
+* agentu
+* agent grupi
+* destinaciji
+* supplier-u
+* proizvodu
+* periodu putovanja
+* prodajnom periodu
+
+Na primer:
+
+* Agent Group A: 8% commission on hotels
+* Agent X: special rates for Montenegro
+* Agent Y: no credit for cruises
+
+---
+
+# 21. Agent promotions
+
+Možete imati i B2B-only promocije.
+
+Na primer:
+
+* extra commission for campaign period
+* hotel spotlight rates
+* preferred partner destination
+* limited-time B2B discount
+
+Portal treba da prikaže:
+
+* promo banner
+* highlighted offers
+* campaign-specific pricing
+
+---
+
+# 22. Agent booking restrictions
+
+Neki agenti ne treba da imaju pristup svemu.
+
+Moguća ograničenja:
+
+* samo određene destinacije
+* bez cruise modula
+* bez credit payment
+* bez offline request booking-a
+* samo određeni supplier pool
+
+To mora biti rešeno kroz role + pricing/channel rules.
+
+---
+
+# 23. Agent operational alerts
+
+B2B dashboard treba da ima upozorenja kao što su:
+
+* booking requires payment
+* travel in next 72h
+* document missing
+* credit nearly exhausted
+* overdue invoice
+* cancellation pending
+* rooming update required
+
+---
+
+# 24. Agent communication log
+
+Vrlo korisno je da agent vidi istoriju komunikacije po rezervaciji.
+
+Na primer:
+
+* voucher sent
+* invoice resent
+* cancellation requested
+* special request added
+* support replied
+
+To smanjuje haos po mejlovima.
+
+---
+
+# 25. Agent API access
+
+Ako želite ozbiljan B2B razvoj, portal treba da bude samo jedan sloj.
+Kasnije možete dodati i **B2B API**.
+
+To znači da partner može:
+
+* pretraživati inventory
+* praviti booking
+* povlačiti dokumenta
+* proveravati finansijski status
+
+Ali to mora biti:
+
+* strogo kontrolisano
+* vezano za agent account
+* sa rate limiting-om
+* sa zasebnim credentials
+
+---
+
+# 26. White-label mogućnost
+
+Ako budete širili mrežu, sistem može podržati:
+
+* white-label agent portale
+* partner brand boje i logo
+* specifične cenovne modele
+* zaseban domen ili subdomen
+
+Ovo ne mora u MVP, ali arhitektura treba da ga dozvoli.
+
+---
+
+# 27. B2B UI pravac
+
+Pošto želite moderan i čist sistem, B2B portal ne treba da izgleda kao zastareli agency extranet.
+
+Predlog:
+
+* isti design DNA kao B2C
+* ali strožiji, funkcionalniji
+* manje fotografija, više produktivne strukture
+* jasne kartice i tabele
+* odličan search + sticky summary
+* finance kartice elegantne, ne agresivne
+
+Dakle:
+**premium enterprise travel workspace**.
+
+---
+
+# 28. Šta je obavezno u MVP-u za B2B
+
+Po meni, minimalno obavezno:
+
+* agent login
+* agent dashboard
+* B2B search & booking
+* agent-specific pricing
+* credit limit check
+* my bookings
+* documents
+* proforma/invoice download
+* finance summary
+* statements basic
+* support request basic
+
+---
+
+# 29. Šta može kasnije
+
+Kasnije možete dodati:
+
+* multi-branch agency management
+* API access
+* white-label
+* advanced commission analytics
+* agency-level workflow approvals
+* shared traveler database per agency
+* agent campaign engine
+
+---
+
+# 30. Gde se B2B portal uklapa u celinu
+
+Sada smo praktično pokrili:
+
+* rezervacionu formu
+* finansijski modul
+* operativne liste
+* rooming i kapacitete
+* contracting
+* B2B portal
+
+To znači da imamo skoro kompletan **mid-office + distribution + booking sistem**.
+
+---
+
+# 31. Sledeći korak
+
+Pošto ste na početku tražili i moderan CSS/UI pravac, sada je pravi trenutak da sledeće uradimo:
+
+## **Master UI / Design System + CSS foundation**
+
+Tu ću vam definisati:
+
+* vizuelni pravac
+* design tokens
+* boje
+* tipografiju
+* spacing
+* dugmad
+* forme
+* tabele
+* kartice
+* status badge-eve
+* layout sistem
+
+i to tako da odgovara svemu što smo razradili:
+
+* B2C
+* B2B
+* Admin
+* Operativi
+* Finansijama
+* Rezervacijama

@@ -1,0 +1,988 @@
+Odlično. Nastavljam sa sledećim logičnim slojem:
+
+# API STRUKTURA PO DOMENU
+
+## Kompletna tehnička specifikacija endpoint-a
+
+Ovo je deo koji razvojni tim koristi da razume:
+
+* kako frontend komunicira sa sistemom
+* kako B2C sajt komunicira sa platformom
+* kako B2B portal komunicira sa platformom
+* kako admin/backoffice radi
+* kako eksterne integracije ulaze u sistem
+* kako AI i event sloj koriste API granice
+
+Neću ići u “samo primere”, nego u **realnu enterprise API arhitekturu**.
+
+---
+
+# 1. API arhitektura — osnovni princip
+
+Predlažem da platforma ima **5 glavnih API slojeva**:
+
+1. **Public Website API**
+2. **B2C Customer API**
+3. **B2B Partner API**
+4. **Internal Admin / Operations API**
+5. **Integration & System API**
+
+To znači da ne postoji “jedan ogroman API”, nego jasno odvojeni konteksti.
+
+---
+
+# 2. Global API principi
+
+## 2.1 Verzija
+
+Svi endpoint-i moraju biti verzionisani.
+
+Primer:
+
+```text
+/api/v1/...
+```
+
+Kasnije:
+
+```text
+/api/v2/...
+```
+
+## 2.2 Format
+
+* JSON kao default
+* multipart za upload
+* CSV/Excel/PDF export preko posebnih download endpoint-a
+
+## 2.3 Identifikatori
+
+Svaki entitet ima:
+
+* interni `id`
+* javni `reference` ili `code`
+
+Frontend i integracije treba da koriste:
+
+* `reference`
+* `code`
+  gde god je moguće
+
+---
+
+# 3. Standard response model
+
+Preporučujem standardizovan odgovor.
+
+## 3.1 Success response
+
+```json
+{
+  "success": true,
+  "data": {},
+  "meta": {},
+  "errors": []
+}
+```
+
+## 3.2 Error response
+
+```json
+{
+  "success": false,
+  "data": null,
+  "meta": {},
+  "errors": [
+    {
+      "code": "BOOKING_NOT_FOUND",
+      "message": "Booking not found."
+    }
+  ]
+}
+```
+
+## 3.3 Pagination
+
+```json
+{
+  "success": true,
+  "data": [],
+  "meta": {
+    "page": 1,
+    "per_page": 20,
+    "total": 140,
+    "total_pages": 7
+  },
+  "errors": []
+}
+```
+
+---
+
+# 4. Auth model po API sloju
+
+## Public Website API
+
+* bez login-a za public content/search
+* optional session token za personalization
+
+## B2C API
+
+* customer auth token
+* refresh token
+* session management
+
+## B2B API
+
+* agency auth token
+* user scope + agency scope
+* optional API key za B2B API access
+
+## Internal API
+
+* SSO/JWT/internal session
+* role + permission enforcement
+
+## Integration API
+
+* API keys
+* OAuth gde treba
+* signed webhook validation
+
+---
+
+# 5. API namespace strategija
+
+Preporučujem ovakvu organizaciju:
+
+```text
+/api/v1/public/...
+/api/v1/customer/...
+/api/v1/b2b/...
+/api/v1/admin/...
+/api/v1/system/...
+```
+
+To je čisto i održivo.
+
+---
+
+# 6. PUBLIC WEBSITE API
+
+Ovo hrani B2C sajt.
+
+## 6.1 Public content endpoints
+
+### Destinations
+
+```text
+GET /api/v1/public/destinations
+GET /api/v1/public/destinations/{slug}
+GET /api/v1/public/destinations/{slug}/offers
+GET /api/v1/public/destinations/{slug}/articles
+```
+
+### Hotels
+
+```text
+GET /api/v1/public/hotels
+GET /api/v1/public/hotels/{slug}
+GET /api/v1/public/hotels/{slug}/offers
+```
+
+### Tours
+
+```text
+GET /api/v1/public/tours
+GET /api/v1/public/tours/{slug}
+GET /api/v1/public/tours/{slug}/departures
+```
+
+### Charters
+
+```text
+GET /api/v1/public/charters
+GET /api/v1/public/charters/{slug}
+GET /api/v1/public/charters/{slug}/departures
+```
+
+### Blog / guides
+
+```text
+GET /api/v1/public/articles
+GET /api/v1/public/articles/{slug}
+```
+
+### Landing pages
+
+```text
+GET /api/v1/public/pages/{slug}
+```
+
+---
+
+## 6.2 Public search endpoints
+
+### Unified public search
+
+```text
+POST /api/v1/public/search
+```
+
+Request primer:
+
+```json
+{
+  "search_type": "package",
+  "origin": "BEG",
+  "destination": "TUN",
+  "start_date": "2026-07-15",
+  "end_date": "2026-07-22",
+  "rooms": [
+    {
+      "adults": 2,
+      "children": 1,
+      "child_ages": [8]
+    }
+  ],
+  "filters": {
+    "board_types": ["AI"],
+    "stars_min": 4
+  }
+}
+```
+
+### Reprice public offer
+
+```text
+POST /api/v1/public/offers/{offer_reference}/reprice
+```
+
+### Public offer details
+
+```text
+GET /api/v1/public/offers/{offer_reference}
+```
+
+---
+
+## 6.3 Public inquiry / lead endpoints
+
+```text
+POST /api/v1/public/inquiries
+POST /api/v1/public/contact-requests
+POST /api/v1/public/newsletter/subscribe
+POST /api/v1/public/chatbot/session
+POST /api/v1/public/chatbot/message
+```
+
+---
+
+# 7. B2C CUSTOMER API
+
+Ovo koristi prijavljeni kupac.
+
+## 7.1 Auth
+
+```text
+POST /api/v1/customer/auth/register
+POST /api/v1/customer/auth/login
+POST /api/v1/customer/auth/logout
+POST /api/v1/customer/auth/refresh
+POST /api/v1/customer/auth/forgot-password
+POST /api/v1/customer/auth/reset-password
+```
+
+---
+
+## 7.2 Customer profile
+
+```text
+GET /api/v1/customer/profile
+PUT /api/v1/customer/profile
+GET /api/v1/customer/preferences
+PUT /api/v1/customer/preferences
+GET /api/v1/customer/consents
+PUT /api/v1/customer/consents
+```
+
+---
+
+## 7.3 Travelers
+
+```text
+GET /api/v1/customer/travelers
+POST /api/v1/customer/travelers
+GET /api/v1/customer/travelers/{id}
+PUT /api/v1/customer/travelers/{id}
+DELETE /api/v1/customer/travelers/{id}
+```
+
+---
+
+## 7.4 Search & offers
+
+```text
+POST /api/v1/customer/search
+GET /api/v1/customer/offers/{offer_reference}
+POST /api/v1/customer/offers/{offer_reference}/reprice
+POST /api/v1/customer/offers/{offer_reference}/hold
+```
+
+---
+
+## 7.5 Booking flow
+
+```text
+POST /api/v1/customer/bookings
+GET /api/v1/customer/bookings
+GET /api/v1/customer/bookings/{booking_reference}
+POST /api/v1/customer/bookings/{booking_reference}/confirm
+POST /api/v1/customer/bookings/{booking_reference}/cancel-request
+POST /api/v1/customer/bookings/{booking_reference}/documents/resend
+```
+
+### Create booking request primer
+
+```json
+{
+  "offer_reference": "OFF-2026-88421",
+  "lead_contact": {
+    "first_name": "Marko",
+    "last_name": "Petrovic",
+    "email": "marko@example.com",
+    "phone": "+381..."
+  },
+  "passengers": [
+    {
+      "first_name": "Marko",
+      "last_name": "Petrovic",
+      "type": "adult",
+      "date_of_birth": "1984-02-01"
+    }
+  ],
+  "extras": [
+    {
+      "code": "AIRPORT_TRANSFER"
+    }
+  ]
+}
+```
+
+---
+
+## 7.6 Payments
+
+```text
+GET /api/v1/customer/bookings/{booking_reference}/payments
+POST /api/v1/customer/bookings/{booking_reference}/payments/intents
+POST /api/v1/customer/bookings/{booking_reference}/payments/manual-notify
+GET /api/v1/customer/bookings/{booking_reference}/invoices
+```
+
+---
+
+## 7.7 Documents
+
+```text
+GET /api/v1/customer/bookings/{booking_reference}/documents
+GET /api/v1/customer/documents/{document_reference}/download
+```
+
+---
+
+## 7.8 B2C chatbot
+
+```text
+POST /api/v1/customer/chatbot/session
+POST /api/v1/customer/chatbot/message
+GET /api/v1/customer/chatbot/session/{session_id}
+```
+
+---
+
+# 8. B2B PARTNER API
+
+Ovo koristi B2B portal i eventualni agency API access.
+
+## 8.1 Auth
+
+```text
+POST /api/v1/b2b/auth/login
+POST /api/v1/b2b/auth/logout
+POST /api/v1/b2b/auth/refresh
+GET /api/v1/b2b/auth/me
+```
+
+---
+
+## 8.2 Agency context
+
+```text
+GET /api/v1/b2b/agency/profile
+GET /api/v1/b2b/agency/credit
+GET /api/v1/b2b/agency/statements
+GET /api/v1/b2b/agency/documents
+```
+
+---
+
+## 8.3 Travelers / customers
+
+```text
+GET /api/v1/b2b/customers
+POST /api/v1/b2b/customers
+GET /api/v1/b2b/customers/{id}
+PUT /api/v1/b2b/customers/{id}
+```
+
+---
+
+## 8.4 Search & offers
+
+```text
+POST /api/v1/b2b/search
+GET /api/v1/b2b/offers/{offer_reference}
+POST /api/v1/b2b/offers/{offer_reference}/reprice
+```
+
+B2B odgovor mora sadržati dodatna polja:
+
+* commission
+* net/sell mode
+* credit eligibility
+* channel restrictions
+
+---
+
+## 8.5 Bookings
+
+```text
+POST /api/v1/b2b/bookings
+GET /api/v1/b2b/bookings
+GET /api/v1/b2b/bookings/{booking_reference}
+PUT /api/v1/b2b/bookings/{booking_reference}/travelers
+POST /api/v1/b2b/bookings/{booking_reference}/cancel-request
+```
+
+---
+
+## 8.6 Agency finance
+
+```text
+GET /api/v1/b2b/finance/open-items
+GET /api/v1/b2b/finance/receivables
+GET /api/v1/b2b/finance/statements
+GET /api/v1/b2b/finance/invoices
+POST /api/v1/b2b/finance/payment-notification
+```
+
+---
+
+## 8.7 Support
+
+```text
+GET /api/v1/b2b/support/cases
+POST /api/v1/b2b/support/cases
+GET /api/v1/b2b/support/cases/{case_reference}
+POST /api/v1/b2b/support/cases/{case_reference}/messages
+```
+
+---
+
+## 8.8 B2B chatbot
+
+```text
+POST /api/v1/b2b/chatbot/session
+POST /api/v1/b2b/chatbot/message
+```
+
+---
+
+## 8.9 Agency API access
+
+Za partnere koji žele direktnu konekciju:
+
+```text
+POST /api/v1/b2b-api/search
+POST /api/v1/b2b-api/bookings
+GET /api/v1/b2b-api/bookings/{booking_reference}
+GET /api/v1/b2b-api/documents/{document_reference}
+```
+
+Ovo treba imati zaseban auth model i rate limits.
+
+---
+
+# 9. INTERNAL ADMIN / OPERATIONS API
+
+Ovo je najveći API sloj.
+
+---
+
+# 9.1 Identity & access admin
+
+```text
+GET /api/v1/admin/users
+POST /api/v1/admin/users
+GET /api/v1/admin/users/{id}
+PUT /api/v1/admin/users/{id}
+GET /api/v1/admin/roles
+GET /api/v1/admin/permissions
+POST /api/v1/admin/users/{id}/roles
+```
+
+---
+
+# 9.2 CRM admin
+
+```text
+GET /api/v1/admin/contacts
+POST /api/v1/admin/contacts
+GET /api/v1/admin/contacts/{id}
+PUT /api/v1/admin/contacts/{id}
+
+GET /api/v1/admin/agencies
+POST /api/v1/admin/agencies
+GET /api/v1/admin/agencies/{id}
+PUT /api/v1/admin/agencies/{id}
+GET /api/v1/admin/agencies/{id}/credit
+GET /api/v1/admin/agencies/{id}/statements
+```
+
+---
+
+# 9.3 Product master admin
+
+```text
+GET /api/v1/admin/products
+POST /api/v1/admin/products
+GET /api/v1/admin/products/{id}
+PUT /api/v1/admin/products/{id}
+
+GET /api/v1/admin/hotels
+GET /api/v1/admin/hotels/{id}
+POST /api/v1/admin/hotels/{id}/room-types
+POST /api/v1/admin/hotels/{id}/board-types
+POST /api/v1/admin/products/{id}/images
+```
+
+---
+
+# 9.4 Contracting admin
+
+```text
+GET /api/v1/admin/contracts
+POST /api/v1/admin/contracts
+GET /api/v1/admin/contracts/{id}
+PUT /api/v1/admin/contracts/{id}
+
+POST /api/v1/admin/contracts/{id}/versions
+POST /api/v1/admin/contracts/{id}/approve
+POST /api/v1/admin/contracts/{id}/seasons
+POST /api/v1/admin/contracts/{id}/rate-plans
+POST /api/v1/admin/contracts/{id}/allotments
+POST /api/v1/admin/contracts/{id}/imports
+GET /api/v1/admin/contracts/{id}/validation-results
+```
+
+---
+
+# 9.5 Pricing admin
+
+```text
+GET /api/v1/admin/pricing/rules
+POST /api/v1/admin/pricing/rules
+GET /api/v1/admin/pricing/rules/{id}
+PUT /api/v1/admin/pricing/rules/{id}
+POST /api/v1/admin/pricing/simulate
+```
+
+### Simulate request primer
+
+```json
+{
+  "channel_id": 2,
+  "agency_id": 145,
+  "destination_id": 88,
+  "product_type": "hotel",
+  "supplier_id": 9,
+  "net_amount": 800,
+  "currency_code": "EUR"
+}
+```
+
+---
+
+# 9.6 Search / offers admin
+
+```text
+GET /api/v1/admin/search/requests
+GET /api/v1/admin/offers/{offer_reference}
+POST /api/v1/admin/offers/{offer_reference}/reprice
+GET /api/v1/admin/offers/{offer_reference}/ranking-features
+```
+
+---
+
+# 9.7 Booking admin
+
+```text
+GET /api/v1/admin/bookings
+POST /api/v1/admin/bookings/manual
+GET /api/v1/admin/bookings/{booking_reference}
+PUT /api/v1/admin/bookings/{booking_reference}
+POST /api/v1/admin/bookings/{booking_reference}/notes
+POST /api/v1/admin/bookings/{booking_reference}/cancel
+POST /api/v1/admin/bookings/{booking_reference}/revalidate
+POST /api/v1/admin/bookings/{booking_reference}/documents/generate
+POST /api/v1/admin/bookings/{booking_reference}/documents/send
+```
+
+---
+
+# 9.8 Reservation operations admin
+
+```text
+GET /api/v1/admin/reservations/workspaces
+GET /api/v1/admin/reservations/{booking_reference}/workspace
+POST /api/v1/admin/reservations/{booking_reference}/assign
+POST /api/v1/admin/reservations/{booking_reference}/flags
+POST /api/v1/admin/reservations/{booking_reference}/todos
+POST /api/v1/admin/reservations/{booking_reference}/dispatches
+```
+
+---
+
+# 9.9 Operational lists admin
+
+```text
+GET /api/v1/admin/operations/arrivals
+GET /api/v1/admin/operations/departures
+GET /api/v1/admin/operations/in-house
+GET /api/v1/admin/operations/transfers
+GET /api/v1/admin/operations/excursions
+GET /api/v1/admin/operations/documents-pending
+GET /api/v1/admin/operations/financial-warnings
+```
+
+Exports:
+
+```text
+GET /api/v1/admin/operations/arrivals/export
+GET /api/v1/admin/operations/transfers/export
+```
+
+---
+
+# 9.10 Rooming & capacity admin
+
+```text
+GET /api/v1/admin/rooming/{booking_reference}
+POST /api/v1/admin/rooming/{booking_reference}/rooms
+POST /api/v1/admin/rooming/{booking_reference}/assign-passenger
+POST /api/v1/admin/rooming/{booking_reference}/validate
+POST /api/v1/admin/rooming/{booking_reference}/export
+POST /api/v1/admin/rooming/{booking_reference}/send
+POST /api/v1/admin/rooming/{booking_reference}/confirm
+```
+
+Capacity:
+
+```text
+GET /api/v1/admin/capacity
+GET /api/v1/admin/allotments
+POST /api/v1/admin/allotments/{id}/override
+POST /api/v1/admin/allotments/{id}/release
+```
+
+---
+
+# 9.11 Finance admin
+
+```text
+GET /api/v1/admin/finance/receivables
+GET /api/v1/admin/finance/payables
+GET /api/v1/admin/finance/refunds
+GET /api/v1/admin/finance/reconciliation
+
+POST /api/v1/admin/finance/payments
+POST /api/v1/admin/finance/refunds
+POST /api/v1/admin/finance/receivables/{id}/apply-payment
+POST /api/v1/admin/finance/payables/{id}/mark-paid
+POST /api/v1/admin/finance/reconciliation/match
+```
+
+---
+
+# 9.12 Tour programs admin
+
+```text
+GET /api/v1/admin/tours/programs
+POST /api/v1/admin/tours/programs
+GET /api/v1/admin/tours/programs/{id}
+PUT /api/v1/admin/tours/programs/{id}
+
+POST /api/v1/admin/tours/programs/{id}/versions
+POST /api/v1/admin/tours/programs/{id}/departures
+POST /api/v1/admin/tours/programs/{id}/itinerary-days
+GET /api/v1/admin/tours/departures/{id}
+POST /api/v1/admin/tours/departures/{id}/publish
+POST /api/v1/admin/tours/departures/{id}/manifest
+```
+
+---
+
+# 9.13 Charter admin
+
+```text
+GET /api/v1/admin/charters/seasons
+POST /api/v1/admin/charters/seasons
+GET /api/v1/admin/charters/seasons/{id}
+PUT /api/v1/admin/charters/seasons/{id}
+
+POST /api/v1/admin/charters/seasons/{id}/routes
+POST /api/v1/admin/charters/seasons/{id}/durations
+POST /api/v1/admin/charters/seasons/{id}/hotel-links
+POST /api/v1/admin/charters/seasons/{id}/pricing
+GET /api/v1/admin/charters/flights/{id}
+POST /api/v1/admin/charters/flights/{id}/blocks
+POST /api/v1/admin/charters/flights/{id}/release
+POST /api/v1/admin/charters/flights/{id}/manifest
+```
+
+---
+
+# 9.14 B2B admin
+
+```text
+GET /api/v1/admin/b2b/agencies
+GET /api/v1/admin/b2b/agencies/{id}
+POST /api/v1/admin/b2b/agencies/{id}/users
+POST /api/v1/admin/b2b/agencies/{id}/restrictions
+POST /api/v1/admin/b2b/agencies/{id}/credit-approve
+GET /api/v1/admin/b2b/agencies/{id}/api-access
+```
+
+---
+
+# 9.15 Mail & communication admin
+
+```text
+GET /api/v1/admin/mail/threads
+GET /api/v1/admin/mail/threads/{id}
+POST /api/v1/admin/mail/threads/{id}/assign
+POST /api/v1/admin/mail/threads/{id}/reply
+POST /api/v1/admin/mail/threads/{id}/notes
+POST /api/v1/admin/mail/threads/{id}/link-booking
+GET /api/v1/admin/mail/unassigned
+GET /api/v1/admin/mail/inbox-users
+GET /api/v1/admin/mail/quality-review
+POST /api/v1/admin/mail/quality-review/{id}/close
+```
+
+---
+
+# 9.16 Marketing admin
+
+```text
+GET /api/v1/admin/marketing/campaigns
+POST /api/v1/admin/marketing/campaigns
+GET /api/v1/admin/marketing/campaigns/{id}
+POST /api/v1/admin/marketing/campaigns/{id}/schedule
+POST /api/v1/admin/marketing/campaigns/{id}/send-test
+POST /api/v1/admin/marketing/campaigns/{id}/approve
+
+GET /api/v1/admin/marketing/audiences
+POST /api/v1/admin/marketing/audiences
+POST /api/v1/admin/marketing/automations
+GET /api/v1/admin/marketing/analytics
+```
+
+---
+
+# 9.17 AI admin
+
+```text
+GET /api/v1/admin/ai/sessions
+GET /api/v1/admin/ai/usage
+GET /api/v1/admin/ai/budgets
+POST /api/v1/admin/ai/budgets
+GET /api/v1/admin/ai/routes
+POST /api/v1/admin/ai/execute-approval/{id}/approve
+POST /api/v1/admin/ai/execute-approval/{id}/reject
+```
+
+---
+
+# 9.18 Website/CMS admin
+
+```text
+GET /api/v1/admin/cms/pages
+POST /api/v1/admin/cms/pages
+GET /api/v1/admin/cms/pages/{id}
+PUT /api/v1/admin/cms/pages/{id}
+POST /api/v1/admin/cms/pages/{id}/publish
+
+GET /api/v1/admin/seo/metadata
+POST /api/v1/admin/seo/metadata
+GET /api/v1/admin/seo/suggestions
+POST /api/v1/admin/seo/suggestions/{id}/apply
+```
+
+---
+
+# 9.19 Monitoring / control admin
+
+```text
+GET /api/v1/admin/monitoring/health
+GET /api/v1/admin/monitoring/alerts
+GET /api/v1/admin/monitoring/incidents
+GET /api/v1/admin/audit/logs
+GET /api/v1/admin/queue/jobs
+POST /api/v1/admin/queue/jobs/{id}/retry
+```
+
+---
+
+# 10. INTEGRATION & SYSTEM API
+
+Ovo je za dobavljače, callback-ove, publishing i interne sisteme.
+
+## 10.1 Supplier connector endpoints
+
+Interni adapter sloj:
+
+```text
+POST /api/v1/system/suppliers/{supplier_code}/search
+POST /api/v1/system/suppliers/{supplier_code}/book
+POST /api/v1/system/suppliers/{supplier_code}/cancel
+POST /api/v1/system/suppliers/{supplier_code}/reprice
+```
+
+Ovo ne ide javno.
+
+---
+
+## 10.2 Webhooks
+
+```text
+POST /api/v1/system/webhooks/payments/{provider_code}
+POST /api/v1/system/webhooks/suppliers/{supplier_code}
+POST /api/v1/system/webhooks/mail/{provider_code}
+POST /api/v1/system/webhooks/messaging/{provider_code}
+```
+
+---
+
+## 10.3 Publishing endpoints
+
+```text
+POST /api/v1/system/publishing/offers/{entity_type}/{id}
+POST /api/v1/system/publishing/pages/{id}
+POST /api/v1/system/publishing/sitemap/rebuild
+```
+
+---
+
+## 10.4 Import / export system API
+
+```text
+POST /api/v1/system/import/contracts
+POST /api/v1/system/import/bank-movements
+POST /api/v1/system/import/rooming
+POST /api/v1/system/export/accounting
+```
+
+---
+
+# 11. API DESIGN PRAVILA
+
+## 11.1 Filtering
+
+Svi list endpoint-i moraju podržati:
+
+* pagination
+* sorting
+* basic filters
+* date ranges
+* status filters
+
+Primer:
+
+```text
+GET /api/v1/admin/bookings?status=confirmed&travel_start_from=2026-07-01&travel_start_to=2026-07-31&page=1&per_page=50
+```
+
+## 11.2 Bulk endpoints
+
+Za operativu su obavezni bulk endpoint-i:
+
+```text
+POST /api/v1/admin/bookings/bulk-assign
+POST /api/v1/admin/operations/arrivals/bulk-export
+POST /api/v1/admin/mail/threads/bulk-assign
+POST /api/v1/admin/marketing/campaigns/{id}/bulk-preview
+```
+
+## 11.3 Idempotency
+
+Za critical POST akcije:
+
+* booking create
+* payment create
+* refund create
+* supplier booking
+  treba koristiti:
+* `Idempotency-Key` header
+
+---
+
+# 12. API SECURITY PRAVILA
+
+* JWT za B2C/B2B/internal
+* API key + HMAC za system integrations gde treba
+* rate limits po client-u i scope-u
+* permission enforcement na internal API
+* field-level masking za osetljive podatke
+* audit log za write operacije
+
+---
+
+# 13. Šta smo sada završili
+
+Sada smo završili sledeći veliki sloj:
+
+## API struktura po domenu
+
+* Public Website API
+* B2C Customer API
+* B2B Partner API
+* Internal Admin / Operations API
+* Integration & System API
+
+To znači da sad imamo:
+
+* domain data model
+* tabelarnu strukturu
+* API boundary
+
+---
+
+# 14. Sledeći korak
+
+Sledeći prirodan korak je:
+
+# EVENT SCHEMA + MESSAGE QUEUE LOGIKA
+
+Tu ću detaljno definisati:
+
+* event nazive
+* event payload standard
+* koji modul emituje koji event
+* koji worker sluša koji event
+* retry logiku
+* dead letter pristup
+* sinhrone vs asinhrone operacije
+
+To je sledeći ključni deo koji pravi sistem **zaista spremnim za razvoj**.

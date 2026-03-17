@@ -1,0 +1,752 @@
+Nastavljam sa **Deo 7: supplier integration architecture, mapping, normalization i error handling**.
+Ovo je deo koji je najbliži realnom radu platforme jer **bez stabilnih supplier integracija booking engine ne postoji**.
+
+Ovaj deo objašnjava:
+
+* kako se povezuju dobavljači (API, XML, GraphQL)
+* kako se njihovi različiti podaci normalizuju
+* kako se mapiraju hoteli i proizvodi
+* kako se rešavaju greške
+* kako se radi fallback između dobavljača
+* kako se prati kvalitet integracije
+
+---
+
+# Unified Travel Booking Platform
+
+## Deo 7 — Supplier Integration Architecture
+
+---
+
+# 1. Zašto je potreban integration layer
+
+Svaki dobavljač ima različite:
+
+* API strukture
+* modele cena
+* identifikatore hotela
+* pravila rezervacije
+* statuse
+* payload formate
+
+Primer:
+
+Jedan hotel može doći iz:
+
+* Hotelbeds
+* Expedia
+* direct hotel contract
+* channel manager
+* DMC
+* wholesaler
+
+Ako platforma direktno koristi supplier API, sistem postaje **neodrživ**.
+
+Zato je potreban **normalization layer**.
+
+---
+
+# 2. Preporučena arhitektura integracija
+
+```text
+Frontend
+   |
+API Gateway
+   |
+Search Service
+   |
+Supplier Aggregation Layer
+   |
+Normalization Layer
+   |
+Supplier Connectors
+   |
+External Supplier APIs
+```
+
+---
+
+# 3. Supplier connector sloj
+
+Svaki dobavljač ima svoj **connector modul**.
+
+Primeri:
+
+```text
+connector_hotelbeds
+connector_expedia
+connector_ratehawk
+connector_duffel
+connector_amadeus
+connector_viator
+connector_getyourguide
+connector_msc_cruises
+connector_direct_hotel
+```
+
+Svaki connector:
+
+* zna supplier API
+* radi autentifikaciju
+* prevodi request
+* prevodi response
+
+---
+
+# 4. Connector odgovornosti
+
+Connector mora da radi:
+
+1. autentifikaciju
+2. request formatiranje
+3. response parsing
+4. error parsing
+5. retry logiku
+6. timeout handling
+7. response caching
+8. metrics logging
+
+Ali **connector ne sme odlučivati poslovna pravila**.
+
+To je posao višeg sloja.
+
+---
+
+# 5. Normalization layer
+
+Ovo je najvažniji deo.
+
+Različiti supplier odgovori moraju biti prevedeni u **standardni model platforme**.
+
+Primer:
+
+Supplier A:
+
+```json
+{
+ "hotelCode": "HT123",
+ "rate": 220,
+ "currency": "EUR"
+}
+```
+
+Supplier B:
+
+```json
+{
+ "property_id": "9981",
+ "price": {
+   "amount": 215,
+   "currency": "EUR"
+ }
+}
+```
+
+Normalization layer mora vratiti:
+
+```json
+{
+ "hotelId": 1201,
+ "supplierId": 5,
+ "supplierHotelCode": "HT123",
+ "roomType": "double",
+ "netPrice": 220,
+ "currency": "EUR"
+}
+```
+
+---
+
+# 6. Normalizovani modeli
+
+Platforma mora imati **canonical modele** za:
+
+* hotel
+* hotel room
+* hotel rate
+* flight itinerary
+* transfer offer
+* activity offer
+* cruise cabin offer
+
+Ovo omogućava da ostatak sistema radi nezavisno od dobavljača.
+
+---
+
+# 7. Hotel normalization model
+
+Standardni hotel objekat mora sadržati:
+
+```json
+{
+ "hotelId": 1201,
+ "supplierId": 5,
+ "supplierHotelCode": "HT123",
+ "name": "Disneyland Hotel",
+ "destinationCode": "PAR",
+ "stars": 5,
+ "latitude": 48.867,
+ "longitude": 2.783,
+ "facilities": ["wifi","pool","spa"],
+ "images": []
+}
+```
+
+---
+
+# 8. Hotel rate normalization
+
+```json
+{
+ "supplierId": 5,
+ "supplierHotelCode": "HT123",
+ "roomCode": "DLX",
+ "roomName": "Deluxe Room",
+ "boardType": "BB",
+ "ratePlanCode": "NRF",
+ "cancelPolicy": "non_refundable",
+ "netPrice": 800,
+ "taxes": 40,
+ "currency": "EUR",
+ "available": true
+}
+```
+
+---
+
+# 9. Flight normalization
+
+Supplier API često daje kompleksne strukture.
+
+Standardni model treba da bude:
+
+```json
+{
+ "offerId": "FL123",
+ "segments": [
+   {
+     "airline": "AF",
+     "flightNumber": "1083",
+     "departure": "BEG",
+     "arrival": "CDG",
+     "departureTime": "2026-07-10T06:40",
+     "arrivalTime": "2026-07-10T09:15"
+   }
+ ],
+ "fareFamily": "Economy Basic",
+ "baggageIncluded": false,
+ "netPrice": 250,
+ "taxes": 40,
+ "currency": "EUR"
+}
+```
+
+---
+
+# 10. Transfer normalization
+
+```json
+{
+ "transferOfferId": 41011,
+ "supplierId": 8,
+ "vehicleType": "sedan",
+ "serviceType": "private",
+ "capacity": 3,
+ "pickupLocation": "CDG",
+ "dropoffLocation": "Disneyland Hotel",
+ "netPrice": 75,
+ "currency": "EUR"
+}
+```
+
+---
+
+# 11. Activity normalization
+
+```json
+{
+ "activityOfferId": 510101,
+ "supplierId": 11,
+ "name": "Disneyland 1 Day Ticket",
+ "category": "theme_park",
+ "date": "2026-07-12",
+ "durationMinutes": 480,
+ "netPrice": 110,
+ "currency": "EUR"
+}
+```
+
+---
+
+# 12. Cruise normalization
+
+```json
+{
+ "cruiseOfferId": 610101,
+ "cruiseLine": "MSC",
+ "ship": "MSC Fantasia",
+ "departurePort": "GEN",
+ "departureDate": "2026-08-05",
+ "nights": 7,
+ "cabinType": "Balcony",
+ "netPrice": 980,
+ "portTaxes": 140,
+ "currency": "EUR"
+}
+```
+
+---
+
+# 13. Supplier mapping
+
+Jedan hotel može imati **više supplier ID-jeva**.
+
+Tabela mapiranja:
+
+```text
+hotel_id | supplier_id | supplier_hotel_code
+```
+
+Primer:
+
+```text
+1201 | hotelbeds | HT123
+1201 | expedia | 9981
+1201 | ratehawk | 55290
+```
+
+To omogućava:
+
+* deduplikaciju rezultata
+* bolji izbor cene
+* fallback između dobavljača
+
+---
+
+# 14. Room mapping
+
+Supplier room nazivi su često različiti.
+
+Primer:
+
+```text
+Supplier A: Deluxe Double
+Supplier B: Double Deluxe Room
+Supplier C: DLX DBL
+```
+
+Sistem mora mapirati u interni model.
+
+```text
+room_type = deluxe_double
+```
+
+---
+
+# 15. Board mapping
+
+Supplier može koristiti:
+
+```text
+RO
+BB
+HB
+FB
+AI
+UAI
+```
+
+Sistem mora mapirati na standard:
+
+```text
+room_only
+bed_breakfast
+half_board
+full_board
+all_inclusive
+```
+
+---
+
+# 16. Cancellation policy mapping
+
+Supplier može vratiti:
+
+```text
+free_cancel_until
+non_refundable
+partial_refund
+```
+
+Interni model:
+
+```text
+cancellation_type
+free_until_date
+penalty_percent
+penalty_amount
+```
+
+---
+
+# 17. Search orchestration
+
+Kada korisnik pokrene pretragu, sistem može pozvati više supplier-a paralelno.
+
+Primer:
+
+```text
+hotelbeds
+ratehawk
+expedia
+direct_contract
+```
+
+Search service:
+
+1. šalje request svim connector-ima
+2. čeka odgovore
+3. normalizuje podatke
+4. deduplikuje hotele
+5. prosleđuje package engine-u
+
+---
+
+# 18. Parallel request model
+
+```text
+Search request
+   |
+parallel requests
+   |
+supplier A
+supplier B
+supplier C
+supplier D
+   |
+Normalization
+   |
+Aggregation
+```
+
+---
+
+# 19. Timeout pravila
+
+Supplier API mora imati timeout.
+
+Primer:
+
+```text
+hotel search timeout = 4s
+flight search timeout = 6s
+activity search timeout = 3s
+```
+
+Ako supplier ne odgovori:
+
+* sistem ne blokira rezultate
+* samo preskoči tog supplier-a
+
+---
+
+# 20. Retry pravila
+
+Retry je dozvoljen samo za:
+
+* network timeout
+* 5xx errors
+
+Primer:
+
+```text
+retry = 2
+retry_delay = 300ms
+```
+
+Ali ne za:
+
+* invalid request
+* no availability
+
+---
+
+# 21. Supplier fallback logika
+
+Ako isti hotel postoji kod više dobavljača:
+
+Sistem bira:
+
+1. najnižu cenu
+2. ako su iste — veću maržu
+3. ako su iste — pouzdanijeg supplier-a
+
+---
+
+# 22. Supplier reliability score
+
+Svaki supplier mora imati metriku pouzdanosti.
+
+Primer:
+
+```text
+confirmation_rate
+timeout_rate
+error_rate
+average_response_time
+```
+
+Iz toga se računa score.
+
+---
+
+# 23. Supplier monitoring
+
+Sistem mora pratiti:
+
+* broj API poziva
+* broj grešaka
+* timeout
+* response time
+* success booking rate
+
+To ide u **supplier dashboard**.
+
+---
+
+# 24. Error kategorije
+
+## Supplier errors
+
+* no availability
+* invalid rate
+* rate expired
+* booking rejected
+
+## Technical errors
+
+* timeout
+* network error
+* invalid response
+* authentication error
+
+---
+
+# 25. Error handling model
+
+```text
+supplier request
+→ response
+→ parse
+→ if error
+     classify error
+     log error
+     retry if allowed
+     return normalized error
+```
+
+---
+
+# 26. Booking supplier flow
+
+Kada booking ide ka supplier-u:
+
+```text
+reserve
+→ confirm
+→ return supplier reference
+```
+
+Supplier reference se čuva u:
+
+```text
+supplier_reservations table
+```
+
+---
+
+# 27. Supplier sandbox / test
+
+Svaki supplier mora imati:
+
+```text
+sandbox
+staging
+production
+```
+
+Test scenariji moraju uključiti:
+
+* successful booking
+* no availability
+* price change
+* cancel booking
+* supplier timeout
+
+---
+
+# 28. Webhook / callback model
+
+Neki supplier-i šalju update.
+
+Primer:
+
+* flight schedule change
+* hotel booking confirmed
+* cruise update
+
+Webhook endpoint:
+
+```text
+/webhooks/suppliers/{supplier}
+```
+
+---
+
+# 29. Supplier rate limiting
+
+Ako supplier ima limit:
+
+Primer:
+
+```text
+max 50 requests / sec
+```
+
+Platforma mora imati:
+
+* request queue
+* rate limiter
+
+---
+
+# 30. Caching strategija
+
+Preporuka:
+
+## Search caching
+
+2–5 minuta
+
+## Hotel content
+
+24h
+
+## Destination content
+
+7 dana
+
+## Airline / airport
+
+30 dana
+
+---
+
+# 31. Content refresh
+
+Sistem mora imati:
+
+* nightly content refresh
+* manual refresh
+* delta update
+
+---
+
+# 32. Supplier testing alat
+
+Admin panel treba imati opciju:
+
+```text
+Test supplier search
+Test supplier booking
+Test supplier cancel
+```
+
+---
+
+# 33. Supplier onboarding proces
+
+Kada se dodaje novi supplier:
+
+1. API credentials
+2. sandbox test
+3. mapping hotels
+4. test search
+5. test booking
+6. monitoring enabled
+7. production enable
+
+---
+
+# 34. Fallback između dobavljača
+
+Ako booking kod supplier A padne:
+
+Sistem može pokušati supplier B za isti hotel.
+
+Ali samo ako:
+
+* rate je kompatibilan
+* cena nije drastično drugačija
+* korisnik prihvati novu cenu
+
+---
+
+# 35. Minimalni supplier set za MVP
+
+Za punu platformu preporučujem minimalno:
+
+Hotel:
+
+* 2 wholesaler API-ja
+* direct contracts
+
+Flight:
+
+* 1 aggregator API
+
+Transfer:
+
+* 1 global supplier
+
+Activities:
+
+* 1 global supplier
+
+Cruise:
+
+* 1 cruise supplier
+
+---
+
+# 36. Zaključak ovog dela
+
+Sa ovim delom sada imate definisano:
+
+* arhitekturu integracija
+* normalization layer
+* supplier mapping
+* error handling
+* fallback logiku
+* monitoring
+* onboarding proces
+
+Ovo je temelj stabilne travel platforme.
+
+---
+
+# 37. Sledeći deo
+
+Ako želite, sledeći deo može biti **Deo 8: infrastruktura sistema, microservice arhitektura, skaliranje i deployment model**.
+
+Tu mogu detaljno objasniti:
+
+* kako Expedia-like platforma tehnički radi
+* koje servise treba razdvojiti
+* kako skalirati search
+* kako rešiti visoki traffic
+* kako optimizovati API pozive
+* kako organizovati cloud infrastrukturu
+* kako implementirati caching i queue sisteme
+
+To je zapravo deo koji pravi razliku između **malog booking engine-a i velike platforme.**
