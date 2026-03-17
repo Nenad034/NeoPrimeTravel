@@ -54,30 +54,24 @@ export class DossierService {
         totalDiscountAmount: breakdown.displaySavings,
         currency: breakdown.currency,
         
-        // Stavke Dosijea (Booking Items - Sekcija 6.4)
-        items: {
-          create: breakdown.items.map(item => {
-            // Logika za Deadlines (Inspirisano OlympicHub-AI-Lab / Deo 7 Sekcija 16)
-            const cancelDays = item.type === 'HOTEL' ? 14 : 7; // Mock pravilo
-            const cancelDeadline = new Date();
-            cancelDeadline.setDate(cancelDeadline.getDate() + 5); // Mock: za 5 dana ističe besplatan cancel
-
-            return {
-              type: item.type,
-              description: item.description,
-              unitPrice: item.sellPrice,
-              quantity: 1,
-              totalPrice: item.sellPrice,
-              netPrice: item.netPrice,
-              taxAmount: item.taxes || 0,
-              markupAmount: item.markup,
-              discountAmount: item.discount,
-              currency: item.currency,
-              cancelDeadline: cancelDeadline,
-              supplierDeadline: cancelDeadline, // Često su isti ili bliski
-              externalStatus: 'PENDING_CONFIRMATION'
-            };
-          })
+      items: {
+          create: breakdown.items.map(item => ({
+            type: item.type,
+            description: item.description,
+            unitPrice: item.netPrice,
+            quantity: 1,
+            totalPrice: item.sellPrice, // Using sellPrice from breakdown item
+            netPrice: item.netPrice,
+            taxAmount: item.taxes || 0,
+            markupAmount: item.markup,
+            discountAmount: item.discount,
+            currency: item.currency,
+            startDate: packageResult.criteria.startDate, 
+            endDate: packageResult.criteria.endDate,     
+            cancelDeadline: new Date(packageResult.criteria.startDate.getTime() - 14 * 24 * 60 * 60 * 1000), 
+            supplierDeadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), 
+            externalStatus: 'PENDING'
+          }))
         },
 
         // 3. Početna aktivnost u Timeline-u

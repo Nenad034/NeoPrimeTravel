@@ -145,6 +145,8 @@ model BookingItem {
   currency          String
   
   // Monitoring (Sekcija 1.1 Supplier Obligations)
+  startDate         DateTime? // Datum početka usluge
+  endDate           DateTime? // Datum završetka usluge
   supplierDeadline  DateTime? // Datum do kog se mora platiti dobavljaču
   cancelDeadline    DateTime? // Datum do kog je besplatno otkazivanje
   externalStatus    String?   // Status kod dobavljača (npr. "Confirmed", "On Request")

@@ -13,6 +13,17 @@ export interface DynamicPackageRequest {
   promoCode?: string;
 }
 
+export interface StructuredPackageRequest {
+  destinationCode: string;
+  startDate: Date;
+  endDate: Date;
+  adults: number;
+  children: number;
+  childAges: number[];
+  channel: Channel;
+  promoCode?: string;
+}
+
 export interface FinalPackageResult {
   searchSummary: string;
   masterHotelId: string;
@@ -22,6 +33,7 @@ export interface FinalPackageResult {
   cancellationPolicy: string;
   currentCancelPenalty: number;
   aiInsights: string[];
+  criteria: any; // Original search parameters
 }
 
 /**
@@ -39,14 +51,40 @@ export interface FinalPackageResult {
 export class NeoTravelMasterEngine {
 
   public static async processFullPackage(request: DynamicPackageRequest): Promise<FinalPackageResult> {
-    console.log(`\n--- 🚀 MASTER ENGINE: PROCESIRANJE "SVE-U-JEDNOM" ---`);
-    
-    // 1. Razumevanje upita (NLP)
+    console.log(`\n--- 🚀 MASTER ENGINE: PROCESIRANJE "SVE-U-JEDNOM" (NLP) ---`);
     const criteria = await AISearchService.parseNaturalQuery(request.naturalQuery);
+    return this.executeSearch(criteria, request.channel, request.promoCode);
+  }
+
+  /**
+   * KLASIČNA (STRUKTURIRANA) PRETRAGA
+   * Koristi se kada agent ručno bira destinaciju, datume i putnike iz dropdown-a.
+   */
+  public static async processStructuredPackage(request: StructuredPackageRequest): Promise<FinalPackageResult> {
+    console.log(`\n--- 🏢 MASTER ENGINE: PROCESIRANJE "SVE-U-JEDNOM" (KLASIČNA) ---`);
+    
+    const criteria = {
+      destinationCode: request.destinationCode,
+      startDate: request.startDate,
+      endDate: request.endDate,
+      rooms: [{ 
+        adults: request.adults, 
+        children: request.children, 
+        childAges: request.childAges 
+      }],
+      aiPrompt: "Classic structured search"
+    };
+
+    return this.executeSearch(criteria, request.channel, request.promoCode);
+  }
+
+  /**
+   * Zajednička logika izvršavanja pretrage i kalkulacije paketa.
+   */
+  private static async executeSearch(criteria: any, channel: Channel, promoCode?: string): Promise<FinalPackageResult> {
     const searchSummary = AISearchService.generateQuerySummary(criteria);
 
-    // 2. Simulacija sirovih podataka (Let + Hotel + Transfer + IZLET/ULAZNICA)
-    // Ovde simuliramo da smo od dobavljača dobili sirove podatke
+    // 1. Simulacija sirovih podataka (Ovo bi išlo preko API konektora u realnosti)
     const rawHotel: RawSupplierOffer = {
       supplierId: 'DIRECT',
       supplierHotelCode: 'SOLPL',
@@ -56,80 +94,26 @@ export class NeoTravelMasterEngine {
       currency: 'EUR'
     };
 
-    const rawFlight: PricingItem = {
-      type: 'FLIGHT',
-      description: 'Zakupljen let Hurghada',
-      netPrice: 250,
-      taxes: 40,
-      fees: 10,
-      currency: 'EUR'
-    };
+    const rawFlight: PricingItem = { type: 'FLIGHT', description: 'Zakupljen let Hurghada', netPrice: 250, taxes: 40, fees: 10, currency: 'EUR' };
+    const rawTransfer: PricingItem = { type: 'TRANSFER', description: 'Povratni transfer aerodrom', netPrice: 40, currency: 'EUR' };
+    const rawActivity: PricingItem = { type: 'ACTIVITY', description: 'Izlet Krstarenje Nilom', netPrice: 45, currency: 'EUR' };
+    const rawTicket: PricingItem = { type: 'ACTIVITY', description: 'Ulaznica za Akvarijum', netPrice: 15, currency: 'EUR' };
 
-    const rawTransfer: PricingItem = {
-      type: 'TRANSFER',
-      description: 'Povratni transfer aerodrom',
-      netPrice: 40,
-      currency: 'EUR'
-    };
-
-    // NOVO: Podrška za IZLETE i ULAZNICE (Sekcije 5.9 i 11 dokumentacije Deo 7)
-    const rawActivity: PricingItem = {
-      type: 'ACTIVITY',
-      description: 'Izlet Krstarenje Nilom (Pun dan)',
-      netPrice: 45,
-      currency: 'EUR'
-    };
-
-    const rawTicket: PricingItem = {
-      type: 'ACTIVITY', // Ulaznica se mapira kao aktivnost/ticket
-      description: 'Ulaznica za Akvarijum Hurghada',
-      netPrice: 15,
-      currency: 'EUR'
-    };
-
-    // 3. Normalizacija hotela (Mapping)
+    // 2. Normalizacija i Matematička obrada
     const normalizedHotel = NormalizationEngine.normalize(rawHotel);
+    const occupancy = AdvancedMathEngine.calculateOccupancyPrice(normalizedHotel.price, criteria.rooms[0]);
 
-    // 4. Matematička obrada putnika (Occupancy Math)
-    const occupancy = AdvancedMathEngine.calculateOccupancyPrice(
-      normalizedHotel.price,
-      criteria.rooms[0] as OccupancyConfig
-    );
-
-    // 5. Formiranje stavki za Pricing Engine
+    // 3. Formiranje stavki i Cena
     const finalItems: PricingItem[] = [
-      { 
-        type: 'HOTEL', 
-        description: `Sol Plaza 5* (${normalizedHotel.room.displayName})`, 
-        netPrice: occupancy.finalPrice, 
-        currency: 'EUR' 
-      },
-      rawFlight,
-      rawTransfer,
-      rawActivity,
-      rawTicket
+      { type: 'HOTEL', description: `Sol Plaza 5* (${normalizedHotel.room.displayName})`, netPrice: occupancy.finalPrice, currency: 'EUR' },
+      rawFlight, rawTransfer, rawActivity, rawTicket
     ];
 
-    // 6. Finalni Pricing & Bundling (uključujući paketne popuste)
-    const breakdown = PackagePricingEngine.calculatePackage(finalItems, request.channel, request.promoCode);
+    const breakdown = PackagePricingEngine.calculatePackage(finalItems, channel, promoCode);
 
-    // 7. Politika otkazivanja (Bazirano na datumu puta iz NLP upita)
-    const cancelSteps: CancellationStep[] = [
-      { daysBefore: 14, percent: 50 },
-      { daysBefore: 1, percent: 100 }
-    ];
-    const cancelInfo = AdvancedMathEngine.calculateCancellationPenalty(
-      breakdown.finalTotal,
-      cancelSteps,
-      criteria.startDate
-    );
-
-    // 8. AI Insights (Logika iz SoftZoneService)
-    const aiInsights = [
-      "Optimalna temperatura u Hurghadi (28°C)",
-      "Ušteda od 8% jer ste uzeli Hotel + Let + Izlete",
-      "Visoka pouzdanost dobavljača (99%)"
-    ];
+    // 4. Politika otkazivanja
+    const cancelSteps: CancellationStep[] = [{ daysBefore: 14, percent: 50 }, { daysBefore: 1, percent: 100 }];
+    const cancelInfo = AdvancedMathEngine.calculateCancellationPenalty(breakdown.finalTotal, cancelSteps, criteria.startDate);
 
     return {
       searchSummary,
@@ -139,7 +123,12 @@ export class NeoTravelMasterEngine {
       breakdown,
       cancellationPolicy: cancelInfo.policyDescription,
       currentCancelPenalty: cancelInfo.currentPenalty,
-      aiInsights
+      aiInsights: [
+        "Optimalna temperatura (28°C)",
+        "Ušteda od 8% na bundle popust",
+        "Pouzdanost 99%"
+      ],
+      criteria
     };
   }
 }

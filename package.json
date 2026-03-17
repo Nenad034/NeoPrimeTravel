@@ -1,19 +1,30 @@
 {
   "name": "neotravel-core",
   "version": "1.0.0",
-  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "simulate": "ts-node-esm scripts/simulate_dossier.ts"
+  },
   "dependencies": {
-    "@prisma/client": "^5.10.2",
+    "@prisma/client": "^5.22.0",
     "axios": "^1.6.7",
-    "decimal.js": "^10.4.3"
+    "decimal.js": "^10.4.3",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "lucide-react": "^0.344.0",
+    "framer-motion": "^11.0.8"
   },
   "devDependencies": {
-    "prisma": "^5.10.2",
+    "@types/node": "^20.11.24",
+    "@types/react": "^18.2.55",
+    "@types/react-dom": "^18.2.19",
+    "@vitejs/plugin-react": "^4.2.1",
+    "prisma": "^5.22.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3",
-    "@types/node": "^20.11.24"
-  },
-  "scripts": {
-    "simulate": "ts-node scripts/simulate_dossier.ts"
+    "vite": "^5.1.4"
   }
 }

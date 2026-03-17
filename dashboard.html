@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeoTravel | Dashboard Dossier Management</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="src/index.css">
+    <style>
+        /* DASHBOARD SPECIFIC LUXURY STYLES */
+        :root {
+            --sidebar-width: 260px;
+        }
+
+        body {
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            background-color: var(--bg-dark); /* Default to Dark as per preference */
+            color: var(--text-dark);
+            font-family: 'Outfit', sans-serif;
+        }
+
+        /* Sidebar Glassmorphism */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 30px 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 50px;
+            color: var(--text-dark);
+            letter-spacing: 1px;
+        }
+
+        .logo span { color: var(--accent); }
+
+        .nav-item {
+            padding: 14px 18px;
+            margin-bottom: 8px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: rgba(128, 0, 32, 0.2);
+            color: white;
+            border-left: 4px solid var(--accent);
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            padding: 40px;
+            overflow-y: auto;
+            background: radial-gradient(circle at top right, rgba(128, 0, 32, 0.05), transparent);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+
+        .search-ai {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 12px 25px;
+            border-radius: 30px;
+            width: 450px;
+            color: white;
+            outline: none;
+            font-family: inherit;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: var(--card-dark);
+            padding: 25px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(128, 0, 32, 0.4);
+        }
+
+        .stat-label { font-size: 14px; color: rgba(255, 255, 255, 0.5); margin-bottom: 10px; }
+        .stat-value { font-size: 28px; font-weight: 700; }
+        .stat-change { font-size: 12px; color: #10B981; margin-top: 5px; }
+
+        /* Dossier Table */
+        .dossier-section {
+            background: var(--card-dark);
+            border-radius: 24px;
+            padding: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .section-title { font-size: 20px; font-weight: 600; margin-bottom: 25px; display: flex; justify-content: space-between; }
+
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 15px; color: rgba(255, 255, 255, 0.4); font-weight: 400; font-size: 14px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+        td { padding: 20px 15px; border-bottom: 1px solid rgba(255, 255, 255, 0.03); }
+
+        .ref-badge { color: var(--accent); font-weight: 600; font-family: monospace; }
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .status-confirmed { background: rgba(16, 185, 129, 0.1); color: #10B981; }
+        .status-draft { background: rgba(255, 255, 255, 0.05); color: #94A3B8; }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .btn-primary:hover { opacity: 0.9; box-shadow: 0 4px 15px rgba(128, 0, 32, 0.3); }
+
+    </style>
+</head>
+<body class="dark"> <!-- User preferred Dark Mode -->
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+        <div class="logo">NEO<span>TRAVEL</span></div>
+        
+        <div class="nav-item active">Dashboard</div>
+        <div class="nav-item">Active Dossiers</div>
+        <div class="nav-item">Calendar Ops</div>
+        <div class="nav-item">Rooming List</div>
+        <div class="nav-item">Finances</div>
+        <div class="nav-item">Marketing</div>
+        
+        <div style="margin-top: auto;">
+            <div class="nav-item">Settings</div>
+            <div class="nav-item" style="color: #ef4444;">Logout</div>
+        </div>
+    </div>
+
+    <!-- MAIN -->
+    <div class="main-content">
+        <div class="header">
+            <div>
+                <h1 style="margin: 0; font-size: 32px;">Welcome back, Admin</h1>
+                <p style="color: rgba(255, 255, 255, 0.5); margin: 5px 0 0;">Here is your operational overview for today.</p>
+            </div>
+            <input type="text" class="search-ai" placeholder="Ask AI: 'Prikaži mi sve neplaćene dosijee za Hurghadu'...">
+        </div>
+
+        <!-- STATS -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Active Dossiers</div>
+                <div class="stat-value">142</div>
+                <div class="stat-change">+12% this week</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">JID Revenue</div>
+                <div class="stat-value">€84,200</div>
+                <div class="stat-change" style="color: var(--accent);">3 critical alerts</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Rooming Status</div>
+                <div class="stat-value">94%</div>
+                <div class="stat-change">6 pending manifests</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">AI Efficiency</div>
+                <div class="stat-value">2.4s</div>
+                <div class="stat-change">Avg. search response</div>
+            </div>
+        </div>
+
+        <!-- DOSSIER LIST -->
+        <div class="dossier-section">
+            <div class="section-title">
+                Recent Bookings (Dosijei)
+                <button class="btn-primary">+ New Booking</button>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>REFERENCE (REF)</th>
+                        <th>JID PRODAJE</th>
+                        <th>CUSTOMER</th>
+                        <th>DESTINATION</th>
+                        <th>TOTAL PRICE</th>
+                        <th>STATUS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="ref-badge">REF-14873-2026</td>
+                        <td style="font-family: monospace;">JID-992-AI</td>
+                        <td>Jovan Jovanović</td>
+                        <td>Hurghada, Egypt</td>
+                        <td>€1,142.40</td>
+                        <td><span class="status-badge status-confirmed">Confirmed</span></td>
+                    </tr>
+                    <tr>
+                        <td class="ref-badge">REF-10471-2026</td>
+                        <td style="font-family: monospace;">JID-441-MX</td>
+                        <td>Marko Arhitekta</td>
+                        <td>Paris, France</td>
+                        <td>€2,050.00</td>
+                        <td><span class="status-badge status-draft">Draft</span></td>
+                    </tr>
+                    <tr>
+                        <td class="ref-badge">REF-11920-2026</td>
+                        <td style="font-family: monospace;">JID-772-BC</td>
+                        <td>Milica Marković</td>
+                        <td>Cairo, Egypt</td>
+                        <td>€1,450.00</td>
+                        <td><span class="status-badge status-confirmed">Confirmed</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</body>
+</html>
