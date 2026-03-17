@@ -1,16 +1,18 @@
 import { BookingEntity } from './BookingEntity';
 import { BookingItemEntity } from './BookingItemEntity';
 import { PassengerEntity } from './PassengerEntity';
+import { RoomingRoomEntity } from './RoomingRoomEntity';
 
 /**
  * BookingDossier - Konsolidovani prikaz rezervacije (Agent View).
- * Objedinjuje glavu, stavke, putnike i finansije.
+ * Objedinjuje glavu, stavke, putnike, rooming i finansije.
  */
 export class BookingDossier {
   constructor(
     public readonly header: BookingEntity,
     public readonly items: BookingItemEntity[],
     public readonly passengers: PassengerEntity[],
+    public readonly rooming: RoomingRoomEntity[] = [],
     public readonly history: any[] = []
   ) {}
 
