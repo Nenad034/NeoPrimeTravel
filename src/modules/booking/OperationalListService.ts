@@ -26,7 +26,7 @@ export class OperationalListService {
         }))
       }));
 
-    console.log(`[OpsService] Generisana rooming lista za ${dossier.header.reference}`);
+    console.log(`[OpsService] Generisana rooming lista za ${dossier.header.cisCode}`);
     return ok(roomingData);
   }
 
@@ -41,7 +41,7 @@ export class OperationalListService {
       dob: (p as any).props.dateOfBirth
     }));
 
-    console.log(`[OpsService] Generisan manifest za ${dossier.header.reference}`);
+    console.log(`[OpsService] Generisan manifest za ${dossier.header.cisCode}`);
     return ok(manifest);
   }
 

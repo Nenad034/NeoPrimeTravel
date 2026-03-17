@@ -6,7 +6,6 @@ import { RegulatoryService } from '../regulatory/RegulatoryService';
  * FinanceService - Upravlja uplatama i pokreće fiskalizaciju.
  */
 export class FinanceService {
-  private regulatoryService = new RegulatoryService();
 
   /**
    * Registruje uplatu korisnika.
@@ -18,7 +17,7 @@ export class FinanceService {
     // 1. Snimanje u bazu (simulacija)
     
     // 2. Automatsko pokretanje fiskalizacije
-    const fiscalResult = await this.regulatoryService.processFiscalization(
+    const fiscalResult = await RegulatoryService.processFiscalization(
       payment.id || 'NEW',
       payment.amount,
       payment.bookingId

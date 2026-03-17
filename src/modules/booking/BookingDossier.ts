@@ -21,7 +21,7 @@ export class BookingDossier {
    */
   get financialSummary() {
     return {
-      totalSell: this.header.totalAmount,
+      totalSell: this.header.totalPrice,
       itemCount: this.items.length,
       passengers: this.passengers.length
     };

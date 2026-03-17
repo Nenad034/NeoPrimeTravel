@@ -45,6 +45,10 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import Footer from './components/Footer';
 import { GeometricBrain } from './components/icons/GeometricBrain';
+import { DynamicPackagingEngine } from './modules/booking/DynamicPackagingEngine';
+import { BundleRuleService } from './modules/booking/BundleRuleService';
+import { OperationalReportsView } from './modules/production/OperationalReportsView';
+import { BundleRuleMasterView } from './modules/booking/BundleRuleMasterView';
 
 // --- Types & Mock Data ---
 interface Selection { id: string; type: string; name: string; price: number; icon: React.ReactNode; }
@@ -89,9 +93,12 @@ const App = () => {
   const [showCalendar, setShowCalendar] = useState(false);
   const [packageStep, setPackageStep] = useState(0); 
   const [selectedServices, setSelectedServices] = useState<Selection[]>([]);
+  const [activeModule, setActiveModule] = useState<string | null>(null);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
+    // Seed initial rules (Standard Discount)
+    BundleRuleService.seedInitialRules();
   }, [isDarkMode]);
 
   const handleServiceSelect = (service: any) => {
@@ -110,7 +117,11 @@ const App = () => {
     setPackageStep(packageStep + 1);
   };
 
-  const totalPrice = selectedServices.reduce((acc, s) => acc + s.price, 0);
+  const validation = DynamicPackagingEngine.validatePackage(
+    selectedServices.map(s => ({ type: s.type.toUpperCase() } as any))
+  );
+
+  const totalPrice = DynamicPackagingEngine.calculateBundlePrice(selectedServices);
 
   // --- View Components ---
 
@@ -150,6 +161,46 @@ const App = () => {
             </div>
           </motion.div>
         ))}
+      </div>
+
+      <div className="glass-card" style={{ padding: '24px', border: '1px solid rgba(128,0,32,0.1)', background: 'rgba(128,0,32,0.02)' }}>
+         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+               <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'var(--bordo)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Zap size={20} color="white" />
+               </div>
+               <div>
+                  <h3 style={{ fontSize: '16px', fontWeight: '900' }}>AI PRICING INTELLIGENCE</h3>
+                  <p style={{ fontSize: '12px', opacity: 0.6 }}>Agent predlaže optimizaciju cena na osnovu potražnje.</p>
+               </div>
+            </div>
+            <button className="btn-primary" style={{ padding: '8px 20px', fontSize: '11px' }}>OSVEŽI ANALIZU</button>
+         </div>
+         
+         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+            <div style={{ padding: '16px', background: 'white', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.05)' }}>
+               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                  <span style={{ fontSize: '10px', fontWeight: '900', color: 'var(--bordo)' }}>SUGESTIJA: EGIPAT LUKSUZ BUNDLE</span>
+                  <span style={{ fontSize: '10px', fontWeight: '800', opacity: 0.5 }}>POVERENJE: 94%</span>
+               </div>
+               <p style={{ fontSize: '12px', fontWeight: '600', marginBottom: '16px' }}>Uočen 3x veći trend pretraga za Rixos hotele + Air Cairo letove. Predlog: -7% popusta na paket.</p>
+               <div style={{ display: 'flex', gap: '8px' }}>
+                  <button className="btn-primary" onClick={() => setActiveModule('bundle')} style={{ flex: 1, fontSize: '10px', padding: '10px' }}>ODOBRI PRAVILO</button>
+                  <button className="glass-card" style={{ flex: 1, fontSize: '10px', padding: '10px', border: 'none' }}>IGNORIŠI</button>
+               </div>
+            </div>
+            <div style={{ padding: '16px', background: 'white', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.05)' }}>
+               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                  <span style={{ fontSize: '10px', fontWeight: '900', color: 'var(--bordo)' }}>SUGESTIJA: HYBRID TRANSFER DISCOUNT</span>
+                  <span style={{ fontSize: '10px', fontWeight: '800', opacity: 0.5 }}>POVERENJE: 82%</span>
+               </div>
+               <p style={{ fontSize: '12px', fontWeight: '600', marginBottom: '16px' }}>Kombinacija Hotel + Transfer ima nizak conversion rate. Predlog: -€20 fiksno + 3% popusta.</p>
+               <div style={{ display: 'flex', gap: '8px' }}>
+                  <button className="btn-primary" onClick={() => setActiveModule('bundle')} style={{ flex: 1, fontSize: '10px', padding: '10px' }}>ODOBRI PRAVILO</button>
+                  <button className="glass-card" style={{ flex: 1, fontSize: '10px', padding: '10px', border: 'none' }}>IGNORIŠI</button>
+               </div>
+            </div>
+         </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 1.2fr', gap: '24px' }}>
@@ -458,8 +509,117 @@ const App = () => {
       <NavItem icon={<SearchIcon size={20}/>} label="Pretraga" active={activeTab === 'search'} onClick={() => setActiveTab('search')} horizontal={menuPosition === 'horizontal'} />
       <NavItem icon={<FileText size={20}/>} label="Dosijei" active={activeTab === 'dossiers'} onClick={() => setActiveTab('dossiers')} horizontal={menuPosition === 'horizontal'} />
       <NavItem icon={<CalendarIcon size={20}/>} label="Kalendar" active={activeTab === 'calendar'} onClick={() => setActiveTab('calendar')} horizontal={menuPosition === 'horizontal'} />
-      <NavItem icon={<Users size={20}/>} label="Rooming" active={activeTab === 'rooming'} onClick={() => setActiveTab('rooming')} horizontal={menuPosition === 'horizontal'} />
+      <NavItem icon={<Users size={20}/>} label="Rooming" active={activeTab === 'rooming'} onClick={() => { setActiveTab('rooming'); setActiveModule(null); }} horizontal={menuPosition === 'horizontal'} />
+      <NavItem icon={<Activity size={20}/>} label="Moduli" active={activeTab === 'modules'} onClick={() => { setActiveTab('modules'); setActiveModule(null); }} horizontal={menuPosition === 'horizontal'} />
     </>
+  );
+
+  const ModulesView = () => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+      <div>
+        <h2 style={{ fontSize: '24px', fontWeight: '900' }}>Sistemski Moduli</h2>
+        <p style={{ opacity: 0.6, fontSize: '13px' }}>Upravljanje nezavisnim komponentama NeoTravel platforme.</p>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
+        {/* Kategorija 1: Operativa */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ fontSize: '11px', fontWeight: '900', opacity: 0.4, letterSpacing: '1px' }}>OPERATIVNI MODULI</div>
+          {[
+            { name: 'Booking Engine', desc: 'Centralna logika za kreiranje rezervacija.', status: 'AKTIVAN', icon: <ShoppingBag size={18} /> },
+            { name: 'Dossier Director', desc: 'Orkestracija dokumenata i statusa dosijea.', status: 'AKTIVAN', icon: <FileText size={18} /> },
+            { name: 'Ops List Generator', desc: 'Rooming, Manifest i Transfer liste.', status: 'AKTIVAN', icon: <Layout size={18} /> }
+          ].map(m => (
+            <div key={m.name} className="glass-card" style={{ padding: '20px', border: '1px solid rgba(0,0,0,0.05)' }}>
+              <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
+                <div style={{ color: 'var(--bordo)' }}>{m.icon}</div>
+                <div style={{ fontSize: '14px', fontWeight: '800' }}>{m.name}</div>
+              </div>
+              <p style={{ fontSize: '11px', opacity: 0.6, lineHeight: '1.5', marginBottom: '16px' }}>{m.desc}</p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '9px', fontWeight: '900', color: '#10B981' }}>{m.status}</span>
+                <button 
+                  onClick={() => (m.name === 'Ops List Generator') ? setActiveModule('ops') : null}
+                  style={{ background: 'none', border: 'none', color: 'var(--bordo)', fontSize: '10px', fontWeight: '900', cursor: 'pointer' }}
+                >
+                  KONFIGURACIJA
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Kategorija 2: Finansije i Regulativa */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ fontSize: '11px', fontWeight: '900', opacity: 0.4, letterSpacing: '1px' }}>FINANSIJE I REGULATIVA</div>
+          {[
+            { name: 'Finance Service', desc: 'Procesiranje uplata i finansijska analitika.', status: 'AKTIVAN', icon: <Euro size={18} /> },
+            { name: 'Regulatory (CIS/SEF)', desc: 'Fiskalizacija, eTurista i eFakture.', status: 'SINHRONIZOVAN', icon: <CheckCircle size={18} /> },
+            { name: 'Inventory Master', desc: 'Upravljanje zakupljenim kapacitetima.', status: 'AKTIVAN', icon: <Building2 size={18} /> }
+          ].map(m => (
+            <div key={m.name} className="glass-card" style={{ padding: '20px', border: '1px solid rgba(0,0,0,0.05)' }}>
+              <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
+                <div style={{ color: 'var(--bordo)' }}>{m.icon}</div>
+                <div style={{ fontSize: '14px', fontWeight: '800' }}>{m.name}</div>
+              </div>
+              <p style={{ fontSize: '11px', opacity: 0.6, lineHeight: '1.5', marginBottom: '16px' }}>{m.desc}</p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '9px', fontWeight: '900', color: '#10B981' }}>{m.status}</span>
+                <button 
+                  onClick={() => (m.name === 'Inventory Master') ? setActiveModule('ops') : null}
+                  style={{ background: 'none', border: 'none', color: 'var(--bordo)', fontSize: '10px', fontWeight: '900', cursor: 'pointer' }}
+                >
+                  KONFIGURACIJA
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Kategorija 3: Intelligence */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ fontSize: '11px', fontWeight: '900', opacity: 0.4, letterSpacing: '1px' }}>AI & INTELLIGENCE</div>
+          {[
+            { name: 'DP Engine (DPE)', desc: 'Dinamičko pakovanje i validacija.', status: 'AKTIVAN', icon: <Zap size={18} /> },
+            { name: 'Bundle Rule Master', desc: 'Upravljanje popustima i AI sugestije.', status: 'POTREBNO ODOBRENJE', icon: <Activity size={18} />, highlight: true },
+            { name: 'Guardian Angel', desc: 'Proaktivna detekcija rizika u korpi.', status: 'AKTIVAN', icon: <GeometricBrain size={18} /> }
+          ].map(m => (
+            <div key={m.name} className="glass-card" style={{ padding: '20px', border: m.highlight ? '1px solid var(--bordo)' : '1px solid rgba(0,0,0,0.05)', background: m.highlight ? 'rgba(128,0,32,0.02)' : 'transparent' }}>
+              <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
+                <div style={{ color: 'var(--bordo)' }}>{m.icon}</div>
+                <div style={{ fontSize: '14px', fontWeight: '800' }}>{m.name}</div>
+              </div>
+              <p style={{ fontSize: '11px', opacity: 0.6, lineHeight: '1.5', marginBottom: '16px' }}>{m.desc}</p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '9px', fontWeight: '900', color: m.highlight ? 'var(--bordo)' : '#10B981' }}>{m.status}</span>
+                <button 
+                  onClick={() => m.name === 'Bundle Rule Master' ? setActiveModule('bundle') : null}
+                  style={{ background: 'none', border: 'none', color: 'var(--bordo)', fontSize: '10px', fontWeight: '900', cursor: 'pointer' }}
+                >
+                  KONFIGURACIJA
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      {activeModule === 'ops' && (
+        <div style={{ position: 'fixed', top: 0, left: menuPosition === 'vertical' ? '320px' : 0, right: 0, bottom: 0, background: 'var(--bg-app)', zIndex: 1000, padding: '40px', overflowY: 'auto' }}>
+           <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', opacity: 0.6 }} onClick={() => setActiveModule(null)}>
+              <ChevronLeft size={16} /> <span style={{ fontSize: '11px', fontWeight: '900' }}>NAZAD NA MODULE</span>
+           </div>
+           <OperationalReportsView />
+        </div>
+      )}
+      {activeModule === 'bundle' && (
+        <div style={{ position: 'fixed', top: 0, left: menuPosition === 'vertical' ? '320px' : 0, right: 0, bottom: 0, background: 'var(--bg-app)', zIndex: 1000, padding: '40px', overflowY: 'auto' }}>
+           <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', opacity: 0.6 }} onClick={() => setActiveModule(null)}>
+              <ChevronLeft size={16} /> <span style={{ fontSize: '11px', fontWeight: '900' }}>NAZAD NA MODULE</span>
+           </div>
+           <BundleRuleMasterView />
+        </div>
+      )}
+    </div>
   );
 
   return (
@@ -513,8 +673,9 @@ const App = () => {
                 {activeTab === 'dashboard' && <DashboardView />}
                 {activeTab === 'search' && <SearchView />}
                 {activeTab === 'dossiers' && <DossiersView />}
-                {activeTab === 'calendar' && <CalendarView />}
+                 {activeTab === 'calendar' && <CalendarView />}
                 {activeTab === 'rooming' && <RoomingView />}
+                {activeTab === 'modules' && <ModulesView />}
               </motion.div>
             </AnimatePresence>
           </main>
@@ -542,6 +703,19 @@ const App = () => {
                          <div className="basket-price" style={{ fontSize: '14px' }}>€{s.price}</div>
                       </div>
                    ))}
+
+                   {/* Guardian Angel Suggestions */}
+                   {validation.suggestions.length > 0 && (
+                     <div style={{ marginTop: '20px', padding: '16px', background: 'rgba(128,0,32,0.05)', borderRadius: '12px', border: '1px solid rgba(128,0,32,0.1)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                           <Zap size={14} color="var(--bordo)" />
+                           <span style={{ fontSize: '10px', fontWeight: '900', color: 'var(--bordo)', letterSpacing: '0.5px' }}>GUARDIAN ANGEL SUGESTIJA</span>
+                        </div>
+                        {validation.suggestions.map((s, i) => (
+                          <div key={i} style={{ fontSize: '11px', fontWeight: '600', opacity: 0.8, lineHeight: '1.4' }}>{s}</div>
+                        ))}
+                     </div>
+                   )}
                 </div>
                 {selectedServices.length > 0 && (
                   <div className="total-summary-box" style={{ background: 'var(--bordo)', borderRadius: '16px', padding: '24px' }}>

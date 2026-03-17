@@ -24,13 +24,13 @@ export class BookingService {
       const totalNet = items.reduce((sum, item) => sum + (item as any).props.netAmount, 0);
 
       const bookingResult = BookingEntity.create({
-        bookingReference: ref,
-        bookingTypeCode: 'DYNAMIC_PACKAGE',
-        userId,
-        statusCode: 'DRAFT',
-        currencyCode: 'EUR',
-        totalSellAmount: totalSell,
-        totalNetAmount: totalNet,
+        cisCode: ref,
+        status: 'DRAFT',
+        customerType: 'INDIVIDUAL',
+        totalPrice: totalSell,
+        currency: 'EUR',
+        bookerName: 'System',
+        bookerEmail: 'system@neotravel.rs'
       });
 
       if (bookingResult.isFailure()) return fail(bookingResult.error);
@@ -52,7 +52,7 @@ export class BookingService {
       return fail(new Error('Vaučer se može izdati samo za potvrđene rezervacije.'));
     }
     
-    const voucherKey = `VOUCH-${booking.reference}.pdf`;
+    const voucherKey = `VOUCH-${booking.cisCode}.pdf`;
     console.log(`[BookingEngine] Generisan vaučer: ${voucherKey}`);
     
     return ok(voucherKey);

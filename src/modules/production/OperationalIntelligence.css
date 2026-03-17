@@ -1,0 +1,152 @@
+/* Operational Intelligence Styles - NeoTravel Style */
+
+.ops-grid-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+}
+
+.ops-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 24px;
+}
+
+.inventory-grid {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.inventory-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.inventory-table th {
+  padding: 12px 8px;
+  background: rgba(0, 0, 0, 0.02);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  font-weight: 800;
+  text-align: center;
+  min-width: 60px;
+}
+
+.inventory-table td {
+  padding: 8px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+  text-align: center;
+  position: relative;
+}
+
+.hotel-row-header {
+  text-align: left !important;
+  font-weight: 800;
+  background: rgba(128, 0, 32, 0.02);
+  color: var(--bordo);
+  padding-left: 16px !important;
+  font-size: 12px;
+}
+
+.capacity-cell {
+  border-radius: 4px;
+  padding: 4px;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.capacity-cell:hover {
+  background: rgba(0, 0, 0, 0.05);
+  transform: scale(1.05);
+}
+
+.capacity-critical {
+  color: #ef4444;
+  font-weight: 900;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.capacity-warning {
+  color: #f59e0b;
+  font-weight: 800;
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.capacity-stop {
+  background: #1a1a1a;
+  color: white;
+  font-weight: 900;
+}
+
+.capacity-ok {
+  color: #10b981;
+  font-weight: 600;
+  background: rgba(16, 185, 129, 0.05);
+}
+
+.mini-badge {
+  font-size: 8px;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.ops-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.ops-tab {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.2s;
+  background: rgba(0, 0, 0, 0.03);
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.ops-tab.active {
+  background: var(--bordo);
+  color: white;
+  box-shadow: 0 4px 12px rgba(128, 0, 32, 0.2);
+}
+
+.ops-tab:hover:not(.active) {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+/* Wizard styles */
+.capacity-wizard {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 480px;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  padding: 32px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.wizard-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  z-index: 999;
+}

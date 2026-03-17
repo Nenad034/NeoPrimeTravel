@@ -3,6 +3,7 @@ import { Result, ok, fail } from '../../core/error/Result';
 export interface HotelProps {
   id?: string;
   productId: string; // Veza ka product.products
+  name: string;
   stars: number;
   cityName: string;
   countryCode: string;
@@ -38,6 +39,7 @@ export class HotelEntity {
 
   // Getteri (Immutable pristup)
   get id() { return this.props.id; }
+  get name() { return this.props.name; }
   get stars() { return this.props.stars; }
   get location() { return `${this.props.cityName}, ${this.props.countryCode}`; }
   get coordinates() { 
