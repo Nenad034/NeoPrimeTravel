@@ -1,410 +1,262 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// 🌍 NeoTravel Global Hybrid Schema
+// Combines Industry Scale Architecture with OlympicHub Operational Excellence
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
 
 generator client {
   provider = "prisma-client-js"
 }
 
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
+// --- CORE PRODUCT DOMAIN (Industry Standards) ---
 
-// =============================================================================
-// DOMAIN 1: IDENTITY & ACCESS (IAM)
-// =============================================================================
-
-model User {
-  id                BigInt    @id @default(autoincrement())
-  email             String    @unique
-  username          String?   @unique
-  passwordHash      String
-  statusCode        String    @default("active")
-  userTypeCode      String    @default("internal")
-  isInternal        Boolean   @default(false)
-  isB2BUser         Boolean   @default(false)
-  isSupplierUser    Boolean   @default(false)
-  supplierId        BigInt?
-  supplierRel       Supplier? @relation("SupplierUsers", fields: [supplierId], references: [id])
-  lastLoginAt       DateTime?
+model Property {
+  id                String    @id @default(uuid())
+  name              String
+  slug              String    @unique
+  category          String    // 3*, 4*, 5*, Boutique...
+  type              String    // Hotel, Apartment, Villa, Camp
+  locationId        String
+  address           String
+  latitude          Float?
+  longitude         Float?
+  description       String?   
+  amenities         String?   // JSON string in SQLite
+  roomTypes         RoomType[]
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
-  deletedAt         DateTime?
-
-  profile           UserProfile?
-  roles             UserRole[]
-  teamMemberships   TeamMember[]
-  sessions          Session[]
-  apiClients        ApiClient[]
-  securityEvents    SecurityEvents[]
-  assignedWorkspaces ReservationWorkspace[]
-  auditLogs         AuditLog[]
-
-  @@map("iam_users")
 }
 
-model UserProfile {
-  id             BigInt   @id @default(autoincrement())
-  userId         BigInt   @unique
-  user           User     @relation(fields: [userId], references: [id])
-  firstName      String
-  lastName       String
-  displayName    String?
-  phone          String?
-  languageCode   String?
-  timezone       String?
-  title          String?
-  signatureHtml  String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  @@map("iam_user_profiles")
+model RoomType {
+  id                String    @id @default(uuid())
+  propertyId        String
+  property          Property  @relation(fields: [propertyId], references: [id])
+  name              String    // Standard, Superior, Junior Suite...
+  code              String?   // Supplier-specific code mapping
+  maxAdults         Int
+  maxChildren       Int
+  maxOccupancy      Int
+  bedConfiguration  String?   // JSON string in SQLite
+  roomingRooms      RoomingRoom[]
 }
 
-model Role {
-  id          BigInt           @id @default(autoincrement())
-  code        String           @unique
-  name        String
-  scopeCode   String
-  isSystem    Boolean          @default(false)
-  createdAt   DateTime         @default(now())
-  permissions RolePermission[]
-  userRoles   UserRole[]
-
-  @@map("iam_roles")
-}
-
-model Permission {
-  id          BigInt           @id @default(autoincrement())
-  code        String           @unique
-  moduleCode  String
-  actionCode  String
-  description String?
-  createdAt   DateTime         @default(now())
-  roles       RolePermission[]
-
-  @@unique([moduleCode, actionCode])
-  @@map("iam_permissions")
-}
-
-model RolePermission {
-  id           BigInt     @id @default(autoincrement())
-  roleId       BigInt
-  permissionId BigInt
-  role         Role       @relation(fields: [roleId], references: [id])
-  permission   Permission @relation(fields: [permissionId], references: [id])
-  createdAt    DateTime   @default(now())
-
-  @@unique([roleId, permissionId])
-  @@map("iam_role_permissions")
-}
-
-model UserRole {
-  id        BigInt    @id @default(autoincrement())
-  userId    BigInt
-  roleId    BigInt
-  user      User      @relation(fields: [userId], references: [id])
-  role      Role      @relation(fields: [roleId], references: [id])
-  validFrom DateTime?
-  validTo   DateTime?
-  createdAt DateTime  @default(now())
-
-  @@map("iam_user_roles")
-}
-
-// =============================================================================
-// DOMAIN 2: CRM & ACCOUNTS
-// =============================================================================
-
-model Agency {
-  id                  BigInt       @id @default(autoincrement())
-  agencyCode          String       @unique
-  legalName           String
-  commercialName      String?
-  primaryEmail        String?
-  primaryPhone        String?
-  websiteUrl          String?
-  taxNumber           String?
-  registrationNumber  String?
-  statusCode          String       @default("active")
-  accountManagerId    BigInt?
-  createdAt           DateTime     @default(now())
-  updatedAt           DateTime     @updatedAt
-
-  contacts            Contact[]
-  agencyUsers         B2BAgencyUser[]
-  bookings            Booking[]
-
-  @@map("crm_agencies")
-}
-
-model Contact {
-  id                BigInt    @id @default(autoincrement())
-  agencyId          BigInt?
-  agency            Agency?   @relation(fields: [agencyId], references: [id])
-  contactTypeCode   String
-  firstName         String
-  lastName          String
-  primaryEmail      String?
-  primaryPhone      String?
-  statusCode        String    @default("active")
-  languageCode      String?
-  countryCode       String?
-  ownerUserId       BigInt?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-
-  profile           ContactProfile?
-  marketingConsents ContactMarketingConsent[]
-  travelPreferences ContactTravelPreference?
-  bookings          Booking[]
-
-  @@map("crm_contacts")
-}
-
-model Supplier {
-  id              BigInt           @id @default(autoincrement())
-  supplierCode    String           @unique
-  legalName       String
-  supplierTypeCode String
-  primaryEmail    String?
-  primaryPhone    String?
-  statusCode      String           @default("active")
-  createdAt       DateTime         @default(now())
-  
-  profile         SupplierProfile?
-  products        Product[]
-  contracts       Contract[]
-  bookings        BookingItem[]
-  payables        Payable[]
-  reservations    SupplierReservation[]
-  users           User[]    @relation("SupplierUsers")
-
-  @@map("crm_suppliers")
-}
-
-// =============================================================================
-// DOMAIN 3: PRODUCT MASTER
-// =============================================================================
-
-model Destination {
-  id                  BigInt        @id @default(autoincrement())
-  destinationCode     String        @unique
-  destinationTypeCode String
-  name                String
-  slug                String        @unique
-  parentDestinationId BigInt?
-  parent              Destination?  @relation("DestinationHierarchy", fields: [parentDestinationId], references: [id])
-  children            Destination[] @relation("DestinationHierarchy")
-  countryCode         String?
-  latitude            Decimal?      @db.Decimal(10, 7)
-  longitude           Decimal?      @db.Decimal(10, 7)
-  statusCode          String        @default("active")
-
-  products            Product[]
-  charterSeasons      CharterSeason[]
-
-  @@map("product_destinations")
-}
-
-model Product {
-  id                  BigInt      @id @default(autoincrement())
-  productTypeCode     String
-  name                String
-  destinationId       BigInt?
-  destination         Destination? @relation(fields: [destinationId], references: [id])
-  supplierId          BigInt?
-  supplier            Supplier?    @relation(fields: [supplierId], references: [id])
-  statusCode          String       @default("active")
-  publicationStatus   String       @default("draft")
-  sourceTypeCode      String       @default("internal")
-  createdAt           DateTime     @default(now())
-
-  hotel               Hotel?
-  transfer            Transfer?
-  activity            Activity?
-  contracts           Contract[]
-  tourProgram         TourProgram?
-
-  @@map("product_products")
-}
-
-model Hotel {
-  id                BigInt            @id @default(autoincrement())
-  productId         BigInt            @unique
-  product           Product           @relation(fields: [productId], references: [id])
-  stars             Int?
-  cityName          String?
-  countryCode       String?
-  latitude          Decimal?          @db.Decimal(10, 7)
-  longitude         Decimal?          @db.Decimal(10, 7)
-  checkInTime       String?
-  checkOutTime      String?
-  hotelChain        String?
-  statusCode        String            @default("active")
-
-  roomTypes         HotelRoomType[]
-  boardTypes        HotelBoardType[]
-  allotments        Allotment[]
-
-  @@map("product_hotels")
-}
-
-// =============================================================================
-// DOMAIN 6: BOOKING CORE
-// =============================================================================
+// --- BOOKING & OPERATIONS DOMAIN (Operational Excellence) ---
 
 model Booking {
-  id                BigInt    @id @default(autoincrement())
-  bookingReference  String    @unique
-  bookingTypeCode   String
-  userId            BigInt?
-  user              User?     @relation(fields: [userId], references: [id])
-  contactId         BigInt?
-  contact           Contact?  @relation(fields: [contactId], references: [id])
-  agencyId          BigInt?
-  agency            Agency?   @relation(fields: [agencyId], references: [id])
-  offerId           BigInt?
-  // offer relation would be here
-  statusCode        String    @default("draft")
-  currencyCode      String    @default("EUR")
-  travelStartDate   DateTime?
-  travelEndDate     DateTime?
-  totalSellAmount   Decimal   @default(0) @db.Decimal(14, 2)
-  totalNetAmount    Decimal   @default(0) @db.Decimal(14, 2)
+  id                String    @id @default(uuid())
+  cisCode           String    @unique // structured REF - 10000-2026
+  jidProdaje        String?   @unique // CIS JID Prodaje
+  externalRef       String?   // Provider's ID (Expedia, Solvex...)
+  status            String @default("DRAFT")
+  customerType      String @default("INDIVIDUAL")
+  // Financial & AI Analytics
+  totalPrice        Decimal   
+  totalNetPrice     Decimal   @default(0)
+  totalTaxAmount    Decimal   @default(0)
+  totalMarkupAmount Decimal   @default(0)
+  totalDiscountAmount Decimal @default(0)
+  currency          String    @default("EUR")
+  aiTokenUsage      Int       @default(0)    
+  aiCostAmount      Decimal   @default(0)   
+  
+  // Contacts
+  bookerName        String
+  bookerEmail       String
+  bookerPhone       String?
+  
+  items             BookingItem[]
+  passengers        Passenger[]
+  payments          Payment[]
+  documents         DossierDocument[]
+  
+  // Operational Intelligence (Your Rooming logic)
+  roomingSets       RoomingSet[]
+  
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
+  
+  // Intelligence & Monitoring (Inspirisano OlympicHub-AI-Lab)
+  activities        DossierActivity[]
+  priorityScore     Int       @default(0) // 0-100: Hitnost plaćanja/obrade
+  isVccGenerated    Boolean   @default(false)
+}
 
-  items             BookingItem[]
-  passengers        BookingPassenger[]
-  documents         BookingDocument[]
-  workspace         ReservationWorkspace?
-  payments          Payment[]
-  receivables       Receivable[]
-  roomingSets       RoomingSet[]
-  sefDocuments      SefDocument[]
+model DossierActivity {
+  id                String    @id @default(uuid())
+  bookingId         String
+  booking           Booking   @relation(fields: [bookingId], references: [id])
+  type              String    // CREATED, STATUS_CHANGE, PRICE_UPDATE, PASSENGER_MOD, MSG_SENT
+  description       String
+  userId            String?   // Ko je uradio (Agent ID)
+  metadata          String?   // JSON snapshot promene (SQLite string)
+  createdAt         DateTime  @default(now())
+}
 
-  @@map("booking_bookings")
+model RoomingSet {
+  id                String    @id @default(uuid())
+  bookingId         String
+  booking           Booking   @relation(fields: [bookingId], references: [id])
+  label             String?   // "Family Room 1", "Drivers Accommodation"
+  rooms             RoomingRoom[]
+}
+
+model RoomingRoom {
+  id                String    @id @default(uuid())
+  roomingSetId      String
+  roomingSet        RoomingSet @relation(fields: [roomingSetId], references: [id])
+  roomTypeId        String
+  roomType          RoomType  @relation(fields: [roomTypeId], references: [id])
+  providerRoomId    String?   // Optional: Actual room number or ID from hotel/provider
+  passengers        Passenger[]
+  status            String?   // Checked-in, Clean, Maintenance
+}
+
+model Passenger {
+  id                String    @id @default(uuid())
+  bookingId         String
+  booking           Booking   @relation(fields: [bookingId], references: [id])
+  roomingRoomId     String?
+  roomingRoom       RoomingRoom? @relation(fields: [roomingRoomId], references: [id])
+  
+  firstName         String
+  lastName          String
+  type              String @default("ADULT")
+  birthDate         DateTime?
+  passportNo        String?
+  specialRequests   String?   
+  isLead            Boolean   @default(false)
 }
 
 model BookingItem {
-  id                BigInt    @id @default(autoincrement())
-  bookingId         BigInt
+  id                String    @id @default(uuid())
+  bookingId         String
   booking           Booking   @relation(fields: [bookingId], references: [id])
-  itemNo            Int
-  itemTypeCode      String
-  supplierId        BigInt?
-  supplier          Supplier? @relation(fields: [supplierId], references: [id])
-  statusCode        String    @default("new")
-  serviceStartDate  DateTime?
-  serviceEndDate    DateTime?
-  grossAmount       Decimal   @default(0) @db.Decimal(14, 2)
-  netAmount         Decimal   @default(0) @db.Decimal(14, 2)
-
-  supplierReservations SupplierReservation[]
-  payables             Payable[]
-
-  @@unique([bookingId, itemNo])
-  @@map("booking_items")
+  type              String    // ACCOMMODATION, TRANSPORT, etc.
+  description       String
+  unitPrice         Decimal
+  quantity          Int       @default(1)
+  totalPrice        Decimal
+  netPrice          Decimal?  @default(0)
+  taxAmount         Decimal?  @default(0)
+  markupAmount      Decimal?  @default(0)
+  discountAmount    Decimal?  @default(0)
+  currency          String
+  
+  // Monitoring (Sekcija 1.1 Supplier Obligations)
+  supplierDeadline  DateTime? // Datum do kog se mora platiti dobavljaču
+  cancelDeadline    DateTime? // Datum do kog je besplatno otkazivanje
+  externalStatus    String?   // Status kod dobavljača (npr. "Confirmed", "On Request")
 }
 
-// =============================================================================
-// DOMAIN: CONTROL & AUDIT
-// =============================================================================
-
-model AuditLog {
-  id                BigInt   @id @default(autoincrement())
-  entityTypeCode    String
-  entityId          BigInt
-  actionCode        String
-  oldValueJson      Json?
-  newValueJson      Json?
-  performedByUserId BigInt?
-  performedBy       User?    @relation(fields: [performedByUserId], references: [id])
-  createdAt         DateTime @default(now())
-
-  @@map("control_audit_logs")
+model CommercialRule {
+  id                String    @id @default(uuid())
+  name              String
+  type              String    // MARKUP, COMMISSION, DISCOUNT, FEE
+  targetType        String    // GLOBAL, PRODUCT_TYPE, SUPPLIER, DESTINATION
+  targetValue       String?   // e.g. "HOTEL", "Expedia", "EG"
+  calculationType   String    // PERCENT, FIXED, STEPPED
+  value             Decimal
+  priority          Int       @default(0)
+  active            Boolean   @default(true)
+  createdAt         DateTime  @default(now())
 }
 
-// NOTE: Rest of the 500+ tables would follow this pattern. 
-// I have implemented the CORE SPINE here.
-
-// Placeholder models needed for relations above
-model Session { id BigInt @id @default(autoincrement()); userId BigInt; user User @relation(fields:[userId], references:[id]); sessionTokenHash String @unique; ipAddress String?; userAgent String?; startedAt DateTime @default(now()); expiresAt DateTime; revokedAt DateTime?; @@map("iam_sessions") }
-model ApiClient { id BigInt @id @default(autoincrement()); name String; clientTypeCode String; ownerUserId BigInt?; user User? @relation(fields:[ownerUserId], references:[id]); statusCode String @default("active"); createdAt DateTime @default(now()); @@map("iam_api_clients") }
-model SecurityEvents { id BigInt @id @default(autoincrement()); userId BigInt?; user User? @relation(fields:[userId], references:[id]); eventTypeCode String; severityCode String; ipAddress String?; detailsJson Json?; createdAt DateTime @default(now()); @@map("iam_security_events") }
-model Team { id BigInt @id @default(autoincrement()); name String @unique; teamTypeCode String; statusCode String @default("active"); createdAt DateTime @default(now()); members TeamMember[]; @@map("iam_teams") }
-model TeamMember { id BigInt @id @default(autoincrement()); teamId BigInt; team Team @relation(fields:[teamId], references:[id]); userId BigInt; user User @relation(fields:[userId], references:[id]); membershipRole String @default("member"); isPrimary Boolean @default(false); createdAt DateTime @default(now()); @@unique([teamId, userId]); @@map("iam_team_members") }
-model ContactProfile { id BigInt @id @default(autoincrement()); contactId BigInt @unique; contact Contact @relation(fields:[contactId], references:[id]); dateOfBirth DateTime?; nationalityCode String?; passportNumber String?; passportExpiryDate DateTime?; genderCode String?; customerSegmentCode String?; vipLevelCode String?; notesInternal String?; @@map("crm_contact_profiles") }
-model ContactMarketingConsent { id BigInt @id @default(autoincrement()); contactId BigInt; contact Contact @relation(fields:[contactId], references:[id]); channelCode String; consentStatusCode String; consentSourceCode String?; grantedAt DateTime?; revokedAt DateTime?; @@map("crm_contact_marketing_consents") }
-model ContactTravelPreference { id BigInt @id @default(autoincrement()); contactId BigInt @unique; contact Contact @relation(fields:[contactId], references:[id]); preferredAirportCode String?; budgetMin Decimal? @db.Decimal(14,2); budgetMax Decimal? @db.Decimal(14,2); preferredBoardCode String?; travelStyleCode String?; directFlightsOnly Boolean @default(false); preferredDestinationsJson Json?; preferredHotelCategoriesJson Json?; @@map("crm_contact_travel_preferences") }
-model SupplierProfile { id BigInt @id @default(autoincrement()); supplierId BigInt @unique; supplier Supplier @relation(fields:[supplierId], references:[id]); apiModeCode String @default("manual"); defaultCurrencyCode String @default("EUR"); responseTimeSlaMs Int?; reliabilityScore Decimal? @db.Decimal(6,2); statusCode String @default("active"); @@map("crm_supplier_profiles") }
-model HotelRoomType { id BigInt @id @default(autoincrement()); hotelId BigInt; hotel Hotel @relation(fields:[hotelId], references:[id]); roomCode String; name String; maxAdults Int @default(2); maxChildren Int @default(0); maxInfants Int @default(0); baseOccupancyCode String?; extraBedAllowed Boolean @default(false); babyCotAllowed Boolean @default(false); statusCode String @default("active"); ratePrices RatePlanPrice[]; allotments Allotment[]; @@unique([hotelId, roomCode]); @@map("product_hotel_room_types") }
-model HotelBoardType { id BigInt @id @default(autoincrement()); hotelId BigInt; hotel Hotel @relation(fields:[hotelId], references:[id]); boardCode String; name String; isDefault Boolean @default(false); statusCode String @default("active"); ratePrices RatePlanPrice[]; allotments Allotment[]; @@unique([hotelId, boardCode]); @@map("product_hotel_board_types") }
-model Contract { id BigInt @id @default(autoincrement()); contractCode String @unique; contractTypeCode String; supplierId BigInt; supplier Supplier @relation(fields:[supplierId], references:[id]); productId BigInt?; product Product? @relation(fields:[productId], references:[id]); startDate DateTime; endDate DateTime; currencyCode String @default("EUR"); statusCode String @default("draft"); createdAt DateTime @default(now()); versions ContractVersion[]; @@map("contracting_contracts") }
-model ContractVersion { id BigInt @id @default(autoincrement()); contractId BigInt; contract Contract @relation(fields:[contractId], references:[id]); versionNumber Int; effectiveFrom DateTime; effectiveTo DateTime?; isCurrent Boolean @default(false); approvalStatus String @default("draft"); createdAt DateTime @default(now()); seasons ContractSeason[]; ratePlans RatePlan[]; allotments Allotment[]; @@unique([contractId, versionNumber]); @@map("contracting_contract_versions") }
-model ContractSeason { id BigInt @id @default(autoincrement()); contractVersionId BigInt; version ContractVersion @relation(fields:[contractVersionId], references:[id]); seasonCode String; name String; startDate DateTime; endDate DateTime; priority Int @default(1); ratePrices RatePlanPrice[]; @@unique([contractVersionId, seasonCode]); @@map("contracting_contract_seasons") }
-model RatePlan { id BigInt @id @default(autoincrement()); contractVersionId BigInt; version ContractVersion @relation(fields:[contractVersionId], references:[id]); ratePlanCode String; name String; pricingBasisCode String; statusCode String @default("active"); prices RatePlanPrice[]; @@unique([contractVersionId, ratePlanCode]); @@map("contracting_rate_plans") }
-model RatePlanPrice { id BigInt @id @default(autoincrement()); ratePlanId BigInt; ratePlan RatePlan @relation(fields:[ratePlanId], references:[id]); seasonId BigInt; season ContractSeason @relation(fields:[seasonId], references:[id]); roomTypeId BigInt?; roomType HotelRoomType? @relation(fields:[roomTypeId], references:[id]); boardTypeId BigInt?; boardType HotelBoardType? @relation(fields:[boardTypeId], references:[id]); occupancyCode String; priceAmount Decimal @db.Decimal(14,2); currencyCode String @default("EUR"); @@unique([ratePlanId, seasonId, roomTypeId, boardTypeId, occupancyCode]); @@map("contracting_rate_plan_prices") }
-model Allotment { id BigInt @id @default(autoincrement()); contractVersionId BigInt; version ContractVersion @relation(fields:[contractVersionId], references:[id]); hotelId BigInt; hotel Hotel @relation(fields:[hotelId], references:[id]); roomTypeId BigInt?; roomType HotelRoomType? @relation(fields:[roomTypeId], references:[id]); boardTypeId BigInt?; boardType HotelBoardType? @relation(fields:[boardTypeId], references:[id]); startDate DateTime; endDate DateTime; releaseDays Int @default(7); totalCommittedQty Int @default(0); statusCode String @default("active"); dailyInventory AllotmentDailyInventory[]; @@map("contracting_allotments") }
-model AllotmentDailyInventory { id BigInt @id @default(autoincrement()); allotmentId BigInt; allotment Allotment @relation(fields:[allotmentId], references:[id]); inventoryDate DateTime; committedQty Int @default(0); soldQty Int @default(0); blockedQty Int @default(0); freeQty Int @default(0); @@unique([allotmentId, inventoryDate]); @@map("contracting_allotment_daily_inventory") }
-model BookingPassenger { id BigInt @id @default(autoincrement()); bookingId BigInt; booking Booking @relation(fields:[bookingId], references:[id]); passengerNo Int; passengerTypeCode String; firstName String; lastName String; dateOfBirth DateTime?; passportNumber String?; passportExpiryDate DateTime?; createdAt DateTime @default(now()); @@unique([bookingId, passengerNo]); @@map("booking_passengers") }
-model SupplierReservation { id BigInt @id @default(autoincrement()); bookingItemId BigInt; item BookingItem @relation(fields:[bookingItemId], references:[id]); supplierId BigInt; supplier Supplier @relation(fields:[supplierId], references:[id]); reservationReference String?; supplierStatusCode String?; requestPayload Json?; responsePayload Json?; requestedAt DateTime @default(now()); confirmedAt DateTime?; statusCode String @default("requested"); @@map("booking_supplier_reservations") }
-model BookingDocument { id BigInt @id @default(autoincrement()); bookingId BigInt; booking Booking @relation(fields:[bookingId], references:[id]); documentTypeCode String; fileKey String?; generatedAt DateTime @default(now()); statusCode String @default("generated"); @@map("booking_documents") }
-model ReservationWorkspace { id BigInt @id @default(autoincrement()); bookingId BigInt @unique; booking Booking @relation(fields:[bookingId], references:[id]); assignedUserId BigInt?; assignedUser User? @relation(fields:[assignedUserId], references:[id]); opsStatusCode String @default("new"); priorityCode String @default("normal"); createdAt DateTime @default(now()); @@map("ops_reservation_workspaces") }
-model Payment { id BigInt @id @default(autoincrement()); bookingId BigInt; booking Booking @relation(fields:[bookingId], references:[id]); payerTypeCode String; amount Decimal @db.Decimal(14,2); currencyCode String @default("EUR"); statusCode String @default("pending"); paidAt DateTime?; createdAt DateTime @default(now()); @@map("finance_payments") }
-model Receivable { id BigInt @id @default(autoincrement()); bookingId BigInt; booking Booking @relation(fields:[bookingId], references:[id]); amount Decimal @db.Decimal(14,2); currencyCode String @default("EUR"); dueDate DateTime; statusCode String @default("open"); createdAt DateTime @default(now()); @@map("finance_receivables") }
-model Payable { id BigInt @id @default(autoincrement()); bookingItemId BigInt; item BookingItem @relation(fields:[bookingItemId], references:[id]); supplierId BigInt; supplier Supplier @relation(fields:[supplierId], references:[id]); amount Decimal @db.Decimal(14,2); currencyCode String @default("EUR"); dueDate DateTime; statusCode String @default("open"); createdAt DateTime @default(now()); @@map("finance_payables") }
-model RoomingSet { id BigInt @id @default(autoincrement()); bookingId BigInt; booking Booking @relation(fields:[bookingId], references:[id]); roomingTypeCode String; statusCode String @default("draft"); createdAt DateTime @default(now()); rooms RoomingRoom[]; @@map("rooming_rooming_sets") }
-model RoomingRoom { id BigInt @id @default(autoincrement()); roomingSetId BigInt; roomingSet RoomingSet @relation(fields:[roomingSetId], references:[id]); roomNo Int; occupancyCode String?; adultsCount Int @default(2); childrenCount Int @default(0); roomStatusCode String @default("draft"); @@map("rooming_rooming_rooms") }
-model TourProgram { id BigInt @id @default(autoincrement()); productId BigInt @unique; product Product @relation(fields:[productId], references:[id]); programCode String @unique; programTypeCode String; durationDays Int; durationNights Int; statusCode String @default("draft"); departures TourDeparture[]; @@map("tour_tour_programs") }
-model TourDeparture { id BigInt @id @default(autoincrement()); tourProgramId BigInt; program TourProgram @relation(fields:[tourProgramId], references:[id]); departureCode String @unique; startDate DateTime; endDate DateTime; statusCode String @default("draft"); minPax Int @default(0); maxPax Int @default(0); soldPax Int @default(0); freePax Int @default(0); @@map("tour_tour_departures") }
-model CharterSeason { id BigInt @id @default(autoincrement()); seasonCode String @unique; name String; destinationId BigInt; destination Destination @relation(fields:[destinationId], references:[id]); originAirportCode String; statusCode String @default("draft"); seasonStartDate DateTime; seasonEndDate DateTime; flights CharterFlight[]; @@map("charter_charter_seasons") }
-model CharterFlight { id BigInt @id @default(autoincrement()); charterSeasonId BigInt; season CharterSeason @relation(fields:[charterSeasonId], references:[id]); flightDate DateTime; directionCode String; seatCapacityTotal Int @default(0); seatCapacitySold Int @default(0); seatCapacityFree Int @default(0); statusCode String @default("scheduled"); @@map("charter_charter_flights") }
-model B2BAgencyUser { id BigInt @id @default(autoincrement()); agencyId BigInt; agency Agency @relation(fields:[agencyId], references:[id]); userId BigInt; user User @relation(fields:[userId], references:[id]); statusCode String @default("active"); @@unique([agencyId, userId]); @@map("b2b_agency_users") }
-model SefDocument { id BigInt @id @default(autoincrement()); bookingId BigInt; booking Booking @relation(fields:[bookingId], references:[id]); sefDocumentReference String?; documentStatusCode String @default("draft"); requestPayload Json?; responsePayload Json?; sentAt DateTime?; createdAt DateTime @default(now()); @@map("regulatory_sef_documents") }
-model Transfer {
-  id                  BigInt       @id @default(autoincrement())
-  productId           BigInt       @unique
-  product             Product      @relation(fields: [productId], references: [id])
-  transferTypeCode    String       // private, shared, shuttle
-  vehicleTypeCode     String       // sedan, minivan, minibus, bus
-  maxPassengers       Int
-  maxBags             Int
-  pickupLocationCode  String
-  dropoffLocationCode String
-  sourcing            String       // api, manual, fleet
-  fleetVehicleId      BigInt?
-  fleetVehicle        FleetVehicle? @relation(fields: [fleetVehicleId], references: [id])
-  statusCode          String       @default("active")
-
-  @@map("product_transfers")
+model BundleRule {
+  id                String    @id @default(uuid())
+  name              String
+  requiredItems     String    // Comma separated types, e.g. "HOTEL,FLIGHT"
+  discountType      String    // PERCENT, FIXED
+  discountValue     Decimal
+  active            Boolean   @default(true)
+  createdAt         DateTime  @default(now())
 }
 
-model Activity {
-  id                   BigInt    @id @default(autoincrement())
-  productId            BigInt    @unique
-  product              Product   @relation(fields: [productId], references: [id])
-  activityCategoryCode String
-  name                 String
-  durationMinutes      Int
-  meetingPointText     String?
-  isTicketed           Boolean   @default(false)
-  statusCode           String    @default("active")
-
-  @@map("product_activities")
+model MasterHotel {
+  id                String    @id @default(uuid())
+  name              String
+  destinationCode   String
+  stars             Int
+  latitude          Float?
+  longitude         Float?
+  mappings          HotelMapping[]
+  createdAt         DateTime  @default(now())
 }
 
-model FleetVehicle {
-  id                 BigInt     @id @default(autoincrement())
-  registrationNumber String     @unique
-  make               String
-  model              String
-  yearOfManufacture  Int
-  capacityPax        Int
-  capacityBags       Int
-  status             String     @default("available")
-  transfers          Transfer[]
+model HotelMapping {
+  id                String      @id @default(uuid())
+  masterHotelId     String
+  masterHotel       MasterHotel @relation(fields: [masterHotelId], references: [id])
+  supplierId        String      // e.g. "EXPEDIA", "WEBBEDS"
+  supplierHotelCode String      // Šifra hotela kod tog dobavljača
+  lastSync          DateTime    @default(now())
 
-  @@map("ops_fleet_vehicles")
+  @@unique([supplierId, supplierHotelCode])
+}
+
+model RoomTypeMapping {
+  id                String    @id @default(uuid())
+  masterRoomCode    String    // npr. "double_deluxe"
+  supplierId        String
+  supplierRoomName  String    // npr. "DLX DBL"
+  supplierRoomCode  String?
+}
+
+model BoardMapping {
+  id                String    @id @default(uuid())
+  masterBoardCode   String    // npr. "ALL_INCLUSIVE"
+  supplierId        String
+  supplierBoardName String    // npr. "AI", "All Incl"
+}
+
+model Payment {
+  id                String    @id @default(uuid())
+  bookingId         String
+  booking           Booking   @relation(fields: [bookingId], references: [id])
+  amount            Decimal   
+  currency          String
+  method            String    // Cash, Card, Bank, VCC
+  status            String @default("PENDING")
+  
+  // Fiscal/Regulatory Link (Adaptable for any country)
+  fiscalId          String?   // PFR number, SEF ID, etc.
+  localTaxAmount    Decimal?  
+  exchangeRate      Decimal?  
+  
+  processedAt       DateTime?
+}
+
+model DossierDocument {
+  id                String    @id @default(uuid())
+  bookingId         String
+  booking           Booking   @relation(fields: [bookingId], references: [id])
+  type              String    // PROFORMA, INVOICE, VOUCHER, RECEIPT, CONTRACT
+  documentNo        String    @unique // npr. PF-2026-001
+  content           String?   // Može biti HTML, JSON ili putanja do fajla
+  fileUrl           String?   // Link ka generisanom PDF-u
+  issuedAt          DateTime  @default(now())
+  issuedBy          String?   // Agent ID
+  isFinal           Boolean   @default(false)
+}
+
+model CisTrip {
+  id                String    @id @default(uuid())
+  bookingId         String
+  tripReference     String
+  submissionStatus  String
+  createdAt         DateTime  @default(now())
+}
+
+model FiscalReceipt {
+  id                String    @id @default(uuid())
+  bookingId         String
+  paymentId         String
+  receiptType       String
+  amount            Decimal
+  currency          String
+  status            String
+  fiscalReference   String
+  qrCodeData        String?
+  createdAt         DateTime  @default(now())
 }

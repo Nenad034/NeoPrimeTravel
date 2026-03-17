@@ -1,0 +1,19 @@
+{
+  "name": "neotravel-core",
+  "version": "1.0.0",
+  "main": "index.js",
+  "dependencies": {
+    "@prisma/client": "^5.10.2",
+    "axios": "^1.6.7",
+    "decimal.js": "^10.4.3"
+  },
+  "devDependencies": {
+    "prisma": "^5.10.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3",
+    "@types/node": "^20.11.24"
+  },
+  "scripts": {
+    "simulate": "ts-node scripts/simulate_dossier.ts"
+  }
+}

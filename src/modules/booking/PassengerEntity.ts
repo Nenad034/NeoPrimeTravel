@@ -1,20 +1,23 @@
 import { Result, ok, fail } from '../../core/error/Result';
 
+export type PassengerType = 'ADULT' | 'CHILD' | 'INFANT';
+
 export interface PassengerProps {
   id?: string;
   bookingId: string;
-  passengerNo: number;
-  passengerTypeCode: 'ADULT' | 'CHILD' | 'INFANT';
+  roomingRoomId?: string; // Link to specific room assignment
   firstName: string;
   lastName: string;
-  dateOfBirth?: Date;
-  passportNumber?: string;
-  passportExpiryDate?: Date;
+  type: PassengerType;
+  birthDate?: Date;
+  passportNo?: string;
+  specialRequests?: string;
+  isLead: boolean;
 }
 
 /**
- * PassengerEntity - Mapirano na tabelu booking.booking_passengers.
- * Putnici pridruženi rezervaciji.
+ * PassengerEntity - Mapirano na tabelu Passenger u novoj šemi.
+ * Putnici pridruženi rezervaciji i opcionalno sobi.
  */
 export class PassengerEntity {
   private constructor(private props: PassengerProps) {}
@@ -27,4 +30,7 @@ export class PassengerEntity {
   }
 
   get fullName() { return `${this.props.firstName} ${this.props.lastName}`; }
+  get type() { return this.props.type; }
+  get roomingRoomId() { return this.props.roomingRoomId; }
 }
+

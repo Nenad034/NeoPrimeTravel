@@ -1,6 +1,7 @@
 import { Result, ok, fail } from '../../core/error/Result';
 import { ProductEntity } from '../products/ProductEntity';
 import { PriceSnapshot, PricingService } from '../contracting/PricingService';
+import { AISearchService } from './AISearchService';
 
 export interface SearchCriteria {
   destinationCode: string;
@@ -31,6 +32,29 @@ export interface SearchResultItem {
  */
 export class SearchEngine {
   private pricingService = new PricingService();
+
+  /**
+   * AI Pretraga na osnovu prirodnog govora.
+   * "Ulazna kapija" za Back-Office AI Agent-a.
+   */
+  async searchByNaturalLanguage(query: string): Promise<Result<{ criteria: SearchCriteria, results: SearchResultItem[] }, Error>> {
+    try {
+      // 1. Pretvaranje rečenice u parametre
+      const criteria = await AISearchService.parseNaturalQuery(query);
+      
+      // 2. Izvršavanje unificirane pretrage
+      const searchResult = await this.unifiedSearch(criteria);
+      
+      if (searchResult.isFailure()) return fail(searchResult.error);
+
+      return ok({
+        criteria,
+        results: searchResult.value
+      });
+    } catch (error) {
+      return fail(error as Error);
+    }
+  }
 
   /**
    * Glavna pretraga (Unified Search).
