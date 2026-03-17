@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Users, 
-  Calendar, 
+  Calendar as CalendarIcon, 
   FileText, 
   Search as SearchIcon, 
   CheckCircle2,
@@ -36,28 +36,49 @@ import {
   ArrowLeftRight,
   ChevronRight,
   Anchor,
-  Clock
+  Clock,
+  Briefcase,
+  History,
+  TrendingDown,
+  ChevronLeft
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Footer from './components/Footer';
 import { GeometricBrain } from './components/icons/GeometricBrain';
 
 // --- Types & Mock Data ---
-interface Room { id: number; adults: number; childrenAges: number[]; }
-interface SelectedService { id: string; type: 'Hotel' | 'Flight' | 'Transfer' | 'Activity'; name: string; price: number; icon: React.ReactNode; }
+interface Selection { id: string; type: string; name: string; price: number; icon: React.ReactNode; }
 
 const SEARCH_RESULTS = [
   { id: 'h-1', type: 'Accommodation', name: 'Rixos Premium Magawish', location: 'Hurghada, Egypt', price: 145, rating: 5, tags: ['UAI', 'Luxury'], aiSummary: 'Idealno za porodice.', prediction: 'Only 3 left', icon: <Building2 className="text-bordo" size={24} /> },
+  { id: 'h-2', type: 'Accommodation', name: 'Steigenberger ALDAU Beach', location: 'Hurghada, Egypt', price: 125, rating: 5, tags: ['AI', 'Beachfront'], aiSummary: 'Vrhunski spa centar.', prediction: 'High demand', icon: <Building2 className="text-bordo" size={24} /> },
+  { id: 'h-4', type: 'Accommodation', name: 'Baron Palace Sahl Hasheesh', location: 'Sahl Hasheesh, Egypt', price: 180, rating: 5, tags: ['UAI', 'Palace'], aiSummary: 'Ultimativni luksuz.', prediction: 'Member Deal', icon: <Building2 className="text-bordo" size={24} /> },
   { id: 'f-1', type: 'Flight', name: 'Air Cairo SM381', location: 'BEG -> HRG', price: 320, rating: 4.5, tags: ['Direct', '7KG Cabin'], aiSummary: 'Najbrži let direktno do Hurgade.', prediction: 'Good price', icon: <Plane className="text-bordo" size={24} /> },
-  { id: 't-1', type: 'Transfer', name: 'Private VIP Transfer', location: 'Airport -> Hotel', price: 45, rating: 5, tags: ['Mercedes V-Class'], aiSummary: 'Brzo i udobno.', prediction: 'Recommended', icon: <Bus className="text-bordo" size={24} /> },
+  { id: 'f-2', type: 'Flight', name: 'Turkish Airlines TK1082', location: 'BEG -> IST -> HRG', price: 410, rating: 5, tags: ['1 Stop', '30KG Luggage'], aiSummary: 'Vrhunski komfor.', prediction: 'Premium', icon: <Plane className="text-bordo" size={24} /> },
   { id: 'a-1', type: 'Activity', name: 'Giftun Island Speedboat', location: 'Hurghada Port', price: 65, rating: 5, tags: ['Snorkeling', 'Lunch'], aiSummary: 'Must see!', prediction: 'Popular', icon: <Map className="text-bordo" size={24} /> }
 ];
 
 const MOCK_DOSSIERS = [
-  { id: 'D-842', client: 'Petar Petrović', destination: 'Egipat, Hurgada', dates: '12.06 - 22.06.2026', total: '€2,450', status: 'Plaćeno', statusColor: '#10B981' },
-  { id: 'D-843', client: 'Jelena Jović', destination: 'Turska, Antalija', dates: '05.07 - 15.07.2026', total: '€3,120', status: 'Pending', statusColor: '#F59E0B' },
-  { id: 'D-844', client: 'Marko Marković', destination: 'Grčka, Krit', dates: '18.08 - 28.08.2026', total: '€1,890', status: 'Plaćeno', statusColor: '#10B981' },
-  { id: 'D-845', client: 'Ana Antić', destination: 'Egipat, Šarm el Šeik', dates: '10.09 - 20.09.2026', total: '€2,700', status: 'Otkazano', statusColor: '#EF4444' }
+  { id: 'D-842', client: 'Petar Petrović', destination: 'Egipat, Hurgada', dates: '12.06 - 22.06.2026', total: '€2,450', status: 'Plaćeno', statusColor: '#10B981', agent: 'Nevena' },
+  { id: 'D-843', client: 'Jelena Jović', destination: 'Turska, Antalija', dates: '05.07 - 15.07.2026', total: '€3,120', status: 'Pending', statusColor: '#F59E0B', agent: 'Marko' },
+  { id: 'D-844', client: 'Marko Marković', destination: 'Grčka, Krit', dates: '18.08 - 28.08.2026', total: '€1,890', status: 'Plaćeno', statusColor: '#10B981', agent: 'Nevena' },
+  { id: 'D-845', client: 'Ana Antić', destination: 'Egipat, Šarm el Šeik', dates: '10.09 - 20.09.2026', total: '€2,700', status: 'Otkazano', statusColor: '#EF4444', agent: 'Maja' },
+  { id: 'D-846', client: 'Dragan Nikolić', destination: 'Kipar, Aja Napa', dates: '01.06 - 10.06.2026', total: '€1,550', status: 'Plaćeno', statusColor: '#10B981', agent: 'Nevena' },
+  { id: 'D-847', client: 'Milica Pavlović', destination: 'Španija, Majorka', dates: '15.07 - 25.07.2026', total: '€3,400', status: 'U obradi', statusColor: '#3B82F6', agent: 'Jovana' }
+];
+
+const MOCK_ROOMING = [
+  { hotel: 'Rixos Premium Magawish', room: 'Superior Suite #204', guest: 'Petar Petrović', checkIn: '12.06', checkOut: '22.06', occupancy: '90%' },
+  { hotel: 'Steigenberger ALDAU', room: 'Deluxe Sea View #102', guest: 'Milica Pavlović', checkIn: '15.07', checkOut: '25.07', occupancy: '100%' },
+  { hotel: 'Baron Palace', room: 'Swim-up Room #15', guest: 'Dragan Nikolić', checkIn: '01.06', checkOut: '10.06', occupancy: '85%' },
+  { hotel: 'Titanic Royal', room: 'Family Suite #405', guest: 'Jelena Jović', checkIn: '05.07', checkOut: '15.07', occupancy: '95%' }
+];
+
+const MOCK_CALENDAR_EVENTS = [
+  { day: 12, month: 'Jun', title: 'Check-in: Rixos Premium (D-842)', type: 'hotel', color: '#800020' },
+  { day: 15, month: 'Jun', title: 'Let BEG-HRG SM381', type: 'flight', color: '#3B82F6' },
+  { day: 18, month: 'Jun', title: 'Izlet Giftun Island', type: 'activity', color: '#10B981' },
+  { day: 22, month: 'Jun', title: 'Check-out & Transfer', type: 'transfer', color: '#F59E0B' }
 ];
 
 const App = () => {
@@ -67,19 +88,19 @@ const App = () => {
   const [searchFilter, setSearchFilter] = useState('Packages');
   const [showCalendar, setShowCalendar] = useState(false);
   const [packageStep, setPackageStep] = useState(0); 
-  const [selectedServices, setSelectedServices] = useState<SelectedService[]>([]);
+  const [selectedServices, setSelectedServices] = useState<Selection[]>([]);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
   }, [isDarkMode]);
 
   const handleServiceSelect = (service: any) => {
-    const newService: SelectedService = {
-      id: service.id,
-      type: service.type === 'Accommodation' ? 'Hotel' : service.type,
-      name: service.name,
-      price: service.price,
-      icon: service.icon
+    const newService: Selection = {
+        id: service.id,
+        type: service.type === 'Accommodation' ? 'Hotel' : service.type,
+        name: service.name,
+        price: service.price,
+        icon: service.icon
     };
     const filtered = selectedServices.filter(s => s.type !== newService.type);
     setSelectedServices([...filtered, newService].sort((a,b) => {
@@ -98,7 +119,7 @@ const App = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h1 style={{ fontSize: '28px', fontWeight: '900', marginBottom: '4px' }}>Zdravo, Nevena 👋</h1>
-          <p style={{ opacity: 0.6, fontSize: '14px' }}>Dobrodošli u vaš sutrašnji travel ekosistem.</p>
+          <p style={{ opacity: 0.6, fontSize: '14px' }}>Dobrodošli u vaš v1.5 travel ekosistem.</p>
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>
           <div className="glass-card" style={{ padding: '10px 20px', display: 'flex', alignItems: 'center', gap: '10px', border: '1px solid var(--bordo)' }}>
@@ -113,10 +134,10 @@ const App = () => {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px' }}>
         {[
-          { label: 'Ukupan Promet', value: '€42,850', trend: '+12%', icon: <DollarSign size={20} />, color: '#10B981' },
-          { label: 'Aktivni Dossieri', value: '48', trend: '+3', icon: <FileText size={20} />, color: '#3B82F6' },
-          { label: 'Nerealizovani Upiti', value: '12', trend: '-1', icon: <MessageSquare size={20} />, color: '#F59E0B' },
-          { label: 'Kapacitet Flote', value: '82%', trend: 'Optimum', icon: <PieChart size={20} />, color: '#EC4899' }
+          { label: 'Ukupan Promet', value: '€184,250', trend: '+18.5%', icon: <DollarSign size={20} />, color: '#10B981' },
+          { label: 'Aktivni Dossieri', value: '1,248', trend: '+14', icon: <FileText size={20} />, color: '#3B82F6' },
+          { label: 'Stope Konverzije', value: '24.2%', trend: '+2.1%', icon: <TrendingUp size={20} />, color: '#F59E0B' },
+          { label: 'Zadovoljstvo', value: '4.8/5', trend: 'Optimum', icon: <Star size={20} />, color: '#EC4899' }
         ].map(stat => (
           <motion.div key={stat.label} className="glass-card" style={{ padding: '20px', position: 'relative', overflow: 'hidden' }}>
             <div style={{ fontSize: '11px', fontWeight: '800', opacity: 0.5, marginBottom: '8px' }}>{stat.label.toUpperCase()}</div>
@@ -133,26 +154,35 @@ const App = () => {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 1.2fr', gap: '24px' }}>
         <div className="glass-card" style={{ padding: '24px' }}>
-           <h3 style={{ fontSize: '16px', fontWeight: '900', marginBottom: '24px' }}>ANALITIKA PRODAJE</h3>
-           <div style={{ height: '200px', display: 'flex', alignItems: 'flex-end', gap: '12px', paddingBottom: '20px' }}>
-              {[60, 40, 80, 50, 90, 70, 100].map((h, i) => (
-                <div key={i} style={{ flex: 1, position: 'relative' }}>
-                   <motion.div initial={{ height: 0 }} animate={{ height: `${h}%` }} style={{ width: '100%', background: i === 6 ? 'var(--bordo)' : 'rgba(128,0,32,0.1)', borderRadius: '4px' }} />
-                   <div style={{ position: 'absolute', bottom: '-20px', left: '0', right: '0', textAlign: 'center', fontSize: '9px', fontWeight: '800', opacity: 0.4 }}>DAN {i+1}</div>
+           <h3 style={{ fontSize: '16px', fontWeight: '900', marginBottom: '24px' }}>ANALITIKA PRODAJE PO DESTINACIJAMA</h3>
+           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {[
+                { name: 'Egipat, Hurgada', share: '45%', amount: '€82,100', color: 'var(--bordo)' },
+                { name: 'Turska, Antalija', share: '30%', amount: '€55,275', color: '#10B981' },
+                { name: 'Grčka, Krit', share: '15%', amount: '€27,630', color: '#3B82F6' },
+                { name: 'Kipar, Protaras', share: '10%', amount: '€19,245', color: '#F59E0B' }
+              ].map(dest => (
+                <div key={dest.name} style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                  <div style={{ width: '120px', fontSize: '12px', fontWeight: '700' }}>{dest.name}</div>
+                  <div style={{ flex: 1, height: '8px', background: 'rgba(0,0,0,0.05)', borderRadius: '4px', overflow: 'hidden' }}>
+                    <motion.div initial={{ width: 0 }} animate={{ width: dest.share }} style={{ height: '100%', background: dest.color }} />
+                  </div>
+                  <div style={{ width: '80px', textAlign: 'right', fontSize: '12px', fontWeight: '800' }}>{dest.amount}</div>
                 </div>
               ))}
            </div>
         </div>
         <div className="glass-card" style={{ padding: '24px', background: 'rgba(59,130,246,0.05)' }}>
-           <h3 style={{ fontSize: '16px', fontWeight: '900', marginBottom: '16px' }}>NOTIFIKACIJE</h3>
+           <h3 style={{ fontSize: '16px', fontWeight: '900', marginBottom: '16px' }}>AKTIVNOST AGENTA</h3>
            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {[
-                { icon: <AlertCircle size={14} color="#F59E0B" />, text: 'Dossier D-843 zahteva proveru uplate.', time: 'Pre 10m' },
-                { icon: <CheckCircle size={14} color="#10B981" />, text: 'Rixos Premium potvrdio rezervaciju.', time: 'Pre 45m' },
-                { icon: <Zap size={14} color="var(--bordo)" />, text: 'Nova preporuka AI agenta za Kipar.', time: 'Pre 2h' }
+                { icon: <History size={14} />, text: 'Nevena je kreirala dossier D-852', time: 'Pre 2m' },
+                { icon: <DollarSign size={14} />, text: 'Uplata od €1,200 proknjižena za D-844', time: 'Pre 5m' },
+                { icon: <MessageSquare size={14} />, text: 'Novi upit za Rixos Premium Magawish', time: 'Pre 12m' },
+                { icon: <Plane size={14} />, text: 'Sistem: Automatska provera karata za Air Cairo', time: 'Pre 45m' }
               ].map((n, i) => (
                 <div key={i} style={{ display: 'flex', gap: '12px', padding: '12px', background: 'rgba(255,255,255,0.5)', borderRadius: '10px', fontSize: '12px' }}>
-                   <div style={{ marginTop: '2px' }}>{n.icon}</div>
+                   <div style={{ marginTop: '2px', opacity: 0.5 }}>{n.icon}</div>
                    <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: '600' }}>{n.text}</div>
                       <div style={{ fontSize: '10px', opacity: 0.5, marginTop: '2px' }}>{n.time}</div>
@@ -169,26 +199,28 @@ const App = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <h2 style={{ fontSize: '24px', fontWeight: '900' }}>Dosijei Putovanja</h2>
-            <p style={{ opacity: 0.6, fontSize: '13px' }}>Upravljajte aktivnim i arhiviranim rezervacijama.</p>
+            <h2 style={{ fontSize: '24px', fontWeight: '900' }}>Centralni Dosijei</h2>
+            <p style={{ opacity: 0.6, fontSize: '13px' }}>Baza svih rezervacija i operativnih statusa.</p>
           </div>
-          <button className="btn-primary">+ NOVI DOSIJE</button>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <button className="glass-card" style={{ padding: '10px 20px', fontWeight: '800', fontSize: '11px' }}>ARHIVA</button>
+            <button className="btn-primary">+ NOVI DOSIJE</button>
+          </div>
        </div>
 
        <div className="glass-card" style={{ padding: '16px 24px', display: 'flex', gap: '20px', alignItems: 'center' }}>
           <div style={{ flex: 1, position: 'relative' }}>
              <SearchIcon size={16} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', opacity: 0.4 }} />
-             <input type="text" placeholder="Pretraži Dossier..." style={{ width: '100%', padding: '10px 16px 10px 44px', borderRadius: '30px', border: '1px solid rgba(0,0,0,0.08)', background: 'transparent', outline: 'none' }} />
+             <input type="text" placeholder="Pretraži Dossier (ID, Ime klijenta, Hotel)..." style={{ width: '100%', padding: '12px 16px 12px 48px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.08)', background: 'transparent', outline: 'none', fontSize: '13px' }} />
           </div>
-          <button className="glass-card" style={{ padding: '8px 16px', fontSize: '12px', fontWeight: '800' }}><Filter size={14} style={{ marginRight: '8px' }} /> FILTERI</button>
-          <button className="glass-card" style={{ padding: '8px 16px', fontSize: '12px', fontWeight: '800' }}><Download size={14} style={{ marginRight: '8px' }} /> IZVOZ</button>
+          <button className="glass-card" style={{ padding: '12px 20px', fontSize: '12px', fontWeight: '800', border: 'none', background: 'rgba(0,0,0,0.03)' }}><Filter size={14} style={{ marginRight: '8px' }} /> FILTERI</button>
        </div>
 
        <div className="glass-card" style={{ overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
              <thead style={{ background: 'rgba(0,0,0,0.02)' }}>
                 <tr>
-                   {['Dozije ID', 'Klijent', 'Destinacija', 'Datum', 'Ukupno', 'Status', ''].map(h => (
+                   {['Dozije ID', 'Klijent', 'Destinacija / Hotel', 'Period', 'Agent', 'Ukupno', 'Status', ''].map(h => (
                       <th key={h} style={{ textAlign: 'left', padding: '16px 24px', fontSize: '11px', fontWeight: '900', opacity: 0.5, textTransform: 'uppercase' }}>{h}</th>
                    ))}
                 </tr>
@@ -200,6 +232,7 @@ const App = () => {
                       <td style={{ padding: '16px 24px', fontWeight: '700', fontSize: '13px' }}>{d.client}</td>
                       <td style={{ padding: '16px 24px', fontSize: '13px', opacity: 0.8 }}>{d.destination}</td>
                       <td style={{ padding: '16px 24px', fontSize: '12px', fontWeight: '600', opacity: 0.6 }}>{d.dates}</td>
+                      <td style={{ padding: '16px 24px', fontSize: '12px', fontWeight: '700' }}>{d.agent}</td>
                       <td style={{ padding: '16px 24px', fontWeight: '900', fontSize: '14px' }}>{d.total}</td>
                       <td style={{ padding: '16px 24px' }}>
                          <span style={{ padding: '4px 12px', borderRadius: '30px', fontSize: '10px', fontWeight: '900', background: `${d.statusColor}22`, color: d.statusColor }}>{d.status.toUpperCase()}</span>
@@ -211,6 +244,109 @@ const App = () => {
                 ))}
              </tbody>
           </table>
+       </div>
+    </div>
+  );
+
+  const RoomingView = () => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h2 style={{ fontSize: '24px', fontWeight: '900' }}>Rooming Lista</h2>
+            <p style={{ opacity: 0.6, fontSize: '13px' }}>Dnevni raspored i popunjenost smeštajnih kapaciteta.</p>
+          </div>
+          <button className="btn-primary">PREUZMI XLSX</button>
+       </div>
+
+       <div className="glass-card" style={{ padding: '24px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {MOCK_ROOMING.map((r, i) => (
+              <div key={i} className="glass-card" style={{ padding: '16px', display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr 1fr 100px', alignItems: 'center', background: 'rgba(0,0,0,0.02)', border: 'none' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <Building2 size={16} color="var(--bordo)" />
+                  <span style={{ fontWeight: '800', fontSize: '13px' }}>{r.hotel}</span>
+                </div>
+                <div style={{ fontSize: '12px', fontWeight: '600' }}>{r.room}</div>
+                <div style={{ fontSize: '12px', fontWeight: '800' }}>{r.guest}</div>
+                <div style={{ fontSize: '12px', opacity: 0.6 }}>{r.checkIn} - {r.checkOut}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ flex: 1, height: '4px', background: 'rgba(0,0,0,0.1)', borderRadius: '2px' }}>
+                    <div style={{ width: r.occupancy, height: '100%', background: '#10B981', borderRadius: '2px' }} />
+                  </div>
+                  <span style={{ fontSize: '10px', fontWeight: '900' }}>{r.occupancy}</span>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <button style={{ background: 'none', border: 'none', color: 'var(--bordo)', fontWeight: '900', fontSize: '11px', cursor: 'pointer' }}>DETALJI</button>
+                </div>
+              </div>
+            ))}
+          </div>
+       </div>
+
+       <div className="glass-card" style={{ padding: '40px', textAlign: 'center', minHeight: '300px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+          <Layout size={48} color="rgba(0,0,0,0.1)" style={{ marginBottom: '16px' }} />
+          <h3 style={{ fontSize: '18px', fontWeight: '800' }}>Gantt Chart (U razvoju)</h3>
+          <p style={{ opacity: 0.5, fontSize: '13px', marginTop: '4px' }}>Puna interaktivna mapa rasporeda soba biće dostupna u v1.6.</p>
+       </div>
+    </div>
+  );
+
+  const CalendarView = () => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <h2 style={{ fontSize: '24px', fontWeight: '900' }}>Operativni Kalendar</h2>
+            <div style={{ display: 'flex', background: 'rgba(0,0,0,0.05)', borderRadius: '10px', padding: '4px' }}>
+               <button className="glass-card" style={{ padding: '6px 16px', background: 'white', border: 'none', fontSize: '11px', fontWeight: '800' }}>MESEC</button>
+               <button style={{ padding: '6px 16px', background: 'transparent', border: 'none', fontSize: '11px', fontWeight: '800', opacity: 0.4 }}>NEDELJA</button>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button className="glass-card" style={{ padding: '10px' }}><ChevronLeft size={18} /></button>
+            <div className="glass-card" style={{ padding: '10px 24px', fontWeight: '900' }}>JUN 2026</div>
+            <button className="glass-card" style={{ padding: '10px' }}><ChevronRight size={18} /></button>
+          </div>
+       </div>
+
+       <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '24px' }}>
+          <div className="glass-card" style={{ padding: '24px', minHeight: '500px' }}>
+             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', textAlign: 'center', gap: '1px', background: 'rgba(0,0,0,0.1)', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '12px', overflow: 'hidden' }}>
+                {['PON', 'UTO', 'SRE', 'ČET', 'PET', 'SUB', 'NED'].map(day => (
+                  <div key={day} style={{ background: 'rgba(255,255,255,0.8)', padding: '12px', fontSize: '11px', fontWeight: '900', opacity: 0.4 }}>{day}</div>
+                ))}
+                {Array.from({ length: 30 }).map((_, i) => {
+                  const dayNum = i + 1;
+                  const event = MOCK_CALENDAR_EVENTS.find(e => e.day === dayNum);
+                  return (
+                    <div key={i} style={{ background: 'white', height: '100px', padding: '8px', position: 'relative' }}>
+                       <div style={{ fontSize: '12px', fontWeight: '800', opacity: 0.3 }}>{dayNum}</div>
+                       {event && (
+                         <div style={{ position: 'absolute', top: '30px', left: '4px', right: '4px', padding: '6px', background: `${event.color}11`, borderLeft: `3px solid ${event.color}`, borderRadius: '4px', fontSize: '9px', fontWeight: '800', color: event.color }}>
+                            {event.title}
+                         </div>
+                       )}
+                    </div>
+                  );
+                })}
+             </div>
+          </div>
+          <div className="glass-card" style={{ padding: '24px' }}>
+             <h3 style={{ fontSize: '14px', fontWeight: '900', marginBottom: '20px' }}>DANAŠNJI DOGAĐAJI</h3>
+             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {MOCK_CALENDAR_EVENTS.map((ev, i) => (
+                  <div key={i} style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                     <div style={{ width: '40px', textAlign: 'center' }}>
+                        <div style={{ fontSize: '16px', fontWeight: '900' }}>{ev.day}</div>
+                        <div style={{ fontSize: '9px', fontWeight: '800', opacity: 0.5 }}>{ev.month.toUpperCase()}</div>
+                     </div>
+                     <div style={{ flex: 1, padding: '12px', background: 'rgba(0,0,0,0.02)', borderRadius: '12px' }}>
+                        <div style={{ fontSize: '12px', fontWeight: '700' }}>{ev.title}</div>
+                        <div style={{ fontSize: '10px', marginTop: '4px', color: ev.color, fontWeight: '800' }}>{ev.type.toUpperCase()}</div>
+                     </div>
+                  </div>
+                ))}
+             </div>
+          </div>
        </div>
     </div>
   );
@@ -250,7 +386,7 @@ const App = () => {
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-          <div className="search-type-tab" style={{ justifyContent: 'center', border: 'none' }}>
+          <div className="search-type-tab" style={{ justifyContent: 'center', border: 'none', paddingBottom: '0' }}>
              {tabs.map(tab => (
                <div key={tab.id} className={`type-tab-item ${searchFilter === tab.id ? 'active' : ''}`} onClick={() => setSearchFilter(tab.id)}>
                   <div style={{ marginBottom: '4px' }}>{tab.icon}</div>
@@ -270,10 +406,10 @@ const App = () => {
             boxShadow: '0 4px 20px rgba(0,0,0,0.05)' 
           }}>
              {renderFields()}
-             <button className="btn-primary" style={{ height: '56px', borderRadius: '12px', fontSize: '14px' }}>PRETRAGA</button>
+             <button className="btn-primary" style={{ height: '64px', borderRadius: '12px', fontSize: '14px' }}>PRETRAGA</button>
           </div>
 
-          {/* Results Area (simplified for demo) */}
+          {/* Results Area */}
           <div style={{ marginTop: '8px' }}>
              <div className="mini-stepper" style={{ marginBottom: '24px' }}>
                 {['Izbor 1', 'Izbor 2', 'Izbor 3', 'Kraj'].map((label, idx) => (
@@ -321,107 +457,109 @@ const App = () => {
       <NavItem icon={<TrendingUp size={20}/>} label="Dashboard" active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} horizontal={menuPosition === 'horizontal'} />
       <NavItem icon={<SearchIcon size={20}/>} label="Pretraga" active={activeTab === 'search'} onClick={() => setActiveTab('search')} horizontal={menuPosition === 'horizontal'} />
       <NavItem icon={<FileText size={20}/>} label="Dosijei" active={activeTab === 'dossiers'} onClick={() => setActiveTab('dossiers')} horizontal={menuPosition === 'horizontal'} />
-      <NavItem icon={<Calendar size={20}/>} label="Kalendar" active={activeTab === 'calendar'} onClick={() => setActiveTab('calendar')} horizontal={menuPosition === 'horizontal'} />
+      <NavItem icon={<CalendarIcon size={20}/>} label="Kalendar" active={activeTab === 'calendar'} onClick={() => setActiveTab('calendar')} horizontal={menuPosition === 'horizontal'} />
       <NavItem icon={<Users size={20}/>} label="Rooming" active={activeTab === 'rooming'} onClick={() => setActiveTab('rooming')} horizontal={menuPosition === 'horizontal'} />
     </>
   );
 
   return (
-    <div style={{ display: 'flex', flexDirection: menuPosition === 'horizontal' ? 'column' : 'row', height: '100vh', width: '100vw', background: 'var(--bg-app)', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw', background: 'var(--bg-app)', overflow: 'hidden' }}>
       
-      {/* LEFT SIDEBAR (VERTICAL) */}
-      {menuPosition === 'vertical' && (
-        <div style={{ padding: '20px 0 20px 40px', display: 'flex' }}>
-           <div className="floating-sidebar" style={{ width: '280px', height: '100%', padding: '32px 16px' }}>
-              <div style={{ fontSize: '24px', fontWeight: '900', marginBottom: '60px', letterSpacing: '2px', textAlign: 'center', color: 'var(--text-main)', display: 'flex', justifyContent: 'center' }}>
-                NEO<span style={{ color: 'var(--bordo)' }}>TRAVEL</span>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1, padding: '0 8px' }}>
-                <NavigationItems />
-              </div>
-              <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', padding: '0 8px' }}>
-                <button onClick={() => setMenuPosition('horizontal')} className="glass-card" style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '10px 16px', width: '100%', border: 'none', background: 'rgba(0,0,0,0.03)' }}>
-                   <Menu size={16} />
-                   <span style={{ fontSize: '10px', fontWeight: '800' }}>HORIZONTAL MENU</span>
-                </button>
-                <button onClick={() => setIsDarkMode(!isDarkMode)} className="glass-card" style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '10px 16px', width: '100%', border: 'none', background: 'rgba(0,0,0,0.03)' }}>
-                  {isDarkMode ? <Sun size={16} /> : <Moon size={16} />}
-                  <span style={{ fontSize: '10px', fontWeight: '800' }}>{isDarkMode ? 'LIGHT MODE' : 'DARK MODE'}</span>
-                </button>
-              </div>
+      {/* TOP HEADER */}
+      {menuPosition === 'horizontal' && (
+        <div className="top-nav" style={{ height: '70px', padding: '0 40px', display: 'flex', alignItems: 'center', borderBottom: '1px solid var(--border-color)', background: 'var(--sidebar-bg)' }}>
+           <div style={{ fontSize: '24px', fontWeight: '900', letterSpacing: '2px', marginRight: '60px', color: 'var(--text-main)' }}>NEO<span style={{ color: 'var(--bordo)' }}>TRAVEL</span></div>
+           <div style={{ display: 'flex', gap: '32px', height: '100%' }}>
+              <NavigationItems />
+           </div>
+           <div style={{ marginLeft: 'auto', display: 'flex', gap: '16px' }}>
+              <button onClick={() => setMenuPosition('vertical')} className="glass-card" style={{ padding: '8px', border: 'none', background: 'transparent' }}><Layout size={18} /></button>
+              <button onClick={() => setIsDarkMode(!isDarkMode)} className="glass-card" style={{ padding: '8px', border: 'none', background: 'transparent' }}>{isDarkMode ? <Sun size={18} /> : <Moon size={18} />}</button>
            </div>
         </div>
       )}
 
-      {/* CENTRAL COLUMN */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-        {/* TOP NAV (HORIZONTAL) */}
-        {menuPosition === 'horizontal' && (
-          <div className="top-nav" style={{ height: '70px', padding: '0 30px' }}>
-             <div style={{ fontSize: '20px', fontWeight: '900', letterSpacing: '2px', marginRight: '40px' }}>NEO<span style={{ color: 'var(--bordo)' }}>TRAVEL</span></div>
-             <NavigationItems />
-             <div style={{ marginLeft: 'auto', display: 'flex', gap: '12px' }}>
-                <button onClick={() => setMenuPosition('vertical')} className="glass-card" style={{ padding: '8px' }}><Layout size={16} /></button>
-                <button onClick={() => setIsDarkMode(!isDarkMode)} className="glass-card" style={{ padding: '8px' }}>{isDarkMode ? <Sun size={16} /> : <Moon size={16} />}</button>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'row', overflow: 'hidden' }}>
+        
+        {/* LEFT SIDEBAR */}
+        {menuPosition === 'vertical' && (
+          <div style={{ padding: '20px 0 20px 40px', display: 'flex' }}>
+             <div className="floating-sidebar" style={{ width: '280px', height: '100%', padding: '32px 16px' }}>
+                <div style={{ fontSize: '24px', fontWeight: '900', marginBottom: '60px', letterSpacing: '2px', textAlign: 'center', color: 'var(--text-main)', display: 'flex', justifyContent: 'center' }}>
+                  NEO<span style={{ color: 'var(--bordo)' }}>TRAVEL</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1, padding: '0 8px' }}>
+                  <NavigationItems />
+                </div>
+                <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', padding: '0 8px' }}>
+                  <button onClick={() => setMenuPosition('horizontal')} className="glass-card" style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '10px 16px', width: '100%', border: 'none', background: 'rgba(0,0,0,0.03)' }}>
+                     <Menu size={16} />
+                     <span style={{ fontSize: '10px', fontWeight: '800' }}>HORIZONTAL MENU</span>
+                  </button>
+                  <button onClick={() => setIsDarkMode(!isDarkMode)} className="glass-card" style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '10px 16px', width: '100%', border: 'none', background: 'rgba(0,0,0,0.03)' }}>
+                    {isDarkMode ? <Sun size={16} /> : <Moon size={16} />}
+                    <span style={{ fontSize: '10px', fontWeight: '800' }}>{isDarkMode ? 'LIGHT MODE' : 'DARK MODE'}</span>
+                  </button>
+                </div>
              </div>
           </div>
         )}
 
-        {/* VIEWPORT AREA */}
-        <main style={{ padding: '24px 40px', flex: 1, overflowY: 'auto' }}>
-          <AnimatePresence mode="wait">
-            <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}>
-              {activeTab === 'dashboard' && <DashboardView />}
-              {activeTab === 'search' && <SearchView />}
-              {activeTab === 'dossiers' && <DossiersView />}
-              {activeTab === 'calendar' && <div className="glass-card" style={{ padding: '40px', textAlign: 'center' }}>Kalendar (U pripremi...)</div>}
-              {activeTab === 'rooming' && <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}><h2 style={{ fontSize: '24px', fontWeight: '900' }}>Rooming Lista</h2><div className="glass-card" style={{ padding: '32px', textAlign: 'center', minHeight: '400px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}><Users size={48} color="var(--bordo)" style={{ opacity: 0.2, marginBottom: '16px' }} /><h3 style={{ fontSize: '18px', fontWeight: '700' }}>U pripremi...</h3><p style={{ opacity: 0.5, maxWidth: '300px', marginTop: '8px' }}>Prikaz rasporeda soba po hotelima i datumima u formi Gantt charta.</p></div></div>}
-            </motion.div>
-          </AnimatePresence>
-        </main>
-
-        {/* FOOTER */}
-        <div style={{ padding: '0 40px 20px 40px' }}>
-           <Footer isDark={isDarkMode} />
+        {/* CENTRAL AREA */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+          <main style={{ padding: '24px 40px', flex: 1, overflowY: 'auto' }}>
+            <AnimatePresence mode="wait">
+              <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}>
+                {activeTab === 'dashboard' && <DashboardView />}
+                {activeTab === 'search' && <SearchView />}
+                {activeTab === 'dossiers' && <DossiersView />}
+                {activeTab === 'calendar' && <CalendarView />}
+                {activeTab === 'rooming' && <RoomingView />}
+              </motion.div>
+            </AnimatePresence>
+          </main>
+          <div style={{ padding: '0 40px 20px 40px' }}>
+             <Footer isDark={isDarkMode} />
+          </div>
         </div>
-      </div>
 
-      {/* RIGHT SIDEBAR (BASKET) */}
-      {(activeTab === 'search' || activeTab === 'dashboard') && (
-        <div style={{ padding: '20px 40px 20px 0', display: 'flex' }}>
-           <div className="floating-sidebar" style={{ width: '380px', height: '100%', padding: '32px 24px' }}>
-              <h4 style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px', fontSize: '13px', fontWeight: '900', letterSpacing: '1px' }}>
-                <ShoppingBag size={18} color="var(--bordo)" /> REZERVACIJA
-              </h4>
-              <div style={{ flex: 1, overflowY: 'auto', marginBottom: '20px' }}>
-                 {selectedServices.length === 0 && <div style={{ opacity: 0.3, textAlign: 'center', marginTop: '100px', fontSize: '13px' }}>Vaša korpa je prazna</div>}
-                 {selectedServices.map(s => (
-                    <div key={s.id} className="basket-item" style={{ padding: '12px 0' }}>
-                       <div className="basket-icon-circle" style={{ width: '40px', height: '40px' }}>{s.icon}</div>
-                       <div style={{ flex: 1 }}>
-                         <div style={{ fontSize: '9px', fontWeight: '800', opacity: 0.5 }}>{s.type.toUpperCase()}</div>
-                         <div style={{ fontWeight: '700', fontSize: '13px', margin: '2px 0' }}>{s.name}</div>
-                       </div>
-                       <div className="basket-price" style={{ fontSize: '14px' }}>€{s.price}</div>
-                    </div>
-                 ))}
-              </div>
-              {selectedServices.length > 0 && (
-                <div className="total-summary-box" style={{ background: 'var(--bordo)', borderRadius: '16px', padding: '24px' }}>
-                   <div style={{ fontSize: '10px', opacity: 0.8, marginBottom: '4px', fontWeight: '800' }}>UKUPNA CENA</div>
-                   <div style={{ fontSize: '32px', fontWeight: '900' }}>€{totalPrice}</div>
-                   <button className="btn-primary" style={{ borderRadius: '50px', background: 'white', color: 'var(--bordo)', fontWeight: '900', width: '100%', marginTop: '20px', padding: '14px' }}>DALJE</button>
+        {/* RIGHT SIDEBAR (BASKET) */}
+        {(activeTab === 'search' || activeTab === 'dashboard') && (
+          <div style={{ padding: '20px 40px 20px 0', display: 'flex' }}>
+             <div className="floating-sidebar" style={{ width: '380px', height: '100%', padding: '32px 24px' }}>
+                <h4 style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px', fontSize: '13px', fontWeight: '900', letterSpacing: '1px' }}>
+                  <ShoppingBag size={18} color="var(--bordo)" /> REZERVACIJA
+                </h4>
+                <div style={{ flex: 1, overflowY: 'auto', marginBottom: '20px' }}>
+                   {selectedServices.length === 0 && <div style={{ opacity: 0.3, textAlign: 'center', marginTop: '100px', fontSize: '13px' }}>Vaša korpa je prazna</div>}
+                   {selectedServices.map(s => (
+                      <div key={s.id} className="basket-item" style={{ padding: '12px 0' }}>
+                         <div className="basket-icon-circle" style={{ width: '40px', height: '40px' }}>{s.icon}</div>
+                         <div style={{ flex: 1 }}>
+                           <div style={{ fontSize: '9px', fontWeight: '800', opacity: 0.5 }}>{s.type.toUpperCase()}</div>
+                           <div style={{ fontWeight: '700', fontSize: '13px', margin: '2px 0' }}>{s.name}</div>
+                         </div>
+                         <div className="basket-price" style={{ fontSize: '14px' }}>€{s.price}</div>
+                      </div>
+                   ))}
                 </div>
-              )}
-           </div>
-        </div>
-      )}
+                {selectedServices.length > 0 && (
+                  <div className="total-summary-box" style={{ background: 'var(--bordo)', borderRadius: '16px', padding: '24px' }}>
+                     <div style={{ fontSize: '10px', opacity: 0.8, marginBottom: '4px', fontWeight: '800' }}>UKUPNA CENA</div>
+                     <div style={{ fontSize: '32px', fontWeight: '900' }}>€{totalPrice}</div>
+                     <button className="btn-primary" style={{ borderRadius: '50px', background: 'white', color: 'var(--bordo)', fontWeight: '900', width: '100%', marginTop: '20px', padding: '14px' }}>DALJE</button>
+                  </div>
+                )}
+             </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
 
 const NavItem = ({ icon, label, active, onClick, horizontal }: any) => (
-  <div onClick={onClick} className={`nav-item ${active ? 'active' : ''}`} style={horizontal ? { borderLeft: 'none', borderBottom: active ? '3px solid var(--bordo)' : '3px solid transparent', borderRadius: 0, padding: '0 12px', height: '100%', display: 'flex', alignItems: 'center', gap: '8px' } : {}}>
+  <div onClick={onClick} className={`nav-item ${active ? 'active' : ''}`} style={horizontal ? { borderLeft: 'none', borderBottom: active ? '3px solid var(--bordo)' : '3px solid transparent', borderRadius: 0, padding: '0 20px', height: '100%', display: 'flex', alignItems: 'center', gap: '8px' } : {}}>
     {icon}
     <span style={{ fontSize: '13px' }}>{label}</span>
   </div>
