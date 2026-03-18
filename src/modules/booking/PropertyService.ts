@@ -5,31 +5,44 @@ export interface Property {
   name: string;
   star_rating: number;
   description: string | null;
+  intro_description: string | null;
   amenity_ids: string[];
+  main_image_url: string | null;
+  image_urls: string[];
+  location: string | null;
+  meta_title: string | null;
+  meta_description: string | null;
 }
 
 export class PropertyService {
   /**
-   * Fetches all properties from the database.
+   * Fetches all properties from the hotel_catalog database.
    */
   static async fetchAllProperties(): Promise<Property[]> {
     try {
+      // Fetching from hotel_catalog which contains the fresh scraped data
       const { data, error } = await supabase
-        .from('properties')
+        .from('hotel_catalog')
         .select('*');
 
       if (error) {
-        console.error('Error fetching properties from Supabase:', error);
+        console.error('Error fetching hotel_catalog from Supabase:', error);
         throw error;
       }
 
       // Map Supabase response to Property array
       return (data || []).map((row: any) => ({
-        id: row.id,
-        name: row.name,
-        star_rating: row.star_rating,
+        id: row.id || row.hotel_name, // Fallback to name if ID is missing
+        name: row.hotel_name,
+        star_rating: row.stars || 4,
         description: row.description,
-        amenity_ids: row.amenity_ids || [],
+        intro_description: row.intro_description,
+        amenity_ids: row.amenities || [],
+        main_image_url: row.main_image_url,
+        image_urls: row.image_urls || [],
+        location: row.location,
+        meta_title: row.meta_title,
+        meta_description: row.meta_description
       }));
     } catch (error) {
       console.error('PropertyService.fetchAllProperties failed:', error);

@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Building2, Plane, ShoppingBag, Navigation, Map, Anchor, Compass, Zap, Car, 
-  MapPin, CalendarDays, Users, Bus, Clock, CheckCircle2, ChevronLeft, ChevronRight 
+  MapPin, CalendarDays, Users, Bus, Clock, CheckCircle2, ChevronLeft, ChevronRight,
+  Layout, Star, Zap as AIZap
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import './SearchModule.css';
 
 // --- Mock Data & Interface ---
@@ -20,11 +22,14 @@ export const SEARCH_RESULTS = [
 
 interface SearchModuleProps {
   onServiceSelect?: (service: any) => void;
+  onSearch?: () => void;
+  results?: any[];
 }
 
-export const SearchModule: React.FC<SearchModuleProps> = ({ onServiceSelect }) => {
+export const SearchModule: React.FC<SearchModuleProps> = ({ onServiceSelect, onSearch, results = SEARCH_RESULTS }) => {
   const today = new Date();
-  const [searchFilter, setSearchFilter] = useState('Packages');
+  const navigate = useNavigate();
+  const [searchFilter, setSearchFilter] = useState('Stays');
   const [packageStep, setPackageStep] = useState(0); 
   const [showCalendar, setShowCalendar] = useState(false);
   const [showRoomsPopover, setShowRoomsPopover] = useState(false);
@@ -33,6 +38,7 @@ export const SearchModule: React.FC<SearchModuleProps> = ({ onServiceSelect }) =
   const [endDate, setEndDate] = useState<number | null>(27);
   const [dates, setDates] = useState('25 Mar - 27 Mar');
   const [dateFlexibility, setDateFlexibility] = useState('Exact dates');
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [viewMonth, setViewMonth] = useState(2); // March
   const [viewYear, setViewYear] = useState(2026);
 
@@ -68,7 +74,7 @@ export const SearchModule: React.FC<SearchModuleProps> = ({ onServiceSelect }) =
   const currentTab = tabs.find(t => t.id === searchFilter) || tabs[0];
   
   const handleServiceSelect = (service: any) => {
-    setPackageStep(prev => Math.min(prev + 1, 4));
+    setPackageStep((prev: number) => Math.min(prev + 1, 4));
     if (onServiceSelect) onServiceSelect(service);
   };
 
@@ -120,28 +126,6 @@ export const SearchModule: React.FC<SearchModuleProps> = ({ onServiceSelect }) =
                     })}
                   </div>
                 </div>
-                <div className="month-section" style={{ flex: 1 }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', textAlign: 'center' }}>
-                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => <div key={d} style={{ fontSize: '13px', fontWeight: '600', opacity: 0.6, padding: '12px 0' }}>{d}</div>)}
-                    {Array.from({ length: getMonthData((viewMonth + 1) % 12, viewMonth === 11 ? viewYear + 1 : viewYear).startDay }).map((_, i) => <div key={`off2-${i}`} />)}
-                    {Array.from({ length: getMonthData((viewMonth + 1) % 12, viewMonth === 11 ? viewYear + 1 : viewYear).daysInMonth }).map((_, i) => {
-                      const day = i + 1;
-                      const nextM = (viewMonth + 1) % 12;
-                      const nextY = viewMonth === 11 ? viewYear + 1 : viewYear;
-                      const isToday = day === today.getDate() && nextM === today.getMonth() && nextY === today.getFullYear();
-                      return (
-                        <div key={i} onClick={() => {
-                          const mName = getMonthData(nextM, nextY).name.substring(0, 3);
-                          if (!startDate || (startDate && endDate)) { setStartDate(day); setEndDate(null); setDates(`${day} ${mName}`); }
-                          else { setEndDate(day); setDates(`${startDate} ${getMonthData(viewMonth, viewYear).name.substring(0,3)} - ${day} ${mName}`); }
-                        }} className={`calendar-day ${isToday && !startDate ? 'start-end' : ''}`} style={{ height: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', cursor: 'pointer', position: 'relative' }}>
-                          {(isToday && !startDate) && <div style={{ position: 'absolute', width: '38px', height: '38px', borderRadius: '12px', border: '2px solid var(--bordo)', zIndex: 0 }} />}
-                          <span style={{ zIndex: 1 }}>{day}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
               </div>
               <div style={{ marginTop: '32px', paddingTop: '24px', borderTop: '1px solid var(--border-color)', display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
                 {['Exact dates', '± 1 day', '± 2 days', '± 3 days', '± 7 days'].map(pill => (
@@ -158,7 +142,7 @@ export const SearchModule: React.FC<SearchModuleProps> = ({ onServiceSelect }) =
           <div className="search-input-field" onClick={() => { setShowRoomsPopover(!showRoomsPopover); setShowCalendar(false); }} style={{ cursor: 'pointer' }}>
             <label>Rooms & Travellers</label>
             <Users size={18} style={{ position: 'absolute', left: '16px', opacity: 0.6 }} />
-            <input type="text" readOnly value={`${roomsData.length} Room, ${roomsData.reduce((acc, r) => acc + r.adults + r.children.length, 0)} Putnika`} style={{ height: '64px', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '14px', fontWeight: '700' }} />
+            <input type="text" readOnly value={`${roomsData.length} Room, ${roomsData.reduce((acc: number, r: any) => acc + r.adults + r.children.length, 0)} Putnika`} style={{ height: '64px', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '14px', fontWeight: '700' }} />
           </div>
           {showRoomsPopover && (
             <div className="search-popover" style={{ width: '420px', left: '0' }}>
@@ -170,12 +154,12 @@ export const SearchModule: React.FC<SearchModuleProps> = ({ onServiceSelect }) =
                        {rIdx > 0 && <span onClick={() => setRoomsData(roomsData.filter(r => r.id !== room.id))} style={{ fontSize: '12px', fontWeight: '700', color: 'var(--bordo)', cursor: 'pointer' }}>Ukloni</span>}
                     </div>
                     <div className="room-row">
-                      <div><div style={{ fontSize: '14px', fontWeight: '700' }}>Odrasli</div><div style={{ fontSize: '11px', opacity: 0.5 }}>Uzrast 18+</div></div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}><button className="counter-btn" onClick={() => { const newRooms = [...roomsData]; newRooms[rIdx].adults = Math.max(1, newRooms[rIdx].adults - 1); setRoomsData(newRooms); }} disabled={room.adults <= 1}>-</button><span style={{ minWidth: '20px', textAlign: 'center', fontWeight: '800' }}>{room.adults}</span><button className="counter-btn" onClick={() => { const newRooms = [...roomsData]; newRooms[rIdx].adults++; setRoomsData(newRooms); }}>+</button></div>
+                       <div><div style={{ fontSize: '14px', fontWeight: '700' }}>Odrasli</div><div style={{ fontSize: '11px', opacity: 0.5 }}>Uzrast 18+</div></div>
+                       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}><button className="counter-btn" onClick={() => { const newRooms = [...roomsData]; newRooms[rIdx].adults = Math.max(1, newRooms[rIdx].adults - 1); setRoomsData(newRooms); }} disabled={room.adults <= 1}>-</button><span style={{ minWidth: '20px', textAlign: 'center', fontWeight: '800' }}>{room.adults}</span><button className="counter-btn" onClick={() => { const newRooms = [...roomsData]; newRooms[rIdx].adults++; setRoomsData(newRooms); }}>+</button></div>
                     </div>
                     <div className="room-row">
-                      <div><div style={{ fontSize: '14px', fontWeight: '700' }}>Deca</div><div style={{ fontSize: '11px', opacity: 0.5 }}>Uzrast 0 - 17</div></div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}><button className="counter-btn" onClick={() => { const newRooms = [...roomsData]; newRooms[rIdx].children.pop(); setRoomsData(newRooms); }} disabled={room.children.length === 0}>-</button><span style={{ minWidth: '20px', textAlign: 'center', fontWeight: '800' }}>{room.children.length}</span><button className="counter-btn" onClick={() => { const newRooms = [...roomsData]; newRooms[rIdx].children.push(0); setRoomsData(newRooms); }}>+</button></div>
+                       <div><div style={{ fontSize: '14px', fontWeight: '700' }}>Deca</div><div style={{ fontSize: '11px', opacity: 0.5 }}>Uzrast 0 - 17</div></div>
+                       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}><button className="counter-btn" onClick={() => { const newRooms = [...roomsData]; newRooms[rIdx].children.pop(); setRoomsData(newRooms); }} disabled={room.children.length === 0}>-</button><span style={{ minWidth: '20px', textAlign: 'center', fontWeight: '800' }}>{room.children.length}</span><button className="counter-btn" onClick={() => { const newRooms = [...roomsData]; newRooms[rIdx].children.push(0); setRoomsData(newRooms); }}>+</button></div>
                     </div>
                     {room.children.length > 0 && <div className="age-select-container">{room.children.map((age, cIdx) => (
                       <div key={cIdx}><div style={{ fontSize: '11px', fontWeight: '700', marginBottom: '4px', opacity: 0.6 }}>Godište deteta {cIdx + 1}</div><select className="age-select" value={age} onChange={(e) => { const newRooms = [...roomsData]; newRooms[rIdx].children[cIdx] = parseInt(e.target.value); setRoomsData(newRooms); }}><option value="0">Ispod 1 god.</option>{Array.from({ length: 17 }).map((_, a) => <option key={a} value={a+1}>{a+1} god.</option>)}</select></div>
@@ -193,7 +177,7 @@ export const SearchModule: React.FC<SearchModuleProps> = ({ onServiceSelect }) =
         <div key={idx} className="search-input-field" onClick={() => { setShowRoomsPopover(true); setShowCalendar(false); }} style={{ cursor: 'pointer' }}>
           <label>Travellers</label>
           <Users size={18} style={{ position: 'absolute', left: '16px', opacity: 0.6 }} />
-          <input type="text" readOnly value={`${roomsData.reduce((acc, r) => acc + r.adults + r.children.length, 0)} Putnika`} style={{ height: '64px', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '14px', fontWeight: '700' }} />
+          <input type="text" readOnly value={`${roomsData.reduce((acc: number, r: any) => acc + r.adults + r.children.length, 0)} Putnika`} style={{ height: '64px', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '14px', fontWeight: '700' }} />
         </div>
       );
       if (field === 'from-to') return <div key={idx} className="search-input-field"><label>From - To</label><Bus size={18} style={{ position: 'absolute', left: '16px', opacity: 0.6 }} /><input type="text" placeholder="Airport -> Hotel" style={{ height: '64px', border: 'none', background: 'transparent' }} /></div>;
@@ -215,47 +199,124 @@ export const SearchModule: React.FC<SearchModuleProps> = ({ onServiceSelect }) =
          ))}
       </div>
       
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: `repeat(${currentTab.fields.length}, 1fr) 180px`, 
-        gap: '8px', 
-        alignItems: 'center', 
-        background: 'rgba(255,255,255,0.8)', 
-        padding: '8px', 
-        borderRadius: '16px', 
-        boxShadow: '0 4px 20px rgba(0,0,0,0.05)' 
-      }}>
-         {renderFields()}
-         <button className="btn-primary" style={{ height: '64px', borderRadius: '12px', fontSize: '14px' }}>PRETRAGA</button>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: `repeat(${currentTab.fields.length}, 1fr) 180px`, 
+          gap: '8px', 
+          alignItems: 'center', 
+          background: 'rgba(255,255,255,0.8)', 
+          padding: '8px', 
+          borderRadius: '16px', 
+          boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
+          flex: 1
+        }}>
+           {renderFields()}
+           <button 
+             className="btn-primary" 
+             style={{ height: '64px', borderRadius: '12px', fontSize: '14px' }}
+             onClick={() => onSearch && onSearch()}
+           >
+             PRETRAGA
+           </button>
+        </div>
+        
+        {/* View Mode Toggle */}
+        <div style={{ marginLeft: '24px', display: 'flex', background: 'rgba(255,255,255,0.5)', padding: '6px', borderRadius: '14px', gap: '4px' }}>
+           <button 
+             onClick={() => setViewMode('list')}
+             style={{ padding: '8px 12px', borderRadius: '10px', border: 'none', background: viewMode === 'list' ? 'white' : 'transparent', cursor: 'pointer', boxShadow: viewMode === 'list' ? '0 2px 8px rgba(0,0,0,0.05)' : 'none' }}>
+             <Layout size={18} color={viewMode === 'list' ? 'var(--bordo)' : '#ccc'} />
+           </button>
+           <button 
+             onClick={() => setViewMode('grid')}
+             style={{ padding: '8px 12px', borderRadius: '10px', border: 'none', background: viewMode === 'grid' ? 'white' : 'transparent', cursor: 'pointer', boxShadow: viewMode === 'grid' ? '0 2px 8px rgba(0,0,0,0.05)' : 'none' }}>
+             <ShoppingBag size={18} color={viewMode === 'grid' ? 'var(--bordo)' : '#ccc'} />
+           </button>
+        </div>
       </div>
 
       {/* Results Area */}
       <div style={{ marginTop: '8px' }}>
-         <div className="mini-stepper" style={{ marginBottom: '24px' }}>
-            {['Izbor 1', 'Izbor 2', 'Izbor 3', 'Kraj'].map((label, idx) => (
-               <div key={label} className={`mini-step ${packageStep >= idx ? 'active' : ''}`} />
-            ))}
-         </div>
-         
-         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+         <div style={{ 
+           display: 'grid', 
+           gridTemplateColumns: viewMode === 'grid' ? 'repeat(auto-fill, minmax(320px, 1fr))' : '1fr', 
+           gap: '24px' 
+         }}>
             {packageStep < 4 ? (
-               SEARCH_RESULTS.filter(r => {
+               results.filter(r => {
                   if (searchFilter === 'Stays') return r.type === 'Accommodation';
                   if (searchFilter === 'Flights') return r.type === 'Flight';
                   if (searchFilter === 'Transfers') return r.type === 'Transfer';
                   if (searchFilter === 'Things') return r.type === 'Activity';
                   return true;
                }).map(res => (
-                  <motion.div key={res.id} layout className="glass-card service-selection-card" style={{ padding: '12px 24px' }}>
-                     <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-                        <div style={{ width: '48px', height: '48px', borderRadius: '10px', background: 'rgba(128,0,32,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{res.icon}</div>
-                        <div style={{ flex: 1 }}>
-                           <h4 style={{ fontSize: '15px', fontWeight: '800' }}>{res.name}</h4>
-                           <div className="ai-summary" style={{ margin: '0', fontSize: '11px', border: 'none', padding: '0', opacity: 0.6 }}>{res.aiSummary}</div>
+                  <motion.div 
+                    key={res.id} 
+                    layout 
+                    className="glass-card service-selection-card" 
+                    style={{ 
+                      padding: '0', 
+                      overflow: 'hidden', 
+                      display: 'flex', 
+                      flexDirection: viewMode === 'grid' ? 'column' : 'row',
+                      minHeight: viewMode === 'grid' ? '420px' : '150px' 
+                    }}
+                    onClick={() => {
+                       if (res.type === 'Accommodation') {
+                          navigate(`/hotel/${res.id}`);
+                       }
+                    }}
+                  >
+                     {/* Image Section */}
+                     <div style={{ 
+                       width: viewMode === 'grid' ? '100%' : '240px', 
+                       height: viewMode === 'grid' ? '220px' : 'auto',
+                       position: 'relative', 
+                       overflow: 'hidden', 
+                       background: '#eee' 
+                     }}>
+                        {res.main_image_url ? (
+                          <img src={res.main_image_url} alt={res.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ccc' }}>{res.icon}</div>
+                        )}
+                        <div style={{ position: 'absolute', top: '12px', left: '12px', background: 'rgba(255,255,255,0.9)', padding: '4px 10px', borderRadius: '8px', fontSize: '10px', fontWeight: '800', color: 'var(--bordo)' }}>
+                           {res.stars ? `${res.stars}★` : res.type}
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
-                           <div style={{ fontSize: '20px', fontWeight: '900' }}>€{res.price}</div>
-                           <button className="btn-primary" onClick={() => handleServiceSelect(res)} style={{ padding: '8px 24px', fontSize: '11px' }}>IZABERI</button>
+                     </div>
+
+                     {/* Content Section */}
+                     <div style={{ flex: 1, padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                           <div>
+                              <h4 style={{ fontSize: '18px', fontWeight: '900', margin: '0 0 4px 0' }}>{res.name}</h4>
+                              <div style={{ fontSize: '11px', color: 'var(--header-sub)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                 <MapPin size={10} /> {res.location || 'Montenegro'}
+                              </div>
+                           </div>
+                           <div style={{ textAlign: 'right' }}>
+                              <div style={{ fontSize: '24px', fontWeight: '900', color: 'var(--text-main)' }}>€{res.price}</div>
+                              <div style={{ fontSize: '10px', opacity: 0.5, fontWeight: '700' }}>OD</div>
+                           </div>
+                        </div>
+                        
+                        <p style={{ fontSize: '12px', lineClamp: 2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', margin: '12px 0', opacity: 0.8, lineHeight: '1.6' }}>
+                           {res.intro_description || res.description || res.aiSummary}
+                        </p>
+
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
+                           <div style={{ display: 'flex', gap: '6px' }}>
+                              {(res.amenity_ids || []).slice(0, 3).map((a: string, i: number) => (
+                                <span key={i} style={{ fontSize: '9px', background: 'rgba(128,0,32,0.04)', padding: '4px 8px', borderRadius: '6px', fontWeight: '800', textTransform: 'uppercase' }}>{a}</span>
+                              ))}
+                           </div>
+                           <button 
+                             className="btn-primary" 
+                             onClick={(e) => { e.stopPropagation(); handleServiceSelect(res); }} 
+                             style={{ padding: '12px 24px', fontSize: '11px' }}>
+                             REZERVIŠI
+                           </button>
                         </div>
                      </div>
                   </motion.div>
