@@ -1,24 +1,85 @@
 import { Result, ok, fail } from '../../core/error/Result';
-import { BundleRuleEntity, BundleRuleProps } from './BundleRuleEntity';
+import { BundleRuleEntity, BundleRuleProps, DiscountType } from './BundleRuleEntity';
+import { supabase } from '../../api/v1/supabaseClient';
 
 /**
  * BundleRuleService - Servis za upravljanje pravilima popusta.
- * Omogućava ručno kreiranje i AI sugestije pravila.
+ * Povezuje UI sa Supabase bazom podataka.
  */
 export class BundleRuleService {
   private static rules: BundleRuleEntity[] = [];
 
   /**
-   * Registruje novo pravilo.
+   * Dohvata sva pravila iz baze podataka.
    */
-  public static saveRule(rule: BundleRuleEntity): void {
-    // U realnom sistemu ovde ide upis u bazu preko Prisme
-    this.rules = [...this.rules.filter(r => r.id !== rule.id), rule];
-    console.log(`[BundleRuleService] Pravilo '${rule.name}' je sačuvano.`);
+  public static async fetchAllRules(): Promise<BundleRuleEntity[]> {
+    try {
+      const { data, error } = await supabase
+        .from('bundle_rules')
+        .select('*')
+        .order('priority', { ascending: false });
+
+      if (error) throw error;
+
+      this.rules = (data || []).map(row => {
+        const props: BundleRuleProps = {
+          id: row.id.toString(),
+          name: row.name,
+          requiredItemTypes: row.types,
+          discountType: row.discount_unit === 'PERCENT' ? 'PERCENTAGE' : 'FIXED_AMOUNT' as DiscountType,
+          discountPercentage: row.discount_unit === 'PERCENT' ? row.discount_value : undefined,
+          discountFixedAmount: row.discount_unit === 'FIXED' ? row.discount_value : undefined,
+          isActive: true, // Pretpostavka za sada
+          priority: row.priority,
+          isAiSuggested: row.is_ai_generated,
+          approvedBy: row.status === 'APPROVED' ? 'System' : undefined
+        };
+        const entity = BundleRuleEntity.create(props);
+        return entity.isSuccess() ? entity.value : null;
+      }).filter(r => r !== null) as BundleRuleEntity[];
+
+      return this.rules;
+    } catch (err) {
+      console.error('[BundleRuleService] Fetch error:', err);
+      return this.rules; // Fallback na in-memory ako baza ne radi
+    }
   }
 
   /**
-   * Dohvata sva aktivna i odobrena pravila.
+   * Registruje novo pravilo u bazu.
+   */
+  public static async saveRuleToDb(props: BundleRuleProps): Promise<Result<BundleRuleEntity, Error>> {
+    try {
+      const dbRow = {
+        name: props.name,
+        types: props.requiredItemTypes,
+        discount_value: props.discountType === 'PERCENTAGE' ? props.discountPercentage : props.discountFixedAmount,
+        discount_unit: props.discountType === 'PERCENTAGE' ? 'PERCENT' : 'FIXED',
+        priority: props.priority,
+        status: props.approvedBy ? 'APPROVED' : 'PENDING',
+        is_ai_generated: props.isAiSuggested || false
+      };
+
+      const { data, error } = await supabase
+        .from('bundle_rules')
+        .insert([dbRow])
+        .select();
+
+      if (error) throw error;
+
+      const entity = BundleRuleEntity.create({ ...props, id: data[0].id.toString() });
+      if (entity.isSuccess()) {
+        this.rules.push(entity.value);
+        return ok(entity.value);
+      }
+      return fail(entity.error);
+    } catch (err: any) {
+      return fail(new Error(err.message));
+    }
+  }
+
+  /**
+   * Dohvata sva aktivna i odobrena pravila (koristi se u DPE engine-u).
    */
   public static getActiveRules(): BundleRuleEntity[] {
     return this.rules
@@ -27,70 +88,30 @@ export class BundleRuleService {
   }
 
   /**
-   * AI Agent: Predlaže novo pravilo na osnovu analize tržišta ili istorije.
-   * Pravilo: Uvek je isAiSuggested = true i NIJE odobreno dok čovek ne klikne.
+   * Čovek (Korisnik) odobrava pravilo (Ažurira status u bazi).
    */
-  public static suggestAiRule(context: string): BundleRuleEntity {
-    console.log(`[AI Agent] Analiziram kontekst: ${context}`);
-    
-    // Simulacija AI analize
-    const suggestedProps: BundleRuleProps = {
-      id: `AI-${Date.now()}`,
-      name: "Smart Summer Bundle (AI Suggestion)",
-      description: "Automatski uočen trend: Povećana potražnja za kombinacijom Hotel + Let za Egipat.",
-      requiredItemTypes: ['HOTEL', 'FLIGHT'],
-      discountType: 'PERCENTAGE',
-      discountPercentage: 7,
-      isActive: true,
-      priority: 10,
-      isAiSuggested: true
-    };
+  public static async approveRule(ruleId: string, userName: string): Promise<Result<BundleRuleEntity, Error>> {
+    try {
+      const { error } = await supabase
+        .from('bundle_rules')
+        .update({ status: 'APPROVED' })
+        .eq('id', ruleId);
 
-    const result = BundleRuleEntity.create(suggestedProps);
-    if (result.isFailure()) throw result.error;
-    return result.value;
-  }
+      if (error) throw error;
 
-  /**
-   * Čovek (Korisnik) odobrava pravilo.
-   */
-  public static approveRule(ruleId: string, userName: string): Result<BundleRuleEntity, Error> {
-    const rule = this.rules.find(r => r.id === ruleId);
-    if (!rule) return fail(new Error("Pravilo nije pronađeno."));
-
-    // Kreiramo novi entitet sa podacima o odobrenju
-    const approvedProps = {
-      ...(rule as any).props,
-      approvedBy: userName,
-      approvedAt: new Date()
-    };
-
-    const approvedRule = BundleRuleEntity.create(approvedProps);
-    if (approvedRule.isSuccess()) {
-      this.saveRule(approvedRule.value);
-      return ok(approvedRule.value);
+      // Osveži lokalnu listu
+      await this.fetchAllRules();
+      return ok(this.rules.find(r => r.id === ruleId)!);
+    } catch (err: any) {
+      return fail(new Error(err.message));
     }
-    return fail(approvedRule.error);
   }
 
   /**
-   * Inicijalizacija osnovnih pravila (samo za demo, u produkciji se vuče iz baze).
+   * Inicijalizacija osnovnih pravila (samo za demo).
    */
   public static seedInitialRules(): void {
-    const result = BundleRuleEntity.create({
-      id: 'rule-master-1',
-      name: 'Standard Package Discount',
-      requiredItemTypes: ['HOTEL', 'FLIGHT', 'TRANSFER'],
-      discountType: 'PERCENTAGE',
-      discountPercentage: 5,
-      isActive: true,
-      priority: 1,
-      approvedBy: 'Admin',
-      approvedAt: new Date()
-    });
-
-    if (result.isSuccess()) {
-      this.saveRule(result.value);
-    }
+    // Ovde možemo pozvati fetchAllRules pri pokretanju aplikacije
+    this.fetchAllRules();
   }
 }

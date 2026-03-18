@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   Building2, Plane, ShoppingBag, Navigation, Map, Anchor, Compass, Zap, Car, 
-  MapPin, CalendarDays, Users, Bus, Clock, CheckCircle2 
+  MapPin, CalendarDays, Users, Bus, Clock, CheckCircle2, ChevronLeft, ChevronRight 
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import './SearchModule.css';
@@ -23,9 +23,35 @@ interface SearchModuleProps {
 }
 
 export const SearchModule: React.FC<SearchModuleProps> = ({ onServiceSelect }) => {
+  const today = new Date();
   const [searchFilter, setSearchFilter] = useState('Packages');
   const [packageStep, setPackageStep] = useState(0); 
   const [showCalendar, setShowCalendar] = useState(false);
+  const [showRoomsPopover, setShowRoomsPopover] = useState(false);
+  const [roomsData, setRoomsData] = useState([{ id: 1, adults: 2, children: [] as number[] }]);
+  const [startDate, setStartDate] = useState<number | null>(25);
+  const [endDate, setEndDate] = useState<number | null>(27);
+  const [dates, setDates] = useState('25 Mar - 27 Mar');
+  const [dateFlexibility, setDateFlexibility] = useState('Exact dates');
+  const [viewMonth, setViewMonth] = useState(2); // March
+  const [viewYear, setViewYear] = useState(2026);
+
+  const getMonthData = (month: number, year: number) => {
+    const name = new Intl.DateTimeFormat('en-US', { month: 'long' }).format(new Date(year, month));
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const startDay = new Date(year, month, 1).getDay();
+    return { name, daysInMonth, startDay };
+  };
+
+  const nextMonth = () => {
+    if (viewMonth === 11) { setViewMonth(0); setViewYear(viewYear + 1); }
+    else { setViewMonth(viewMonth + 1); }
+  };
+
+  const prevMonth = () => {
+    if (viewMonth === 0) { setViewMonth(11); setViewYear(viewYear - 1); }
+    else { setViewMonth(viewMonth - 1); }
+  };
 
   const tabs = [
     { id: 'Stays', label: 'Smeštaj', icon: <Building2 size={22} />, fields: ['city-hotel', 'dates', 'rooms'] },
@@ -52,9 +78,124 @@ export const SearchModule: React.FC<SearchModuleProps> = ({ onServiceSelect }) =
       if (field === 'from') return <div key={idx} className="search-input-field"><label>Leaving from</label><MapPin size={18} style={{ position: 'absolute', left: '16px', opacity: 0.6 }} /><input type="text" defaultValue="Belgrade (BEG)" style={{ height: '64px', border: 'none', background: 'transparent' }} /></div>;
       if (field === 'to') return <div key={idx} className="search-input-field"><label>Going to</label><MapPin size={18} style={{ position: 'absolute', left: '16px', opacity: 0.6 }} /><input type="text" placeholder="Antalya, Turkey" style={{ height: '64px', border: 'none', background: 'transparent' }} /></div>;
       if (field === 'destination') return <div key={idx} className="search-input-field"><label>Destination</label><MapPin size={18} style={{ position: 'absolute', left: '16px', opacity: 0.6 }} /><input type="text" placeholder="Tuscany, Italy" style={{ height: '64px', border: 'none', background: 'transparent' }} /></div>;
-      if (field === 'dates') return <div key={idx} className="search-input-field" onClick={() => setShowCalendar(true)}><label>Dates</label><CalendarDays size={18} style={{ position: 'absolute', left: '16px', opacity: 0.6 }} /><input type="text" readOnly value="18 Mar - 25 Mar" style={{ height: '64px', border: 'none', background: 'transparent' }} /></div>;
-      if (field === 'rooms') return <div key={idx} className="search-input-field"><label>Rooms & Travellers</label><Users size={18} style={{ position: 'absolute', left: '16px', opacity: 0.6 }} /><input type="text" readOnly value="1 Room, 2 Adults" style={{ height: '64px', border: 'none', background: 'transparent' }} /></div>;
-      if (field === 'passengers') return <div key={idx} className="search-input-field"><label>Travellers</label><Users size={18} style={{ position: 'absolute', left: '16px', opacity: 0.6 }} /><input type="text" readOnly value="2 Adults" style={{ height: '64px', border: 'none', background: 'transparent' }} /></div>;
+      if (field === 'dates') return (
+        <div key={idx} style={{ position: 'relative' }}>
+          <div className="search-input-field" onClick={() => { setShowCalendar(!showCalendar); setShowRoomsPopover(false); }} style={{ cursor: 'pointer' }}>
+            <label>Dates</label>
+            <CalendarDays size={18} style={{ position: 'absolute', left: '16px', opacity: 0.6 }} />
+            <input type="text" readOnly value={dates || 'Izaberite termine'} style={{ height: '64px', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '14px', fontWeight: '700' }} />
+          </div>
+          {showCalendar && (
+            <div className="search-popover" style={{ width: '740px', padding: '32px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                <button className="glass-card" onClick={prevMonth} style={{ width: '40px', height: '40px', borderRadius: '50%', border: 'none', cursor: 'pointer' }}><ChevronLeft size={20} /></button>
+                <div style={{ display: 'flex', width: '100%', justifyContent: 'space-around', padding: '0 40px' }}>
+                  <div style={{ fontSize: '18px', fontWeight: '800' }}>{getMonthData(viewMonth, viewYear).name} {viewYear}</div>
+                  <div style={{ fontSize: '18px', fontWeight: '800' }}>{getMonthData((viewMonth + 1) % 12, viewMonth === 11 ? viewYear + 1 : viewYear).name} {viewMonth === 11 ? viewYear + 1 : viewYear}</div>
+                </div>
+                <button className="glass-card" onClick={nextMonth} style={{ width: '40px', height: '40px', borderRadius: '50%', border: 'none', cursor: 'pointer' }}><ChevronRight size={20} /></button>
+              </div>
+              <div className="dual-month-container" style={{ padding: 0, gap: '60px' }}>
+                <div className="month-section" style={{ flex: 1 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', textAlign: 'center' }}>
+                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => <div key={d} style={{ fontSize: '13px', fontWeight: '600', opacity: 0.6, padding: '12px 0' }}>{d}</div>)}
+                    {Array.from({ length: getMonthData(viewMonth, viewYear).startDay }).map((_, i) => <div key={`off-${i}`} />)}
+                    {Array.from({ length: getMonthData(viewMonth, viewYear).daysInMonth }).map((_, i) => {
+                      const day = i + 1;
+                      const isToday = day === today.getDate() && viewMonth === today.getMonth() && viewYear === today.getFullYear();
+                      const isStart = startDate === day && viewMonth === 2;
+                      const isEnd = endDate === day && viewMonth === 2;
+                      const isInRange = startDate && endDate && day > startDate && day < endDate && viewMonth === 2;
+                      return (
+                        <div key={i} onClick={() => {
+                          const mName = getMonthData(viewMonth, viewYear).name.substring(0, 3);
+                          if (!startDate || (startDate && endDate)) { setStartDate(day); setEndDate(null); setDates(`${day} ${mName}`); }
+                          else if (day > startDate) { setEndDate(day); setDates(`${startDate} ${mName} - ${day} ${mName}`); }
+                          else { setStartDate(day); setEndDate(null); setDates(`${day} ${mName}`); }
+                        }} className={`calendar-day ${isStart || isEnd || (isToday && !startDate) ? 'start-end' : ''} ${isInRange ? 'in-range' : ''}`} style={{ height: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: (isStart || isEnd || isToday) ? '800' : '500', color: (isStart || isEnd || isToday) ? 'white' : 'inherit', position: 'relative', cursor: 'pointer' }}>
+                          {(isToday && !isStart && !isEnd) && <div style={{ position: 'absolute', width: '38px', height: '38px', borderRadius: '12px', border: '2px solid var(--bordo)', zIndex: 0 }} />}
+                          <span style={{ zIndex: 1 }}>{day}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="month-section" style={{ flex: 1 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', textAlign: 'center' }}>
+                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => <div key={d} style={{ fontSize: '13px', fontWeight: '600', opacity: 0.6, padding: '12px 0' }}>{d}</div>)}
+                    {Array.from({ length: getMonthData((viewMonth + 1) % 12, viewMonth === 11 ? viewYear + 1 : viewYear).startDay }).map((_, i) => <div key={`off2-${i}`} />)}
+                    {Array.from({ length: getMonthData((viewMonth + 1) % 12, viewMonth === 11 ? viewYear + 1 : viewYear).daysInMonth }).map((_, i) => {
+                      const day = i + 1;
+                      const nextM = (viewMonth + 1) % 12;
+                      const nextY = viewMonth === 11 ? viewYear + 1 : viewYear;
+                      const isToday = day === today.getDate() && nextM === today.getMonth() && nextY === today.getFullYear();
+                      return (
+                        <div key={i} onClick={() => {
+                          const mName = getMonthData(nextM, nextY).name.substring(0, 3);
+                          if (!startDate || (startDate && endDate)) { setStartDate(day); setEndDate(null); setDates(`${day} ${mName}`); }
+                          else { setEndDate(day); setDates(`${startDate} ${getMonthData(viewMonth, viewYear).name.substring(0,3)} - ${day} ${mName}`); }
+                        }} className={`calendar-day ${isToday && !startDate ? 'start-end' : ''}`} style={{ height: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', cursor: 'pointer', position: 'relative' }}>
+                          {(isToday && !startDate) && <div style={{ position: 'absolute', width: '38px', height: '38px', borderRadius: '12px', border: '2px solid var(--bordo)', zIndex: 0 }} />}
+                          <span style={{ zIndex: 1 }}>{day}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+              <div style={{ marginTop: '32px', paddingTop: '24px', borderTop: '1px solid var(--border-color)', display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
+                {['Exact dates', '± 1 day', '± 2 days', '± 3 days', '± 7 days'].map(pill => (
+                   <button key={pill} onClick={() => setDateFlexibility(pill)} className={`calendar-pill ${dateFlexibility === pill ? 'active' : ''}`} style={{ padding: '10px 20px', fontSize: '13px', fontWeight: '700' }}>{pill}</button>
+                ))}
+                <button className="btn-primary" onClick={() => setShowCalendar(false)} style={{ marginLeft: 'auto', padding: '12px 40px' }}>Primeni</button>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+      if (field === 'rooms') return (
+        <div key={idx} style={{ position: 'relative' }}>
+          <div className="search-input-field" onClick={() => { setShowRoomsPopover(!showRoomsPopover); setShowCalendar(false); }} style={{ cursor: 'pointer' }}>
+            <label>Rooms & Travellers</label>
+            <Users size={18} style={{ position: 'absolute', left: '16px', opacity: 0.6 }} />
+            <input type="text" readOnly value={`${roomsData.length} Room, ${roomsData.reduce((acc, r) => acc + r.adults + r.children.length, 0)} Putnika`} style={{ height: '64px', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '14px', fontWeight: '700' }} />
+          </div>
+          {showRoomsPopover && (
+            <div className="search-popover" style={{ width: '420px', left: '0' }}>
+              <div className="popover-scroll-area">
+                {roomsData.map((room, rIdx) => (
+                  <div key={room.id} className="room-section">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                       <h4 className="room-title" style={{ margin: 0 }}>Soba {rIdx + 1}</h4>
+                       {rIdx > 0 && <span onClick={() => setRoomsData(roomsData.filter(r => r.id !== room.id))} style={{ fontSize: '12px', fontWeight: '700', color: 'var(--bordo)', cursor: 'pointer' }}>Ukloni</span>}
+                    </div>
+                    <div className="room-row">
+                      <div><div style={{ fontSize: '14px', fontWeight: '700' }}>Odrasli</div><div style={{ fontSize: '11px', opacity: 0.5 }}>Uzrast 18+</div></div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}><button className="counter-btn" onClick={() => { const newRooms = [...roomsData]; newRooms[rIdx].adults = Math.max(1, newRooms[rIdx].adults - 1); setRoomsData(newRooms); }} disabled={room.adults <= 1}>-</button><span style={{ minWidth: '20px', textAlign: 'center', fontWeight: '800' }}>{room.adults}</span><button className="counter-btn" onClick={() => { const newRooms = [...roomsData]; newRooms[rIdx].adults++; setRoomsData(newRooms); }}>+</button></div>
+                    </div>
+                    <div className="room-row">
+                      <div><div style={{ fontSize: '14px', fontWeight: '700' }}>Deca</div><div style={{ fontSize: '11px', opacity: 0.5 }}>Uzrast 0 - 17</div></div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}><button className="counter-btn" onClick={() => { const newRooms = [...roomsData]; newRooms[rIdx].children.pop(); setRoomsData(newRooms); }} disabled={room.children.length === 0}>-</button><span style={{ minWidth: '20px', textAlign: 'center', fontWeight: '800' }}>{room.children.length}</span><button className="counter-btn" onClick={() => { const newRooms = [...roomsData]; newRooms[rIdx].children.push(0); setRoomsData(newRooms); }}>+</button></div>
+                    </div>
+                    {room.children.length > 0 && <div className="age-select-container">{room.children.map((age, cIdx) => (
+                      <div key={cIdx}><div style={{ fontSize: '11px', fontWeight: '700', marginBottom: '4px', opacity: 0.6 }}>Godište deteta {cIdx + 1}</div><select className="age-select" value={age} onChange={(e) => { const newRooms = [...roomsData]; newRooms[rIdx].children[cIdx] = parseInt(e.target.value); setRoomsData(newRooms); }}><option value="0">Ispod 1 god.</option>{Array.from({ length: 17 }).map((_, a) => <option key={a} value={a+1}>{a+1} god.</option>)}</select></div>
+                    ))}</div>}
+                  </div>
+                ))}
+                {roomsData.length < 3 && <button className="room-action-link" style={{ border: 'none', background: 'none' }} onClick={() => setRoomsData([...roomsData, { id: Date.now(), adults: 2, children: [] }])}>Dodaj još jednu sobu</button>}
+              </div>
+              <div className="popover-footer"><div style={{ opacity: 0 }}>Spacer</div><button className="btn-primary" onClick={() => setShowRoomsPopover(false)} style={{ padding: '12px 40px' }}>GOTOVO</button></div>
+            </div>
+          )}
+        </div>
+      );
+      if (field === 'passengers') return (
+        <div key={idx} className="search-input-field" onClick={() => { setShowRoomsPopover(true); setShowCalendar(false); }} style={{ cursor: 'pointer' }}>
+          <label>Travellers</label>
+          <Users size={18} style={{ position: 'absolute', left: '16px', opacity: 0.6 }} />
+          <input type="text" readOnly value={`${roomsData.reduce((acc, r) => acc + r.adults + r.children.length, 0)} Putnika`} style={{ height: '64px', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '14px', fontWeight: '700' }} />
+        </div>
+      );
       if (field === 'from-to') return <div key={idx} className="search-input-field"><label>From - To</label><Bus size={18} style={{ position: 'absolute', left: '16px', opacity: 0.6 }} /><input type="text" placeholder="Airport -> Hotel" style={{ height: '64px', border: 'none', background: 'transparent' }} /></div>;
       if (field === 'pickup') return <div key={idx} className="search-input-field"><label>Pick-up Location</label><MapPin size={18} style={{ position: 'absolute', left: '16px', opacity: 0.6 }} /><input type="text" placeholder="Milan Airport" style={{ height: '64px', border: 'none', background: 'transparent' }} /></div>;
       if (field === 'cruise-line') return <div key={idx} className="search-input-field"><label>Cruise Line</label><Anchor size={18} style={{ position: 'absolute', left: '16px', opacity: 0.6 }} /><input type="text" placeholder="MSC Cruises" style={{ height: '64px', border: 'none', background: 'transparent' }} /></div>;

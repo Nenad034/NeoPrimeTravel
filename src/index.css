@@ -247,6 +247,11 @@ button.glass-card:hover {
   height: 64px;
   transition: all 0.2s;
   background: rgba(255,255,255,0.4);
+  cursor: text;
+}
+
+.search-input-field input[readOnly] {
+  cursor: pointer;
 }
 
 .search-input-field input:focus {
@@ -426,7 +431,7 @@ button.glass-card:hover {
 .calendar-day.start-end {
   background: var(--bordo);
   color: white;
-  border-radius: 50%;
+  border-radius: 12px;
 }
 
 .room-row {
