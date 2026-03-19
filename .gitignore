@@ -5,3 +5,8 @@ build
 .gemini
 tmp
 *.log
+
+# OpenClaw - sensitive files (API keys, config)
+src/automation/openclaw/openclaw/.env
+src/automation/openclaw/openclaw/config/
+src/automation/openclaw/openclaw/workspace/
